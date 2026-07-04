@@ -4,159 +4,118 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Studio</title>
-    <link rel="stylesheet" href="styles.css?v=20260704-studio7">
+    <link rel="stylesheet" href="styles.css?v=20260704-timeline2">
   </head>
   <body>
-    <main class="shell">
-      <section class="hero" aria-labelledby="trip-title">
-        <div class="hero__photo" role="img" aria-label="Australia coast and travel notebook"></div>
-        <div class="hero__body">
-          <div class="sync-pill" id="sync-status">起動中</div>
-          <p class="eyebrow">Trip Studio</p>
-          <h1 id="trip-title">Australia 2026</h1>
-          <p id="trip-mood"></p>
-          <div class="hero__facts" id="trip-facts"></div>
-        </div>
-      </section>
+    <main class="stage">
+      <p class="theme-label"><span>1b</span>すっきりタイムライン</p>
 
-      <section class="command-bar" aria-label="同期と操作">
-        <div class="sync-panel" aria-live="polite">
-          <strong id="save-state">自動同期を準備中</strong>
-          <span id="last-updated">前回更新 未取得</span>
-          <p id="sync-help">入力後に自動保存し、他の端末にも数秒以内に反映します。</p>
-        </div>
-        <div class="actions">
-          <button class="primary" id="save-remote" type="button">今すぐ同期</button>
-          <button id="refresh-remote" type="button">最新を反映</button>
-          <button id="sync-settings" type="button">同期設定</button>
-          <button id="export-json" type="button">JSON</button>
-          <a id="repo-link" href="https://github.com/masakasakasama/Trip_Plan" target="_blank" rel="noreferrer">GitHub</a>
-        </div>
-      </section>
+      <section class="phone" aria-label="Trip Studio">
+        <div class="notch"></div>
 
-      <section class="dashboard" aria-label="計画の状態">
-        <article class="metric">
-          <span>Plan health</span>
-          <strong id="quality-score">0%</strong>
-          <p>日程、POI、メモ、予算の埋まり具合</p>
-        </article>
-        <div class="quality-list" id="quality-list"></div>
-      </section>
-
-      <section class="workspace">
-        <aside class="panel trip-rail" aria-labelledby="trips-heading">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Library</p>
-              <h2 id="trips-heading">Trips</h2>
-            </div>
-            <button id="new-trip" type="button">新規</button>
+        <header class="app-header">
+          <button class="ghost-button" id="trip-switcher" type="button" aria-label="Trip切替">⌄</button>
+          <div>
+            <p id="trip-dates">2026・8.1 - 8.10</p>
+            <h1 id="trip-title">Australia 2026</h1>
           </div>
-          <div id="trip-list" class="trip-list"></div>
-        </aside>
+          <button class="ghost-button" id="sync-settings" type="button" aria-label="同期設定">⋯</button>
+        </header>
 
-        <section class="main-stack">
-          <section class="panel planner" aria-labelledby="rough-heading">
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">Rough first</p>
-                <h2 id="rough-heading">ラフプラン</h2>
-              </div>
-              <button id="archive-toggle" type="button">過去Tripへ移動</button>
-            </div>
-            <form id="trip-form" class="form-grid">
-              <label>タイトル<input name="title" autocomplete="off"></label>
-              <label>行き先<input name="destination" autocomplete="off"></label>
-              <label>開始日<input name="startDate" type="date"></label>
-              <label>終了日<input name="endDate" type="date"></label>
-              <label>予算<input name="budget" type="number" min="0" step="1000"></label>
-              <label>ステータス<input name="status" autocomplete="off"></label>
-              <label class="wide">旅の雰囲気<textarea name="mood" rows="3"></textarea></label>
-            </form>
-          </section>
-
-          <section class="panel poi-panel" aria-labelledby="poi-heading">
-            <div class="section-head">
-              <div>
-                <p class="eyebrow">Places</p>
-                <h2 id="poi-heading">行きたいところ</h2>
-              </div>
-              <button id="open-map-search" type="button">Google Mapsで探す</button>
-            </div>
-            <form id="poi-form" class="poi-form">
-              <input name="name" placeholder="場所の名前">
-              <input name="area" placeholder="エリア・住所">
-              <select name="category" aria-label="カテゴリ">
-                <option value="cafe">カフェ</option>
-                <option value="food">ごはん</option>
-                <option value="spot">観光</option>
-                <option value="nature">自然</option>
-                <option value="shop">買い物</option>
-                <option value="hotel">ホテル</option>
-                <option value="transport">移動</option>
-              </select>
-              <select name="priority" aria-label="優先度">
-                <option value="high">絶対行きたい</option>
-                <option value="medium">できれば</option>
-                <option value="low">余裕があれば</option>
-              </select>
-              <input class="wide" name="mapsUrl" placeholder="Google Maps URL">
-              <textarea class="wide" name="memo" rows="2" placeholder="メモ"></textarea>
-              <button class="primary wide" type="submit">候補に追加</button>
-            </form>
-            <div class="poi-list" id="poi-list"></div>
-          </section>
+        <section class="soft-card status-card">
+          <div class="weather-icon">☀️</div>
+          <div>
+            <strong id="trip-place">Sydney・晴れ 26°</strong>
+            <p id="sync-status">自動同期を準備中</p>
+          </div>
+          <div class="countdown">
+            <span>あと</span>
+            <strong id="countdown-days">--日</strong>
+          </div>
         </section>
 
-        <section class="panel schedule-panel" aria-labelledby="schedule-heading">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Itinerary</p>
-              <h2 id="schedule-heading">日程</h2>
-            </div>
+        <nav class="day-tabs" id="day-tabs" aria-label="日付"></nav>
+
+        <section class="view is-active" id="view-home" aria-label="ホーム">
+          <div class="timeline" id="timeline"></div>
+          <div class="progress-grid">
+            <article class="progress-card pink">
+              <div><strong>持ち物</strong><span id="packing-score">75%</span></div>
+              <meter min="0" max="100" value="75"></meter>
+            </article>
+            <article class="progress-card blue">
+              <div><strong>予算</strong><span id="budget-score">52%</span></div>
+              <meter min="0" max="100" value="52"></meter>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-itinerary" aria-label="旅程">
+          <div class="section-title">
+            <h2>旅程</h2>
             <button id="add-day" type="button">日を追加</button>
           </div>
-          <div id="schedule"></div>
+          <div class="stack-list" id="day-list"></div>
         </section>
 
-        <section class="panel notes-panel" aria-labelledby="notes-heading">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Decisions</p>
-              <h2 id="notes-heading">メモ</h2>
-            </div>
+        <section class="view" id="view-spots" aria-label="スポット">
+          <div class="section-title">
+            <h2>スポット</h2>
+            <button id="add-spot" type="button">追加</button>
+          </div>
+          <button class="map-search" id="open-map-search" type="button">Google Mapsで探す</button>
+          <div class="stack-list" id="spot-list"></div>
+        </section>
+
+        <section class="view" id="view-memory" aria-label="おもいで">
+          <div class="section-title">
+            <h2>メモ</h2>
             <button id="add-note" type="button">追加</button>
           </div>
-          <div id="notes"></div>
+          <div class="stack-list" id="note-list"></div>
+          <div class="archive-box">
+            <strong>旅行後</strong>
+            <p>終わったTripは過去Tripへ移動して、このURLの中に残せます。</p>
+            <button id="archive-toggle" type="button">過去Tripへ移動</button>
+          </div>
         </section>
+
+        <nav class="bottom-nav" aria-label="メインナビ">
+          <button class="is-active" data-view="home" type="button"><span>🏠</span>ホーム</button>
+          <button data-view="itinerary" type="button"><span>🗓️</span>旅程</button>
+          <button data-view="spots" type="button"><span>📍</span>スポット</button>
+          <button data-view="memory" type="button"><span>📷</span>おもいで</button>
+        </nav>
       </section>
     </main>
 
+    <dialog id="trip-dialog">
+      <form method="dialog">
+        <div class="dialog-head">
+          <h2>Trip</h2>
+          <button type="submit">閉じる</button>
+        </div>
+        <div id="trip-list" class="trip-list"></div>
+        <button id="new-trip" class="wide-action" type="button">新しいTripを作る</button>
+      </form>
+    </dialog>
+
     <dialog id="settings-dialog">
-      <form method="dialog" id="settings-form">
-        <div class="section-head">
+      <form method="dialog">
+        <div class="dialog-head">
           <h2>同期設定</h2>
           <button type="submit">閉じる</button>
         </div>
-        <p class="dialog-copy">自動保存にはGitHub Fine-grained personal access tokenが必要です。Trip_Planリポジトリだけに Contents: Read and write を付けてください。</p>
+        <p class="hint">自動保存する端末だけGitHub tokenを設定します。普段はこの画面を触らなくてOK。</p>
         <label>GitHub token<input id="github-token" type="password" autocomplete="off" placeholder="github_pat_..."></label>
         <div class="dialog-actions">
-          <button class="primary" id="save-token" type="button">この端末に保存</button>
-          <button id="clear-token" type="button">token削除</button>
+          <button id="save-token" class="wide-action" type="button">保存する</button>
+          <button id="clear-token" type="button">削除</button>
+          <button id="save-now" type="button">今すぐ同期</button>
         </div>
       </form>
     </dialog>
 
-    <dialog id="json-dialog">
-      <form method="dialog">
-        <div class="section-head">
-          <h2>JSON</h2>
-          <button type="submit">閉じる</button>
-        </div>
-        <textarea id="json-output" rows="18" readonly></textarea>
-      </form>
-    </dialog>
-
-    <script src="app.js?v=20260704-studio7" defer></script>
+    <script src="app.js?v=20260704-timeline2" defer></script>
   </body>
 </html>

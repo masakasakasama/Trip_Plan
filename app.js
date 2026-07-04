@@ -8,54 +8,45 @@ const GITHUB = {
 const API_URL = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/${GITHUB.path}`;
 const DATA_URL = "trip-plan.json";
 const TOKEN_KEY = "trip-plan-github-token-v1";
-const CACHE_KEY = "trip-plan-last-good-cache-v2";
+const CACHE_KEY = "trip-plan-cache-v3";
 const POLL_MS = 5000;
-const AUTO_SAVE_MS = 1500;
-const SAVE_RETRY_MS = 10000;
+const AUTO_SAVE_MS = 1400;
 
 const els = {
   title: document.querySelector("#trip-title"),
-  mood: document.querySelector("#trip-mood"),
-  facts: document.querySelector("#trip-facts"),
+  dates: document.querySelector("#trip-dates"),
+  place: document.querySelector("#trip-place"),
   status: document.querySelector("#sync-status"),
-  saveState: document.querySelector("#save-state"),
-  lastUpdated: document.querySelector("#last-updated"),
-  syncHelp: document.querySelector("#sync-help"),
-  qualityScore: document.querySelector("#quality-score"),
-  qualityList: document.querySelector("#quality-list"),
+  countdown: document.querySelector("#countdown-days"),
+  dayTabs: document.querySelector("#day-tabs"),
+  timeline: document.querySelector("#timeline"),
+  packingScore: document.querySelector("#packing-score"),
+  budgetScore: document.querySelector("#budget-score"),
+  dayList: document.querySelector("#day-list"),
+  spotList: document.querySelector("#spot-list"),
+  noteList: document.querySelector("#note-list"),
+  tripDialog: document.querySelector("#trip-dialog"),
   tripList: document.querySelector("#trip-list"),
-  tripForm: document.querySelector("#trip-form"),
-  poiForm: document.querySelector("#poi-form"),
-  poiList: document.querySelector("#poi-list"),
-  schedule: document.querySelector("#schedule"),
-  notes: document.querySelector("#notes"),
-  saveRemote: document.querySelector("#save-remote"),
-  refreshRemote: document.querySelector("#refresh-remote"),
-  syncSettings: document.querySelector("#sync-settings"),
-  exportJson: document.querySelector("#export-json"),
-  newTrip: document.querySelector("#new-trip"),
-  archiveToggle: document.querySelector("#archive-toggle"),
-  addDay: document.querySelector("#add-day"),
-  addNote: document.querySelector("#add-note"),
-  openMapSearch: document.querySelector("#open-map-search"),
   settingsDialog: document.querySelector("#settings-dialog"),
-  githubToken: document.querySelector("#github-token"),
-  saveToken: document.querySelector("#save-token"),
-  clearToken: document.querySelector("#clear-token"),
-  jsonDialog: document.querySelector("#json-dialog"),
-  jsonOutput: document.querySelector("#json-output")
+  token: document.querySelector("#github-token"),
+  archiveToggle: document.querySelector("#archive-toggle")
 };
 
 let state = null;
 let remoteSha = "";
-let lastRemoteJson = "";
-let isDirty = false;
-let isSaving = false;
-let pendingSaveRequested = false;
+let activeDayIndex = 0;
+let activeView = "home";
+let dirty = false;
+let saving = false;
 let autoSaveTimer = null;
 
-function token() {
+function getToken() {
   return localStorage.getItem(TOKEN_KEY) || "";
+}
+
+function setStatus(text, tone = "") {
+  els.status.textContent = text;
+  els.status.dataset.tone = tone;
 }
 
 function uid(prefix) {
@@ -66,109 +57,19 @@ function valueOr(value, fallback = "") {
   return value === undefined || value === null || value === "" ? fallback : String(value);
 }
 
-function clear(node) {
-  node.replaceChildren();
+function currentTrip() {
+  return state.trips.find((trip) => trip.id === state.activeTripId) || state.trips[0];
 }
 
-function setSync(message, tone = "normal") {
-  els.status.textContent = message;
-  els.status.dataset.tone = tone;
-}
-
-function setSaveState(message) {
-  els.saveState.textContent = message;
-}
-
-function money(value) {
-  return new Intl.NumberFormat("ja-JP", {
-    style: "currency",
-    currency: "JPY",
-    maximumFractionDigits: 0
-  }).format(Number(value) || 0);
-}
-
-function dateLabel(value) {
-  if (!value) return "未定";
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("ja-JP", {
-    month: "numeric",
-    day: "numeric",
-    weekday: "short"
-  }).format(date);
-}
-
-function timeLabel(value) {
-  if (!value) return "未取得";
-  return new Intl.DateTimeFormat("ja-JP", {
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(value));
-}
-
-function encodeBase64Unicode(text) {
-  const bytes = new TextEncoder().encode(text);
-  let binary = "";
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
-
-function decodeBase64Unicode(text) {
-  const binary = atob(text.replace(/\n/g, ""));
-  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
-
-async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
-  if (typeof fetch !== "function") {
-    return xhrRequest(url, options, timeoutMs);
-  }
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    window.clearTimeout(timer);
-  }
-}
-
-function xhrRequest(url, options = {}, timeoutMs = 10000) {
-  return new Promise((resolve, reject) => {
-    const request = new XMLHttpRequest();
-    request.open(options.method || "GET", url, true);
-    request.timeout = timeoutMs;
-    Object.entries(options.headers || {}).forEach(([key, value]) => {
-      request.setRequestHeader(key, value);
-    });
-    request.onload = () => {
-      resolve({
-        ok: request.status >= 200 && request.status < 300,
-        status: request.status,
-        json: async () => JSON.parse(request.responseText),
-        text: async () => request.responseText
-      });
-    };
-    request.onerror = () => reject(new Error("通信に失敗しました"));
-    request.ontimeout = () => reject(new Error("通信がタイムアウトしました"));
-    request.send(options.body || null);
-  });
-}
-
-function mapsUrl(poi) {
-  if (poi.mapsUrl) return poi.mapsUrl;
+function currentDay() {
   const trip = currentTrip();
-  const query = encodeURIComponent([poi.name, poi.area, trip.destination].filter(Boolean).join(" "));
-  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+  return trip.days[activeDayIndex] || trip.days[0];
 }
 
 function normalizeTrip(trip) {
   return {
     id: trip.id || uid("trip"),
-    title: valueOr(trip.title, "新しいTrip"),
+    title: valueOr(trip.title, "新しい旅"),
     destination: valueOr(trip.destination, "行き先未定"),
     startDate: valueOr(trip.startDate),
     endDate: valueOr(trip.endDate),
@@ -178,7 +79,6 @@ function normalizeTrip(trip) {
     status: valueOr(trip.status, "ラフ設計"),
     lastUpdated: valueOr(trip.lastUpdated, new Date().toISOString()),
     archived: Boolean(trip.archived),
-    source: valueOr(trip.source),
     pois: Array.isArray(trip.pois) ? trip.pois : [],
     days: Array.isArray(trip.days) ? trip.days : [],
     notes: Array.isArray(trip.notes) ? trip.notes : []
@@ -195,606 +95,424 @@ function normalize(data) {
     };
   }
 
-  const migrated = normalizeTrip({
+  const trip = normalizeTrip({
     id: "legacy-trip",
     ...(data.trip || {}),
     pois: data.pois || [],
     days: data.days || [],
     notes: data.notes || []
   });
-  return { schemaVersion: 2, activeTripId: migrated.id, trips: [migrated] };
+  return { schemaVersion: 2, activeTripId: trip.id, trips: [trip] };
 }
 
-function currentTrip() {
-  return state.trips.find((trip) => trip.id === state.activeTripId) || state.trips[0];
+function formatShortDate(value) {
+  if (!value) return "--";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(date);
 }
 
-function visibleTrips() {
-  return [...state.trips].sort((a, b) => Number(a.archived) - Number(b.archived) || b.startDate.localeCompare(a.startDate));
-}
-
-function quality(trip) {
-  const checks = [
-    ["日付", Boolean(trip.startDate && trip.endDate), "開始日と終了日"],
-    ["行きたい場所", trip.pois.length >= 3, "候補3件以上"],
-    ["日程", trip.days.some((day) => day.items.length), "予定入りの日程"],
-    ["休憩余白", trip.notes.some((note) => /休憩|無理|疲れ|余裕/.test(note)), "疲れない設計メモ"],
-    ["予算", trip.budget > 0, "予算の目安"]
-  ];
-  const done = checks.filter((item) => item[1]).length;
-  return { score: Math.round((done / checks.length) * 100), checks };
-}
-
-async function fetchRemote() {
-  if (!token()) {
-    const response = await fetchWithTimeout(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
-    if (!response.ok) throw new Error(`データ読み込み失敗: ${response.status}`);
-    const json = await response.text();
-    return { data: normalize(JSON.parse(json)), sha: remoteSha, json };
-  }
-
-  const headers = {
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28"
-  };
-  headers.Authorization = `Bearer ${token()}`;
-  const response = await fetchWithTimeout(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, { headers, cache: "no-store" });
-  if (!response.ok) throw new Error(`GitHub読み込み失敗: ${response.status}`);
-  const payload = await response.json();
-  const json = decodeBase64Unicode(payload.content);
-  return { data: normalize(JSON.parse(json)), sha: payload.sha, json };
-}
-
-async function loadRemote({ force = false } = {}) {
-  if (isDirty && !force) {
-    setSync("自動保存待ちの変更があります", "warn");
-    return;
-  }
-  setSync("GitHubから読み込み中");
-  try {
-    const remote = await fetchRemote();
-    state = remote.data;
-    remoteSha = remote.sha;
-    lastRemoteJson = remote.json;
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ data: state, sha: remoteSha, fetchedAt: new Date().toISOString() }));
-    isDirty = false;
-    renderAll();
-    setSaveState(token() ? "自動同期ON" : "自動保存OFF");
-    if (!window.__tripStudioErrors?.length) {
-      setSync(token() ? "自動同期ON" : "token未設定");
-    }
-    els.lastUpdated.textContent = `前回更新 ${timeLabel(currentTrip().lastUpdated)}`;
-  } catch (error) {
-    const cache = localStorage.getItem(CACHE_KEY);
-    if (!cache) {
-      setSync(error.message, "error");
-      throw error;
-    }
-    const cached = JSON.parse(cache);
-    state = normalize(cached.data);
-    remoteSha = cached.sha || "";
-    renderAll();
-    setSync("通信失敗: 最後の成功データを表示", "warn");
-    setSaveState("キャッシュ表示");
-    els.lastUpdated.textContent = `前回取得 ${timeLabel(cached.fetchedAt)}`;
-  }
-}
-
-function scheduleAutoSave() {
-  window.clearTimeout(autoSaveTimer);
-  if (!token()) {
-    setSaveState("自動保存OFF");
-    setSync("token設定後に自動保存します", "warn");
-    return;
-  }
-  setSaveState("自動同期待ち");
-  autoSaveTimer = window.setTimeout(() => saveRemote({ automatic: true }), AUTO_SAVE_MS);
-}
-
-async function saveRemote({ automatic = false } = {}) {
-  window.clearTimeout(autoSaveTimer);
-  if (isSaving) {
-    pendingSaveRequested = true;
-    return;
-  }
-  if (!token()) {
-    els.settingsDialog.showModal();
-    setSync("自動保存にはGitHub tokenが必要です", "warn");
-    return;
-  }
-  if (!state) return;
-
-  isSaving = true;
-  const trip = currentTrip();
-  trip.lastUpdated = new Date().toISOString();
-  setSaveState(automatic ? "自動同期中" : "同期中");
-  setSync(automatic ? "自動同期中" : "今すぐ同期中");
-
-  const nextJson = `${JSON.stringify(state, null, 2)}\n`;
-  try {
-    if (!remoteSha) {
-      const latest = await fetchRemote();
-      remoteSha = latest.sha;
-    }
-    let response = null;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      response = await fetchWithTimeout(API_URL, {
-        method: "PUT",
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${token()}`,
-          "Content-Type": "application/json",
-          "X-GitHub-Api-Version": "2022-11-28"
-        },
-        body: JSON.stringify({
-          message: `Update trip plan ${new Date().toISOString()}`,
-          content: encodeBase64Unicode(nextJson),
-          sha: remoteSha,
-          branch: GITHUB.branch
-        })
-      }, 12000);
-      if (response.status !== 409) break;
-      const latest = await fetchRemote();
-      remoteSha = latest.sha;
-    }
-    if (!response.ok) {
-      const detail = await response.text();
-      throw new Error(`保存失敗: ${response.status} ${detail.slice(0, 120)}`);
-    }
-    const payload = await response.json();
-    remoteSha = payload.content.sha;
-    lastRemoteJson = nextJson;
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ data: state, sha: remoteSha, fetchedAt: new Date().toISOString() }));
-    isDirty = false;
-    renderAll();
-    setSaveState("同期済み");
-    setSync("自動同期済み");
-    els.lastUpdated.textContent = `前回更新 ${timeLabel(currentTrip().lastUpdated)}`;
-  } catch (error) {
-    setSaveState("同期失敗");
-    setSync(error.message, "error");
-    if (token() && !/401|403/.test(error.message)) {
-      autoSaveTimer = window.setTimeout(() => saveRemote({ automatic: true }), SAVE_RETRY_MS);
-    }
-  } finally {
-    isSaving = false;
-    if (pendingSaveRequested) {
-      pendingSaveRequested = false;
-      scheduleAutoSave();
-    }
-  }
-}
-
-function markDirty() {
-  isDirty = true;
-  setSaveState("未同期");
-  setSync("変更を検知: 自動同期待ち", "warn");
-  scheduleAutoSave();
-}
-
-function renderHero() {
-  const trip = currentTrip();
-  els.title.textContent = trip.title;
-  els.mood.textContent = valueOr(trip.mood, "旅の雰囲気を入力");
-  clear(els.facts);
-  [
-    ["行き先", trip.destination],
-    ["日程", `${dateLabel(trip.startDate)} - ${dateLabel(trip.endDate)}`],
-    ["予算", money(trip.budget)],
-    ["旅行者", trip.travelers.join("・")]
-  ].forEach(([label, value]) => {
-    const fact = document.createElement("div");
-    fact.className = "fact";
-    fact.innerHTML = `<span>${label}</span><strong>${valueOr(value, "未定")}</strong>`;
-    els.facts.append(fact);
-  });
-}
-
-function renderQuality() {
-  const result = quality(currentTrip());
-  els.qualityScore.textContent = `${result.score}%`;
-  clear(els.qualityList);
-  result.checks.forEach(([label, ok, hint]) => {
-    const item = document.createElement("div");
-    item.className = `quality-item${ok ? " is-ok" : ""}`;
-    item.innerHTML = `<strong>${ok ? "OK" : "TODO"}</strong><span>${label}</span><small>${hint}</small>`;
-    els.qualityList.append(item);
-  });
-}
-
-function renderTripList() {
-  clear(els.tripList);
-  visibleTrips().forEach((trip) => {
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = `trip-card${trip.id === state.activeTripId ? " is-active" : ""}${trip.archived ? " is-archived" : ""}`;
-    item.innerHTML = `
-      <span>${trip.archived ? "Past" : "Active"}</span>
-      <strong>${trip.title}</strong>
-      <small>${trip.destination} / ${dateLabel(trip.startDate)}</small>
-    `;
-    item.addEventListener("click", () => {
-      state.activeTripId = trip.id;
-      renderAll();
-      markDirty();
-    });
-    els.tripList.append(item);
-  });
-}
-
-function syncTripForm() {
-  const trip = currentTrip();
-  Object.entries(trip).forEach(([key, value]) => {
-    const field = els.tripForm.elements[key];
-    if (field) field.value = Array.isArray(value) ? value.join(", ") : valueOr(value);
-  });
-  els.archiveToggle.textContent = trip.archived ? "現在Tripに戻す" : "過去Tripへ移動";
-}
-
-function categoryLabel(value) {
-  return {
-    cafe: "カフェ",
-    food: "ごはん",
-    spot: "観光",
-    nature: "自然",
-    shop: "買い物",
-    hotel: "ホテル",
-    transport: "移動"
-  }[value] || "候補";
-}
-
-function priorityLabel(value) {
-  return {
-    high: "絶対行きたい",
-    medium: "できれば",
-    low: "余裕があれば"
-  }[value] || "候補";
+function daysUntil(value) {
+  if (!value) return "--";
+  const start = new Date(`${value}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.ceil((start - today) / 86400000));
 }
 
 function poiById(id) {
   return currentTrip().pois.find((poi) => poi.id === id);
 }
 
-function renderPois() {
-  const trip = currentTrip();
-  clear(els.poiList);
-  if (!trip.pois.length) {
-    els.poiList.innerHTML = `<p class="empty">Google Mapsで見つけた場所をここに貯めます。</p>`;
-    return;
+function mapsUrl(poi) {
+  if (poi.mapsUrl) return poi.mapsUrl;
+  const q = encodeURIComponent(`${poi.name} ${poi.area} ${currentTrip().destination}`);
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
+
+function request(url, options = {}, timeoutMs = 10000) {
+  if (typeof fetch === "function") {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
   }
-  trip.pois.forEach((poi) => {
-    const card = document.createElement("article");
-    card.className = "poi";
-    card.innerHTML = `
-      <div class="poi__top">
-        <div>
-          <h3>${poi.name}</h3>
-          <p class="meta">${valueOr(poi.area, "エリア未定")} / ${valueOr(poi.memo, "メモなし")}</p>
-        </div>
-        <div class="mini-actions">
-          <a href="${mapsUrl(poi)}" target="_blank" rel="noreferrer">Map</a>
-        </div>
-      </div>
-      <div class="chip-row">
-        <span class="chip is-mint">${categoryLabel(poi.category)}</span>
-        <span class="chip">${priorityLabel(poi.priority)}</span>
-      </div>
-    `;
-    card.querySelector(".mini-actions").append(
-      button("編集", () => editPoi(poi.id)),
-      button("削除", () => removePoi(poi.id))
-    );
-    els.poiList.append(card);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(options.method || "GET", url, true);
+    xhr.timeout = timeoutMs;
+    Object.entries(options.headers || {}).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+    xhr.onload = () => resolve({
+      ok: xhr.status >= 200 && xhr.status < 300,
+      status: xhr.status,
+      json: async () => JSON.parse(xhr.responseText),
+      text: async () => xhr.responseText
+    });
+    xhr.onerror = () => reject(new Error("通信に失敗しました"));
+    xhr.ontimeout = () => reject(new Error("通信がタイムアウトしました"));
+    xhr.send(options.body || null);
   });
 }
 
-function renderSchedule() {
+function encodeBase64(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  return btoa(binary);
+}
+
+function decodeBase64(text) {
+  const binary = atob(text.replace(/\n/g, ""));
+  return new TextDecoder().decode(Uint8Array.from(binary, (ch) => ch.charCodeAt(0)));
+}
+
+async function loadRemote() {
+  try {
+    const token = getToken();
+    if (token) {
+      const response = await request(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": "2022-11-28"
+        },
+        cache: "no-store"
+      });
+      if (!response.ok) throw new Error(`同期できません (${response.status})`);
+      const payload = await response.json();
+      remoteSha = payload.sha;
+      state = normalize(JSON.parse(decodeBase64(payload.content)));
+    } else {
+      const response = await request(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`読み込めません (${response.status})`);
+      state = normalize(JSON.parse(await response.text()));
+    }
+    localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+    activeDayIndex = 0;
+    render();
+    setStatus(token ? "自動同期中" : "同期設定待ち", token ? "" : "soft");
+  } catch (error) {
+    const cache = localStorage.getItem(CACHE_KEY);
+    if (cache) {
+      state = normalize(JSON.parse(cache));
+      render();
+      setStatus("オフライン・前回データ", "warn");
+      return;
+    }
+    setStatus(error.message, "warn");
+  }
+}
+
+function markDirty() {
+  dirty = true;
+  setStatus(getToken() ? "保存待ち" : "同期設定待ち", "soft");
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveRemote, AUTO_SAVE_MS);
+}
+
+async function saveRemote() {
+  if (!dirty || saving || !getToken()) return;
+  saving = true;
+  setStatus("自動保存中");
   const trip = currentTrip();
-  clear(els.schedule);
-  if (!trip.days.length) {
-    els.schedule.innerHTML = `<p class="empty">まずは日を追加して、移動・食事・休憩を置きます。</p>`;
+  trip.lastUpdated = new Date().toISOString();
+  const body = `${JSON.stringify(state, null, 2)}\n`;
+  try {
+    if (!remoteSha) {
+      const latest = await request(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${getToken()}`, Accept: "application/vnd.github+json" }
+      });
+      if (latest.ok) remoteSha = (await latest.json()).sha;
+    }
+    const response = await request(API_URL, {
+      method: "PUT",
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${getToken()}`,
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      },
+      body: JSON.stringify({
+        message: `Update trip plan ${new Date().toISOString()}`,
+        content: encodeBase64(body),
+        sha: remoteSha,
+        branch: GITHUB.branch
+      })
+    }, 15000);
+    if (!response.ok) throw new Error(`保存失敗 (${response.status})`);
+    const payload = await response.json();
+    remoteSha = payload.content.sha;
+    dirty = false;
+    localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+    setStatus("保存済み");
+  } catch (error) {
+    setStatus(error.message, "warn");
+  } finally {
+    saving = false;
+  }
+}
+
+function render() {
+  if (!state?.trips?.length) return;
+  renderHeader();
+  renderDayTabs();
+  renderTimeline();
+  renderProgress();
+  renderDayList();
+  renderSpots();
+  renderNotes();
+  renderTrips();
+  renderView();
+  els.token.value = getToken();
+}
+
+function renderHeader() {
+  const trip = currentTrip();
+  els.title.textContent = trip.title;
+  els.dates.textContent = `${trip.startDate?.replaceAll("-", "・")} - ${formatShortDate(trip.endDate)}`;
+  els.place.textContent = `${trip.destination.split("/")[0].trim()}・晴れ 26°`;
+  els.countdown.textContent = `${daysUntil(trip.startDate)}日`;
+  els.archiveToggle.textContent = trip.archived ? "現在Tripに戻す" : "過去Tripへ移動";
+}
+
+function renderDayTabs() {
+  const trip = currentTrip();
+  els.dayTabs.replaceChildren();
+  trip.days.forEach((day, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = index === activeDayIndex ? "is-active" : "";
+    button.textContent = day.title || `Day ${index + 1}`;
+    button.addEventListener("click", () => {
+      activeDayIndex = index;
+      renderTimeline();
+      renderDayTabs();
+    });
+    els.dayTabs.append(button);
+  });
+}
+
+function renderTimeline() {
+  const day = currentDay();
+  els.timeline.replaceChildren();
+  if (!day) {
+    els.timeline.innerHTML = `<p class="empty">日程を追加すると、ここにタイムラインが出ます。</p>`;
     return;
   }
-  trip.days.forEach((day) => {
-    const wrap = document.createElement("article");
-    wrap.className = "day";
-    const items = day.items.map((item) => {
-      const poi = poiById(item.poiId);
-      return `
-        <div class="item">
-          <div>
-            <h3><time>${valueOr(item.time, "未定")}</time> ${valueOr(item.title, "予定")}</h3>
-            <p class="meta">${poi ? poi.name : "POI未設定"} / ${valueOr(item.memo, "メモなし")}</p>
-          </div>
-          <div class="mini-actions" data-item="${item.id}"></div>
-        </div>
-      `;
-    }).join("");
-    wrap.innerHTML = `
-      <div class="day__top">
-        <div>
-          <h3>${day.title} / ${dateLabel(day.date)}</h3>
-          <p class="meta">${valueOr(day.theme, "テーマ未設定")}</p>
-        </div>
-        <div class="mini-actions day-actions"></div>
-      </div>
-      <div class="day__items">${items}</div>
-      <form class="add-item">
-        <input name="time" type="time" value="10:00" aria-label="時間">
-        <input name="title" placeholder="予定を追加" aria-label="予定">
-        <button type="submit">追加</button>
-      </form>
+  day.items.forEach((item, index) => {
+    const poi = poiById(item.poiId);
+    const row = document.createElement("article");
+    row.className = "timeline-row";
+    row.innerHTML = `
+      <time>${item.time || "--:--"}</time>
+      <span class="dot ${index % 2 ? "blue" : "pink"}"></span>
+      <button class="event-card" type="button">
+        <strong>${item.title}</strong>
+        <small>${poi ? poi.name : item.memo || "メモなし"}</small>
+      </button>
     `;
-    wrap.querySelector(".day-actions").append(button("編集", () => editDay(day.id)), button("削除", () => removeDay(day.id)));
-    day.items.forEach((item) => {
-      const actions = wrap.querySelector(`[data-item="${item.id}"]`);
-      const poi = poiById(item.poiId);
-      if (poi) {
-        const link = document.createElement("a");
-        link.href = mapsUrl(poi);
-        link.target = "_blank";
-        link.rel = "noreferrer";
-        link.textContent = "Map";
-        actions.append(link);
-      }
-      actions.append(button("編集", () => editItem(day.id, item.id)), button("削除", () => removeItem(day.id, item.id)));
+    row.querySelector(".event-card").addEventListener("click", () => editItem(day.id, item.id));
+    els.timeline.append(row);
+  });
+}
+
+function renderProgress() {
+  const trip = currentTrip();
+  const packing = Math.min(95, 45 + trip.notes.length * 10);
+  const budget = trip.budget ? 64 : 20;
+  els.packingScore.textContent = `${packing}%`;
+  els.budgetScore.textContent = `${budget}%`;
+  document.querySelector(".progress-card.pink meter").value = packing;
+  document.querySelector(".progress-card.blue meter").value = budget;
+}
+
+function renderDayList() {
+  const trip = currentTrip();
+  els.dayList.replaceChildren();
+  trip.days.forEach((day) => {
+    const card = document.createElement("article");
+    card.className = "list-card";
+    card.innerHTML = `<strong>${day.title} / ${formatShortDate(day.date)}</strong><p>${day.theme || "テーマ未設定"}</p><small>${day.items.length}予定</small>`;
+    card.addEventListener("click", () => editDay(day.id));
+    els.dayList.append(card);
+  });
+}
+
+function renderSpots() {
+  const trip = currentTrip();
+  els.spotList.replaceChildren();
+  trip.pois.forEach((poi) => {
+    const card = document.createElement("article");
+    card.className = "list-card spot-card";
+    card.innerHTML = `<strong>${poi.name}</strong><p>${poi.area}・${poi.memo || "メモなし"}</p><a href="${mapsUrl(poi)}" target="_blank" rel="noreferrer">Mapで開く</a>`;
+    card.addEventListener("click", (event) => {
+      if (event.target.tagName !== "A") editPoi(poi.id);
     });
-    wrap.querySelector(".add-item").addEventListener("submit", (event) => {
-      event.preventDefault();
-      const data = new FormData(event.currentTarget);
-      addItem(day.id, data.get("time"), data.get("title"));
-      event.currentTarget.reset();
-    });
-    els.schedule.append(wrap);
+    els.spotList.append(card);
   });
 }
 
 function renderNotes() {
   const trip = currentTrip();
-  clear(els.notes);
+  els.noteList.replaceChildren();
   trip.notes.forEach((note, index) => {
-    const row = document.createElement("div");
-    row.className = "note-row";
-    const input = document.createElement("input");
-    input.value = note;
-    input.addEventListener("input", () => {
-      trip.notes[index] = input.value;
+    const card = document.createElement("article");
+    card.className = "list-card";
+    card.innerHTML = `<strong>Memo ${index + 1}</strong><p>${note || "空のメモ"}</p>`;
+    card.addEventListener("click", () => {
+      const next = prompt("メモ", note);
+      if (next === null) return;
+      trip.notes[index] = next;
+      render();
       markDirty();
     });
-    row.append(input, button("削除", () => {
-      trip.notes.splice(index, 1);
-      renderNotes();
-      markDirty();
-    }));
-    els.notes.append(row);
+    els.noteList.append(card);
   });
 }
 
-function safeRender(label, fn) {
-  try {
-    fn();
-  } catch (error) {
-    window.__tripStudioErrors = window.__tripStudioErrors || [];
-    window.__tripStudioErrors.push({ label, message: error.message });
-    console.error(`${label} render failed`, error);
-    setSync(`${label}表示エラー: ${error.message}`, "error");
-  }
+function renderTrips() {
+  els.tripList.replaceChildren();
+  state.trips.forEach((trip) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = trip.id === state.activeTripId ? "trip-choice is-active" : "trip-choice";
+    button.innerHTML = `<strong>${trip.title}</strong><span>${trip.archived ? "過去Trip" : "現在Trip"}・${trip.destination}</span>`;
+    button.addEventListener("click", () => {
+      state.activeTripId = trip.id;
+      activeDayIndex = 0;
+      els.tripDialog.close();
+      render();
+      markDirty();
+    });
+    els.tripList.append(button);
+  });
 }
 
-function renderAll() {
-  window.__tripStudioErrors = [];
-  window.__tripStudioState = state;
-  window.__tripStudioTrip = currentTrip();
-  safeRender("Hero", renderHero);
-  safeRender("Quality", renderQuality);
-  safeRender("Trips", renderTripList);
-  safeRender("Form", syncTripForm);
-  safeRender("POI", renderPois);
-  safeRender("Schedule", renderSchedule);
-  safeRender("Notes", renderNotes);
-  els.githubToken.value = token();
-  els.syncHelp.textContent = token()
-    ? "入力後すぐに自動保存します。他端末の更新も数秒ごとに自動反映します。"
-    : "全端末で同じデータを読みます。編集内容を自動保存するにはGitHub tokenを設定してください。";
+function renderView() {
+  document.querySelectorAll(".view").forEach((view) => view.classList.remove("is-active"));
+  document.querySelector(`#view-${activeView}`).classList.add("is-active");
+  document.querySelectorAll(".bottom-nav button").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.view === activeView);
+  });
 }
 
-function addPoi(values) {
+function addSpot() {
+  const name = prompt("場所の名前");
+  if (!name) return;
   const trip = currentTrip();
   trip.pois.unshift({
     id: uid("poi"),
-    name: valueOr(values.get("name"), "新しい候補"),
-    area: valueOr(values.get("area"), "TBD"),
-    category: valueOr(values.get("category"), "spot"),
-    priority: valueOr(values.get("priority"), "medium"),
-    mapsUrl: valueOr(values.get("mapsUrl")),
-    memo: valueOr(values.get("memo"))
+    name,
+    area: prompt("エリア・住所", trip.destination) || "",
+    category: "spot",
+    priority: "medium",
+    mapsUrl: prompt("Google Maps URL", "") || "",
+    memo: prompt("メモ", "") || ""
   });
-  renderAll();
+  render();
   markDirty();
 }
 
 function editPoi(id) {
-  const poi = poiById(id);
+  const poi = currentTrip().pois.find((item) => item.id === id);
   if (!poi) return;
-  const name = prompt("場所の名前", poi.name);
-  if (name === null) return;
-  poi.name = name.trim() || poi.name;
-  poi.area = prompt("エリア・住所", poi.area) ?? poi.area;
-  poi.mapsUrl = prompt("Google Maps URL", poi.mapsUrl) ?? poi.mapsUrl;
+  poi.name = prompt("場所の名前", poi.name) || poi.name;
+  poi.area = prompt("エリア", poi.area) ?? poi.area;
   poi.memo = prompt("メモ", poi.memo) ?? poi.memo;
-  renderAll();
+  render();
   markDirty();
 }
 
-function removePoi(id) {
-  const trip = currentTrip();
-  trip.pois = trip.pois.filter((poi) => poi.id !== id);
-  trip.days.forEach((day) => day.items.forEach((item) => {
-    if (item.poiId === id) item.poiId = "";
-  }));
-  renderAll();
-  markDirty();
-}
-
-function addItem(dayId, time, title) {
-  const trip = currentTrip();
-  const day = trip.days.find((item) => item.id === dayId);
+function editDay(id) {
+  const day = currentTrip().days.find((item) => item.id === id);
   if (!day) return;
-  day.items.push({
-    id: uid("item"),
-    time: valueOr(time, "10:00"),
-    title: valueOr(title, "新しい予定"),
-    poiId: trip.pois[0]?.id || "",
-    memo: ""
-  });
-  renderAll();
+  day.title = prompt("タイトル", day.title) || day.title;
+  day.theme = prompt("テーマ", day.theme) ?? day.theme;
+  render();
   markDirty();
 }
 
 function editItem(dayId, itemId) {
-  const day = currentTrip().days.find((entry) => entry.id === dayId);
+  const day = currentTrip().days.find((item) => item.id === dayId);
   const item = day?.items.find((entry) => entry.id === itemId);
   if (!item) return;
-  item.time = prompt("時間", item.time) ?? item.time;
-  item.title = prompt("予定", item.title) ?? item.title;
-  const poiName = prompt("紐づけるPOI名", poiById(item.poiId)?.name || "");
-  const poi = currentTrip().pois.find((entry) => entry.name === poiName);
-  item.poiId = poi ? poi.id : item.poiId;
+  item.time = prompt("時間", item.time) || item.time;
+  item.title = prompt("予定", item.title) || item.title;
   item.memo = prompt("メモ", item.memo) ?? item.memo;
-  renderAll();
+  render();
   markDirty();
 }
 
-function removeItem(dayId, itemId) {
-  const day = currentTrip().days.find((entry) => entry.id === dayId);
-  if (!day) return;
-  day.items = day.items.filter((entry) => entry.id !== itemId);
-  renderAll();
-  markDirty();
-}
-
-function editDay(dayId) {
-  const day = currentTrip().days.find((entry) => entry.id === dayId);
-  if (!day) return;
-  day.title = prompt("タイトル", day.title) ?? day.title;
-  day.date = prompt("日付", day.date) ?? day.date;
-  day.theme = prompt("テーマ", day.theme) ?? day.theme;
-  renderAll();
-  markDirty();
-}
-
-function removeDay(dayId) {
+function addDay() {
   const trip = currentTrip();
-  trip.days = trip.days.filter((entry) => entry.id !== dayId);
-  renderAll();
+  trip.days.push({
+    id: uid("day"),
+    date: trip.startDate,
+    title: `Day ${trip.days.length + 1}`,
+    theme: "ゆるく予定を置く日",
+    items: []
+  });
+  activeDayIndex = trip.days.length - 1;
+  render();
+  markDirty();
+}
+
+function addNote() {
+  currentTrip().notes.push("新しいメモ");
+  render();
   markDirty();
 }
 
 function newTrip() {
   const id = uid("trip");
-  state.trips.unshift(normalizeTrip({
-    id,
-    title: "新しいTrip",
-    destination: "行き先未定",
-    status: "ラフ設計",
-    archived: false,
-    notes: ["まず行きたい場所を3つ入れる。"]
-  }));
+  state.trips.unshift(normalizeTrip({ id, title: "新しい旅", destination: "行き先未定", notes: ["まず行きたい場所を3つ入れる。"] }));
   state.activeTripId = id;
-  renderAll();
+  els.tripDialog.close();
+  render();
   markDirty();
 }
 
-function bindEvents() {
-  els.tripForm.addEventListener("input", () => {
-    const trip = currentTrip();
-    const data = new FormData(els.tripForm);
-    ["title", "destination", "startDate", "endDate", "status", "mood"].forEach((key) => {
-      trip[key] = valueOr(data.get(key));
-    });
-    trip.budget = Number(data.get("budget")) || 0;
-    renderHero();
-    renderQuality();
-    renderTripList();
-    markDirty();
-  });
-
-  els.poiForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    addPoi(new FormData(els.poiForm));
-    els.poiForm.reset();
-  });
-
-  els.saveRemote.addEventListener("click", () => saveRemote({ automatic: false }));
-  els.refreshRemote.addEventListener("click", () => loadRemote({ force: true }));
-  els.syncSettings.addEventListener("click", () => els.settingsDialog.showModal());
-  els.saveToken.addEventListener("click", () => {
-    localStorage.setItem(TOKEN_KEY, els.githubToken.value.trim());
+function bind() {
+  document.querySelector("#trip-switcher").addEventListener("click", () => els.tripDialog.showModal());
+  document.querySelector("#sync-settings").addEventListener("click", () => els.settingsDialog.showModal());
+  document.querySelector("#save-token").addEventListener("click", () => {
+    localStorage.setItem(TOKEN_KEY, els.token.value.trim());
     els.settingsDialog.close();
-    renderAll();
-    setSync("自動同期ON");
-    if (isDirty) scheduleAutoSave();
+    setStatus("自動同期中");
+    markDirty();
   });
-  els.clearToken.addEventListener("click", () => {
+  document.querySelector("#clear-token").addEventListener("click", () => {
     localStorage.removeItem(TOKEN_KEY);
-    els.githubToken.value = "";
-    renderAll();
-    setSync("tokenを削除しました", "warn");
+    els.token.value = "";
+    setStatus("同期設定待ち", "soft");
   });
-  els.exportJson.addEventListener("click", () => {
-    els.jsonOutput.value = `${JSON.stringify(state, null, 2)}\n`;
-    els.jsonDialog.showModal();
+  document.querySelector("#save-now").addEventListener("click", () => {
+    dirty = true;
+    saveRemote();
   });
-  els.newTrip.addEventListener("click", newTrip);
-  els.archiveToggle.addEventListener("click", () => {
-    const trip = currentTrip();
-    trip.archived = !trip.archived;
-    renderAll();
+  document.querySelector("#new-trip").addEventListener("click", newTrip);
+  document.querySelector("#add-spot").addEventListener("click", addSpot);
+  document.querySelector("#add-day").addEventListener("click", addDay);
+  document.querySelector("#add-note").addEventListener("click", addNote);
+  document.querySelector("#archive-toggle").addEventListener("click", () => {
+    currentTrip().archived = !currentTrip().archived;
+    render();
     markDirty();
   });
-  els.addDay.addEventListener("click", () => {
+  document.querySelector("#open-map-search").addEventListener("click", () => {
     const trip = currentTrip();
-    trip.days.push({
-      id: uid("day"),
-      date: trip.startDate,
-      title: `Day ${trip.days.length + 1}`,
-      theme: "新しい日",
-      items: []
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trip.destination)}`, "_blank", "noreferrer");
+  });
+  document.querySelectorAll(".bottom-nav button").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeView = button.dataset.view;
+      renderView();
     });
-    renderAll();
-    markDirty();
-  });
-  els.addNote.addEventListener("click", () => {
-    currentTrip().notes.push("");
-    renderNotes();
-    markDirty();
-  });
-  els.openMapSearch.addEventListener("click", () => {
-    const trip = currentTrip();
-    const query = encodeURIComponent(`${trip.destination || ""} ${trip.mood || ""}`);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank", "noreferrer");
   });
 }
 
-async function pollRemote() {
-  if (isDirty || isSaving) return;
-  try {
-    const remote = await fetchRemote();
-    if (remote.sha !== remoteSha && remote.json !== lastRemoteJson) {
-      state = remote.data;
-      remoteSha = remote.sha;
-      lastRemoteJson = remote.json;
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ data: state, sha: remoteSha, fetchedAt: new Date().toISOString() }));
-      renderAll();
-      setSaveState("同期済み");
-      setSync("他端末の更新を反映しました");
-      els.lastUpdated.textContent = `前回更新 ${timeLabel(currentTrip().lastUpdated)}`;
-    }
-  } catch {
-    setSync("最新チェック失敗: 表示中データを維持", "warn");
-  }
-}
-
-bindEvents();
-loadRemote().catch(() => {});
-setInterval(pollRemote, POLL_MS);
+bind();
+loadRemote();
+setInterval(() => {
+  if (!dirty && !saving) loadRemote();
+}, POLL_MS);
