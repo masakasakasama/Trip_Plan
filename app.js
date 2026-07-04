@@ -1,5 +1,15 @@
-const DATA_URL = "trip-plan.json";
-const STORAGE_KEY = "trip-plan-draft-v2";
+const GITHUB = {
+  owner: "masakasakasama",
+  repo: "Trip_Plan",
+  branch: "main",
+  path: "trip-plan.json"
+};
+
+const API_URL = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/${GITHUB.path}`;
+const RAW_URL = `https://raw.githubusercontent.com/${GITHUB.owner}/${GITHUB.repo}/${GITHUB.branch}/${GITHUB.path}`;
+const TOKEN_KEY = "trip-plan-github-token-v1";
+const CACHE_KEY = "trip-plan-last-good-cache-v1";
+const POLL_MS = 30000;
 
 const els = {
   title: document.querySelector("#trip-title"),
@@ -7,22 +17,32 @@ const els = {
   facts: document.querySelector("#trip-facts"),
   status: document.querySelector("#sync-status"),
   saveState: document.querySelector("#save-state"),
+  lastUpdated: document.querySelector("#last-updated"),
+  syncHelp: document.querySelector("#sync-help"),
   tripForm: document.querySelector("#trip-form"),
   poiForm: document.querySelector("#poi-form"),
   poiList: document.querySelector("#poi-list"),
   schedule: document.querySelector("#schedule"),
   notes: document.querySelector("#notes"),
-  saveDraft: document.querySelector("#save-draft"),
+  saveRemote: document.querySelector("#save-remote"),
+  refreshRemote: document.querySelector("#refresh-remote"),
+  syncSettings: document.querySelector("#sync-settings"),
   exportJson: document.querySelector("#export-json"),
-  resetData: document.querySelector("#reset-data"),
   addDay: document.querySelector("#add-day"),
   addNote: document.querySelector("#add-note"),
   openMapSearch: document.querySelector("#open-map-search"),
+  settingsDialog: document.querySelector("#settings-dialog"),
+  githubToken: document.querySelector("#github-token"),
+  saveToken: document.querySelector("#save-token"),
+  clearToken: document.querySelector("#clear-token"),
   jsonDialog: document.querySelector("#json-dialog"),
   jsonOutput: document.querySelector("#json-output")
 };
 
 let state = null;
+let remoteSha = "";
+let isDirty = false;
+let lastRemoteJson = "";
 
 function uid(prefix) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
@@ -30,6 +50,19 @@ function uid(prefix) {
 
 function valueOr(value, fallback = "") {
   return value === undefined || value === null || value === "" ? fallback : String(value);
+}
+
+function token() {
+  return localStorage.getItem(TOKEN_KEY) || "";
+}
+
+function setSync(message, tone = "normal") {
+  els.status.textContent = message;
+  els.status.dataset.tone = tone;
+}
+
+function setSaveState(message) {
+  els.saveState.textContent = message;
 }
 
 function money(value) {
@@ -51,6 +84,16 @@ function dateLabel(value) {
   }).format(date);
 }
 
+function timeLabel(value) {
+  if (!value) return "未取得";
+  return new Intl.DateTimeFormat("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
 function mapsUrl(poi) {
   if (poi.mapsUrl) return poi.mapsUrl;
   const query = encodeURIComponent([poi.name, poi.area, state.trip.destination].filter(Boolean).join(" "));
@@ -70,11 +113,139 @@ function button(label, onClick, className = "") {
   return node;
 }
 
+function encodeBase64Unicode(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+function decodeBase64Unicode(text) {
+  const binary = atob(text.replace(/\n/g, ""));
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function normalize(data) {
+  return {
+    trip: {
+      title: "ふたりの旅プラン",
+      destination: "行き先未定",
+      startDate: "",
+      endDate: "",
+      travelers: ["夫", "妻"],
+      mood: "",
+      budget: 0,
+      status: "ラフ作成中",
+      lastUpdated: new Date().toISOString(),
+      ...(data.trip || {})
+    },
+    pois: Array.isArray(data.pois) ? data.pois : [],
+    days: Array.isArray(data.days) ? data.days : [],
+    notes: Array.isArray(data.notes) ? data.notes : []
+  };
+}
+
+async function fetchRemote() {
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
+  if (token()) headers.Authorization = `Bearer ${token()}`;
+  const response = await fetch(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, { headers, cache: "no-store" });
+  if (!response.ok) throw new Error(`GitHub読み込み失敗: ${response.status}`);
+  const payload = await response.json();
+  const json = decodeBase64Unicode(payload.content);
+  return { data: normalize(JSON.parse(json)), sha: payload.sha, json };
+}
+
+async function loadRemote({ force = false } = {}) {
+  if (isDirty && !force) {
+    setSync("未同期の変更があります", "warn");
+    return;
+  }
+  setSync("GitHubから読み込み中");
+  try {
+    const remote = await fetchRemote();
+    state = remote.data;
+    remoteSha = remote.sha;
+    lastRemoteJson = remote.json;
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ data: state, sha: remoteSha, fetchedAt: new Date().toISOString() }));
+    isDirty = false;
+    renderAll();
+    setSaveState("同期済み");
+    setSync(token() ? "GitHub同期ON" : "閲覧モード");
+    els.lastUpdated.textContent = `前回更新 ${timeLabel(state.trip.lastUpdated)}`;
+  } catch (error) {
+    const cache = localStorage.getItem(CACHE_KEY);
+    if (!cache) {
+      setSync(error.message, "error");
+      throw error;
+    }
+    const cached = JSON.parse(cache);
+    state = normalize(cached.data);
+    remoteSha = cached.sha || "";
+    renderAll();
+    setSync("通信失敗: 最後の成功データを表示", "warn");
+    setSaveState("キャッシュ表示");
+    els.lastUpdated.textContent = `前回取得 ${timeLabel(cached.fetchedAt)}`;
+  }
+}
+
+async function saveRemote() {
+  if (!token()) {
+    els.settingsDialog.showModal();
+    setSync("保存にはGitHub tokenが必要です", "warn");
+    return;
+  }
+  if (!state) return;
+  setSync("GitHubへ保存中");
+  state.trip.lastUpdated = new Date().toISOString();
+  const nextJson = `${JSON.stringify(state, null, 2)}\n`;
+  try {
+    const response = await fetch(API_URL, {
+      method: "PUT",
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token()}`,
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      },
+      body: JSON.stringify({
+        message: `Update trip plan ${new Date().toISOString()}`,
+        content: encodeBase64Unicode(nextJson),
+        sha: remoteSha,
+        branch: GITHUB.branch
+      })
+    });
+    if (response.status === 409) {
+      setSync("他端末の更新があります。最新を読み込んでから再保存してください", "warn");
+      return;
+    }
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(`保存失敗: ${response.status} ${detail.slice(0, 120)}`);
+    }
+    const payload = await response.json();
+    remoteSha = payload.content.sha;
+    lastRemoteJson = nextJson;
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ data: state, sha: remoteSha, fetchedAt: new Date().toISOString() }));
+    isDirty = false;
+    renderAll();
+    setSaveState("同期済み");
+    setSync("GitHubへ保存しました");
+    els.lastUpdated.textContent = `前回更新 ${timeLabel(state.trip.lastUpdated)}`;
+  } catch (error) {
+    setSync(error.message, "error");
+  }
+}
+
 function renderHero() {
   const trip = state.trip;
   els.title.textContent = valueOr(trip.title, "ふたりの旅プラン");
   els.mood.textContent = valueOr(trip.mood, "旅の雰囲気を入力");
-  els.status.textContent = `${valueOr(trip.status, "編集中")} / ${state.pois.length}候補`;
   clear(els.facts);
 
   [
@@ -114,7 +285,6 @@ function renderPois() {
   state.pois.forEach((poi) => {
     const card = document.createElement("article");
     card.className = "poi";
-
     const top = document.createElement("div");
     top.className = "poi__top";
 
@@ -133,12 +303,7 @@ function renderPois() {
     map.target = "_blank";
     map.rel = "noreferrer";
     map.textContent = "Map";
-    actions.append(
-      map,
-      button("編集", () => editPoi(poi.id)),
-      button("削除", () => removePoi(poi.id))
-    );
-
+    actions.append(map, button("編集", () => editPoi(poi.id)), button("削除", () => removePoi(poi.id)));
     top.append(body, actions);
 
     const chips = document.createElement("div");
@@ -149,7 +314,6 @@ function renderPois() {
       chip.textContent = text;
       chips.append(chip);
     });
-
     card.append(top, chips);
     els.poiList.append(card);
   });
@@ -248,7 +412,6 @@ function renderItem(dayId, item) {
     actions.append(map);
   }
   actions.append(button("編集", () => editItem(dayId, item.id)), button("削除", () => removeItem(dayId, item.id)));
-
   row.append(body, actions);
   return row;
 }
@@ -266,7 +429,7 @@ function renderNotes() {
     });
     row.append(input, button("削除", () => {
       state.notes.splice(index, 1);
-      renderAll();
+      renderNotes();
       markDirty();
     }));
     els.notes.append(row);
@@ -279,17 +442,16 @@ function renderAll() {
   renderPois();
   renderSchedule();
   renderNotes();
+  els.githubToken.value = token();
+  els.syncHelp.textContent = token()
+    ? "この端末はGitHubへ保存できます。30秒ごとに最新チェックします。"
+    : "閲覧は全端末で同期されます。編集保存する端末にはGitHub tokenを設定してください。";
 }
 
 function markDirty() {
-  els.saveState.textContent = "未保存";
-}
-
-function saveDraft() {
-  state.trip.lastUpdated = new Date().toISOString().slice(0, 10);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  els.saveState.textContent = "保存済み";
-  renderHero();
+  isDirty = true;
+  setSaveState("未同期");
+  setSync("変更があります。GitHubへ同期してください", "warn");
 }
 
 function addPoi(values) {
@@ -397,14 +559,24 @@ function bindEvents() {
     els.poiForm.reset();
   });
 
-  els.saveDraft.addEventListener("click", saveDraft);
-  els.exportJson.addEventListener("click", () => {
-    els.jsonOutput.value = JSON.stringify(state, null, 2);
-    els.jsonDialog.showModal();
+  els.saveRemote.addEventListener("click", saveRemote);
+  els.refreshRemote.addEventListener("click", () => loadRemote({ force: true }));
+  els.syncSettings.addEventListener("click", () => els.settingsDialog.showModal());
+  els.saveToken.addEventListener("click", () => {
+    localStorage.setItem(TOKEN_KEY, els.githubToken.value.trim());
+    els.settingsDialog.close();
+    renderAll();
+    setSync("GitHub tokenを保存しました");
   });
-  els.resetData.addEventListener("click", async () => {
-    localStorage.removeItem(STORAGE_KEY);
-    await load(true);
+  els.clearToken.addEventListener("click", () => {
+    localStorage.removeItem(TOKEN_KEY);
+    els.githubToken.value = "";
+    renderAll();
+    setSync("GitHub tokenを削除しました");
+  });
+  els.exportJson.addEventListener("click", () => {
+    els.jsonOutput.value = `${JSON.stringify(state, null, 2)}\n`;
+    els.jsonDialog.showModal();
   });
   els.addDay.addEventListener("click", () => {
     state.days.push({
@@ -428,23 +600,25 @@ function bindEvents() {
   });
 }
 
-async function load(forceRemote = false) {
-  const draft = localStorage.getItem(STORAGE_KEY);
-  if (draft && !forceRemote) {
-    state = JSON.parse(draft);
-    renderAll();
-    els.saveState.textContent = "保存済み下書き";
-    return;
+async function pollRemote() {
+  if (isDirty) return;
+  try {
+    const remote = await fetchRemote();
+    if (remote.sha !== remoteSha && remote.json !== lastRemoteJson) {
+      state = remote.data;
+      remoteSha = remote.sha;
+      lastRemoteJson = remote.json;
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ data: state, sha: remoteSha, fetchedAt: new Date().toISOString() }));
+      renderAll();
+      setSaveState("同期済み");
+      setSync("他端末の更新を反映しました");
+      els.lastUpdated.textContent = `前回更新 ${timeLabel(state.trip.lastUpdated)}`;
+    }
+  } catch {
+    setSync("最新チェック失敗: 表示中データを維持", "warn");
   }
-
-  const response = await fetch(`${DATA_URL}?v=${Date.now()}`, { cache: "no-store" });
-  state = await response.json();
-  renderAll();
-  els.saveState.textContent = "初期データ";
 }
 
 bindEvents();
-load().catch((error) => {
-  els.status.textContent = "読み込み失敗";
-  els.saveState.textContent = error.message;
-});
+loadRemote().catch(() => {});
+setInterval(pollRemote, POLL_MS);
