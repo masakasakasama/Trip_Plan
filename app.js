@@ -9,7 +9,9 @@ const API_URL = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/con
 const RAW_URL = `https://raw.githubusercontent.com/${GITHUB.owner}/${GITHUB.repo}/${GITHUB.branch}/${GITHUB.path}`;
 const TOKEN_KEY = "trip-plan-github-token-v1";
 const CACHE_KEY = "trip-plan-last-good-cache-v1";
-const POLL_MS = 30000;
+const POLL_MS = 5000;
+const AUTO_SAVE_MS = 1500;
+const SAVE_RETRY_MS = 10000;
 
 const els = {
   title: document.querySelector("#trip-title"),
@@ -43,6 +45,9 @@ let state = null;
 let remoteSha = "";
 let isDirty = false;
 let lastRemoteJson = "";
+let autoSaveTimer = null;
+let isSaving = false;
+let pendingSaveRequested = false;
 
 function uid(prefix) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
@@ -176,7 +181,7 @@ async function loadRemote({ force = false } = {}) {
     isDirty = false;
     renderAll();
     setSaveState("同期済み");
-    setSync(token() ? "GitHub同期ON" : "閲覧モード");
+    setSync(token() ? "自動同期ON" : "保存設定が必要");
     els.lastUpdated.textContent = `前回更新 ${timeLabel(state.trip.lastUpdated)}`;
   } catch (error) {
     const cache = localStorage.getItem(CACHE_KEY);
@@ -194,35 +199,57 @@ async function loadRemote({ force = false } = {}) {
   }
 }
 
-async function saveRemote() {
+function scheduleAutoSave() {
+  window.clearTimeout(autoSaveTimer);
+  if (!token()) {
+    setSaveState("保存設定が必要");
+    setSync("自動保存にはGitHub tokenが必要です", "warn");
+    return;
+  }
+  setSaveState("自動同期待ち");
+  autoSaveTimer = window.setTimeout(() => {
+    saveRemote({ automatic: true });
+  }, AUTO_SAVE_MS);
+}
+
+async function saveRemote({ automatic = false } = {}) {
+  window.clearTimeout(autoSaveTimer);
+  if (isSaving) {
+    pendingSaveRequested = true;
+    return;
+  }
   if (!token()) {
     els.settingsDialog.showModal();
-    setSync("保存にはGitHub tokenが必要です", "warn");
+    setSync("自動保存にはGitHub tokenが必要です", "warn");
     return;
   }
   if (!state) return;
-  setSync("GitHubへ保存中");
+  isSaving = true;
+  setSaveState(automatic ? "自動同期中" : "同期中");
+  setSync(automatic ? "自動同期中" : "今すぐ同期中");
   state.trip.lastUpdated = new Date().toISOString();
   const nextJson = `${JSON.stringify(state, null, 2)}\n`;
   try {
-    const response = await fetch(API_URL, {
-      method: "PUT",
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${token()}`,
-        "Content-Type": "application/json",
-        "X-GitHub-Api-Version": "2022-11-28"
-      },
-      body: JSON.stringify({
-        message: `Update trip plan ${new Date().toISOString()}`,
-        content: encodeBase64Unicode(nextJson),
-        sha: remoteSha,
-        branch: GITHUB.branch
-      })
-    });
-    if (response.status === 409) {
-      setSync("他端末の更新があります。最新を読み込んでから再保存してください", "warn");
-      return;
+    let response = null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      response = await fetch(API_URL, {
+        method: "PUT",
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token()}`,
+          "Content-Type": "application/json",
+          "X-GitHub-Api-Version": "2022-11-28"
+        },
+        body: JSON.stringify({
+          message: `Update trip plan ${new Date().toISOString()}`,
+          content: encodeBase64Unicode(nextJson),
+          sha: remoteSha,
+          branch: GITHUB.branch
+        })
+      });
+      if (response.status !== 409) break;
+      const latest = await fetchRemote();
+      remoteSha = latest.sha;
     }
     if (!response.ok) {
       const detail = await response.text();
@@ -235,10 +262,23 @@ async function saveRemote() {
     isDirty = false;
     renderAll();
     setSaveState("同期済み");
-    setSync("GitHubへ保存しました");
+    setSync("自動同期済み");
     els.lastUpdated.textContent = `前回更新 ${timeLabel(state.trip.lastUpdated)}`;
   } catch (error) {
+    setSaveState("同期失敗");
     setSync(error.message, "error");
+    if (token() && !/401|403/.test(error.message)) {
+      window.clearTimeout(autoSaveTimer);
+      autoSaveTimer = window.setTimeout(() => {
+        saveRemote({ automatic: true });
+      }, SAVE_RETRY_MS);
+    }
+  } finally {
+    isSaving = false;
+    if (pendingSaveRequested) {
+      pendingSaveRequested = false;
+      scheduleAutoSave();
+    }
   }
 }
 
@@ -444,14 +484,15 @@ function renderAll() {
   renderNotes();
   els.githubToken.value = token();
   els.syncHelp.textContent = token()
-    ? "この端末はGitHubへ保存できます。30秒ごとに最新チェックします。"
-    : "閲覧は全端末で同期されます。編集保存する端末にはGitHub tokenを設定してください。";
+    ? "入力後すぐに自動保存します。他端末の更新も数秒ごとに自動反映します。"
+    : "全端末で同じデータを読みます。編集内容を自動保存するにはGitHub tokenを設定してください。";
 }
 
 function markDirty() {
   isDirty = true;
   setSaveState("未同期");
-  setSync("変更があります。GitHubへ同期してください", "warn");
+  setSync("変更を検知: 自動同期待ち", "warn");
+  scheduleAutoSave();
 }
 
 function addPoi(values) {
@@ -566,7 +607,8 @@ function bindEvents() {
     localStorage.setItem(TOKEN_KEY, els.githubToken.value.trim());
     els.settingsDialog.close();
     renderAll();
-    setSync("GitHub tokenを保存しました");
+    setSync("自動同期ON");
+    if (isDirty) scheduleAutoSave();
   });
   els.clearToken.addEventListener("click", () => {
     localStorage.removeItem(TOKEN_KEY);
@@ -601,7 +643,7 @@ function bindEvents() {
 }
 
 async function pollRemote() {
-  if (isDirty) return;
+  if (isDirty || isSaving) return;
   try {
     const remote = await fetchRemote();
     if (remote.sha !== remoteSha && remote.json !== lastRemoteJson) {
