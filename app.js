@@ -260,7 +260,9 @@ async function loadRemote({ force = false } = {}) {
     isDirty = false;
     renderAll();
     setSaveState(token() ? "自動同期ON" : "自動保存OFF");
-    setSync(token() ? "自動同期ON" : "token未設定");
+    if (!window.__tripStudioErrors?.length) {
+      setSync(token() ? "自動同期ON" : "token未設定");
+    }
     els.lastUpdated.textContent = `前回更新 ${timeLabel(currentTrip().lastUpdated)}`;
   } catch (error) {
     const cache = localStorage.getItem(CACHE_KEY);
@@ -572,12 +574,15 @@ function safeRender(label, fn) {
   try {
     fn();
   } catch (error) {
+    window.__tripStudioErrors = window.__tripStudioErrors || [];
+    window.__tripStudioErrors.push({ label, message: error.message });
     console.error(`${label} render failed`, error);
     setSync(`${label}表示エラー: ${error.message}`, "error");
   }
 }
 
 function renderAll() {
+  window.__tripStudioErrors = [];
   window.__tripStudioState = state;
   window.__tripStudioTrip = currentTrip();
   safeRender("Hero", renderHero);
