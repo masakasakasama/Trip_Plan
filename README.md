@@ -6,11 +6,12 @@
 
 - データ本体は `trip-plan.json`
 - ページ起動時にGitHubから最新データを取得
-- 30秒ごとに最新チェック
-- `GitHubへ同期` で `trip-plan.json` を更新
+- 数秒ごとに最新チェック
+- 入力後に自動で `trip-plan.json` を更新
+- `今すぐ同期` で待たずに保存
 - 通信失敗時は最後に成功したキャッシュを表示
 
-保存にはGitHub Fine-grained personal access tokenが必要です。
+自動保存にはGitHub Fine-grained personal access tokenが必要です。
 
 推奨token設定:
 
