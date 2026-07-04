@@ -11,7 +11,7 @@
       <section class="hero" aria-labelledby="trip-title">
         <div class="hero__photo" role="img" aria-label="旅ノートと花の写真"></div>
         <div class="hero__body">
-          <div class="sync-pill" id="sync-status">読み込み中</div>
+          <div class="sync-pill" id="sync-status">GitHubから読み込み中</div>
           <h1 id="trip-title">ふたりの旅プラン</h1>
           <p id="trip-mood"></p>
           <div class="hero__facts" id="trip-facts"></div>
@@ -19,17 +19,25 @@
       </section>
 
       <section class="toolbar" aria-label="操作">
-        <button class="primary" id="save-draft" type="button">下書き保存</button>
-        <button id="export-json" type="button">JSON出力</button>
-        <button id="reset-data" type="button">初期データに戻す</button>
-        <a id="repo-link" href="https://github.com/masakasakasama/Trip_Plan">GitHub</a>
+        <button class="primary" id="save-remote" type="button">GitHubへ同期</button>
+        <button id="refresh-remote" type="button">最新を読み込む</button>
+        <button id="sync-settings" type="button">同期設定</button>
+        <button id="export-json" type="button">JSON確認</button>
+        <a id="repo-link" href="https://github.com/masakasakasama/Trip_Plan" target="_blank" rel="noreferrer">GitHub</a>
+      </section>
+
+      <section class="sync-panel" aria-live="polite">
+        <div>
+          <strong id="save-state">未変更</strong>
+          <span id="last-updated">前回更新 未取得</span>
+        </div>
+        <p id="sync-help">入力内容はGitHubの trip-plan.json に保存され、同じURLを開く全デバイスに反映されます。</p>
       </section>
 
       <section class="layout">
         <section class="panel planner" aria-labelledby="rough-heading">
           <div class="section-head">
             <h2 id="rough-heading">ラフプラン</h2>
-            <span id="save-state"></span>
           </div>
           <form id="trip-form" class="form-grid">
             <label>タイトル<input name="title" autocomplete="off"></label>
@@ -87,6 +95,21 @@
         </section>
       </section>
     </main>
+
+    <dialog id="settings-dialog">
+      <form method="dialog" id="settings-form">
+        <div class="section-head">
+          <h2>同期設定</h2>
+          <button type="submit">閉じる</button>
+        </div>
+        <p class="dialog-copy">保存にはGitHubのFine-grained personal access tokenが必要です。Trip_Planリポジトリだけに Contents: Read and write を付けたtokenを入れてください。</p>
+        <label>GitHub token<input id="github-token" type="password" autocomplete="off" placeholder="github_pat_..."></label>
+        <div class="dialog-actions">
+          <button class="primary" id="save-token" type="button">この端末に保存</button>
+          <button id="clear-token" type="button">token削除</button>
+        </div>
+      </form>
+    </dialog>
 
     <dialog id="json-dialog">
       <form method="dialog">

@@ -163,6 +163,46 @@ h1 {
   text-decoration: none;
 }
 
+.sync-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 18px;
+  border: 1px solid rgba(217, 79, 120, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 14px 16px;
+}
+
+.sync-panel strong {
+  display: block;
+  font-size: 0.98rem;
+}
+
+.sync-panel span,
+.sync-panel p,
+.dialog-copy {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.sync-panel p {
+  max-width: 620px;
+  margin: 0;
+}
+
+.sync-pill[data-tone="warn"] {
+  border-color: #f5d66b;
+  color: #8b6712;
+}
+
+.sync-pill[data-tone="error"] {
+  border-color: #f1a0a0;
+  color: #af3434;
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
@@ -363,8 +403,20 @@ dialog {
   padding: 18px;
 }
 
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
 dialog::backdrop {
   background: rgba(47, 39, 48, 0.28);
+}
+
+#json-output,
+#github-token {
+  margin-top: 8px;
 }
 
 #json-output {
@@ -407,6 +459,11 @@ dialog::backdrop {
 
   .toolbar {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sync-panel {
+    align-items: flex-start;
     flex-direction: column;
   }
 
