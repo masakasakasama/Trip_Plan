@@ -1,6 +1,7 @@
 # Trip_Plan
 
 ふたりで旅行のラフプラン、行きたい場所、日程を作るGitHub Pagesアプリ。
+現在のTripと、完了後に残す過去Tripを同じJSONで管理します。
 
 ## 同期
 
@@ -29,5 +30,5 @@ GitHub Settings > Pages の Source は `GitHub Actions` を選択してくださ
 - `index.html`: UI
 - `styles.css`: 見た目
 - `app.js`: GitHub同期と編集ロジック
-- `trip-plan.json`: 共有される旅行データ
+- `trip-plan.json`: 共有される旅行データ。`trips[]` に現在/過去Tripを保存
 - `handoff.md`: 作業メモ

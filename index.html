@@ -3,84 +3,117 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ふたりの旅プラン</title>
-    <link rel="stylesheet" href="styles.css?v=20260704-rt1">
+    <title>Trip Studio</title>
+    <link rel="stylesheet" href="styles.css?v=20260704-studio2">
   </head>
   <body>
     <main class="shell">
       <section class="hero" aria-labelledby="trip-title">
-        <div class="hero__photo" role="img" aria-label="旅ノートと花の写真"></div>
+        <div class="hero__photo" role="img" aria-label="Australia coast and travel notebook"></div>
         <div class="hero__body">
-          <div class="sync-pill" id="sync-status">GitHubから読み込み中</div>
-          <h1 id="trip-title">ふたりの旅プラン</h1>
+          <div class="sync-pill" id="sync-status">起動中</div>
+          <p class="eyebrow">Trip Studio</p>
+          <h1 id="trip-title">Australia 2026</h1>
           <p id="trip-mood"></p>
           <div class="hero__facts" id="trip-facts"></div>
         </div>
       </section>
 
-      <section class="toolbar" aria-label="操作">
-        <button class="primary" id="save-remote" type="button">今すぐ同期</button>
-        <button id="refresh-remote" type="button">最新を読み込む</button>
-        <button id="sync-settings" type="button">同期設定</button>
-        <button id="export-json" type="button">JSON確認</button>
-        <a id="repo-link" href="https://github.com/masakasakasama/Trip_Plan" target="_blank" rel="noreferrer">GitHub</a>
-      </section>
-
-      <section class="sync-panel" aria-live="polite">
-        <div>
-          <strong id="save-state">未変更</strong>
+      <section class="command-bar" aria-label="同期と操作">
+        <div class="sync-panel" aria-live="polite">
+          <strong id="save-state">自動同期を準備中</strong>
           <span id="last-updated">前回更新 未取得</span>
+          <p id="sync-help">入力後に自動保存し、他の端末にも数秒以内に反映します。</p>
         </div>
-        <p id="sync-help">入力内容は自動でGitHubの trip-plan.json に保存され、同じURLを開く全デバイスに反映されます。</p>
+        <div class="actions">
+          <button class="primary" id="save-remote" type="button">今すぐ同期</button>
+          <button id="refresh-remote" type="button">最新を反映</button>
+          <button id="sync-settings" type="button">同期設定</button>
+          <button id="export-json" type="button">JSON</button>
+          <a id="repo-link" href="https://github.com/masakasakasama/Trip_Plan" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
       </section>
 
-      <section class="layout">
-        <section class="panel planner" aria-labelledby="rough-heading">
-          <div class="section-head">
-            <h2 id="rough-heading">ラフプラン</h2>
-          </div>
-          <form id="trip-form" class="form-grid">
-            <label>タイトル<input name="title" autocomplete="off"></label>
-            <label>行き先<input name="destination" autocomplete="off"></label>
-            <label>開始日<input name="startDate" type="date"></label>
-            <label>終了日<input name="endDate" type="date"></label>
-            <label>予算<input name="budget" type="number" min="0" step="1000"></label>
-            <label>ステータス<input name="status" autocomplete="off"></label>
-            <label class="wide">旅の雰囲気<textarea name="mood" rows="3"></textarea></label>
-          </form>
-        </section>
+      <section class="dashboard" aria-label="計画の状態">
+        <article class="metric">
+          <span>Plan health</span>
+          <strong id="quality-score">0%</strong>
+          <p>日程、POI、メモ、予算の埋まり具合</p>
+        </article>
+        <div class="quality-list" id="quality-list"></div>
+      </section>
 
-        <section class="panel poi-panel" aria-labelledby="poi-heading">
+      <section class="workspace">
+        <aside class="panel trip-rail" aria-labelledby="trips-heading">
           <div class="section-head">
-            <h2 id="poi-heading">行きたいところ</h2>
-            <button id="open-map-search" type="button">Google Mapsで探す</button>
+            <div>
+              <p class="eyebrow">Library</p>
+              <h2 id="trips-heading">Trips</h2>
+            </div>
+            <button id="new-trip" type="button">新規</button>
           </div>
-          <form id="poi-form" class="poi-form">
-            <input name="name" placeholder="場所の名前">
-            <input name="area" placeholder="エリア・住所">
-            <select name="category" aria-label="カテゴリ">
-              <option value="cafe">カフェ</option>
-              <option value="food">ごはん</option>
-              <option value="spot">観光</option>
-              <option value="shop">買い物</option>
-              <option value="hotel">ホテル</option>
-              <option value="transport">移動</option>
-            </select>
-            <select name="priority" aria-label="優先度">
-              <option value="high">絶対行きたい</option>
-              <option value="medium">できれば</option>
-              <option value="low">余裕があれば</option>
-            </select>
-            <input class="wide" name="mapsUrl" placeholder="Google Maps URL">
-            <textarea class="wide" name="memo" rows="2" placeholder="メモ"></textarea>
-            <button class="primary wide" type="submit">候補に追加</button>
-          </form>
-          <div class="poi-list" id="poi-list"></div>
+          <div id="trip-list" class="trip-list"></div>
+        </aside>
+
+        <section class="main-stack">
+          <section class="panel planner" aria-labelledby="rough-heading">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Rough first</p>
+                <h2 id="rough-heading">ラフプラン</h2>
+              </div>
+              <button id="archive-toggle" type="button">過去Tripへ移動</button>
+            </div>
+            <form id="trip-form" class="form-grid">
+              <label>タイトル<input name="title" autocomplete="off"></label>
+              <label>行き先<input name="destination" autocomplete="off"></label>
+              <label>開始日<input name="startDate" type="date"></label>
+              <label>終了日<input name="endDate" type="date"></label>
+              <label>予算<input name="budget" type="number" min="0" step="1000"></label>
+              <label>ステータス<input name="status" autocomplete="off"></label>
+              <label class="wide">旅の雰囲気<textarea name="mood" rows="3"></textarea></label>
+            </form>
+          </section>
+
+          <section class="panel poi-panel" aria-labelledby="poi-heading">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Places</p>
+                <h2 id="poi-heading">行きたいところ</h2>
+              </div>
+              <button id="open-map-search" type="button">Google Mapsで探す</button>
+            </div>
+            <form id="poi-form" class="poi-form">
+              <input name="name" placeholder="場所の名前">
+              <input name="area" placeholder="エリア・住所">
+              <select name="category" aria-label="カテゴリ">
+                <option value="cafe">カフェ</option>
+                <option value="food">ごはん</option>
+                <option value="spot">観光</option>
+                <option value="nature">自然</option>
+                <option value="shop">買い物</option>
+                <option value="hotel">ホテル</option>
+                <option value="transport">移動</option>
+              </select>
+              <select name="priority" aria-label="優先度">
+                <option value="high">絶対行きたい</option>
+                <option value="medium">できれば</option>
+                <option value="low">余裕があれば</option>
+              </select>
+              <input class="wide" name="mapsUrl" placeholder="Google Maps URL">
+              <textarea class="wide" name="memo" rows="2" placeholder="メモ"></textarea>
+              <button class="primary wide" type="submit">候補に追加</button>
+            </form>
+            <div class="poi-list" id="poi-list"></div>
+          </section>
         </section>
 
         <section class="panel schedule-panel" aria-labelledby="schedule-heading">
           <div class="section-head">
-            <h2 id="schedule-heading">日程</h2>
+            <div>
+              <p class="eyebrow">Itinerary</p>
+              <h2 id="schedule-heading">日程</h2>
+            </div>
             <button id="add-day" type="button">日を追加</button>
           </div>
           <div id="schedule"></div>
@@ -88,7 +121,10 @@
 
         <section class="panel notes-panel" aria-labelledby="notes-heading">
           <div class="section-head">
-            <h2 id="notes-heading">メモ</h2>
+            <div>
+              <p class="eyebrow">Decisions</p>
+              <h2 id="notes-heading">メモ</h2>
+            </div>
             <button id="add-note" type="button">追加</button>
           </div>
           <div id="notes"></div>
@@ -102,7 +138,7 @@
           <h2>同期設定</h2>
           <button type="submit">閉じる</button>
         </div>
-        <p class="dialog-copy">保存にはGitHubのFine-grained personal access tokenが必要です。Trip_Planリポジトリだけに Contents: Read and write を付けたtokenを入れてください。</p>
+        <p class="dialog-copy">自動保存にはGitHub Fine-grained personal access tokenが必要です。Trip_Planリポジトリだけに Contents: Read and write を付けてください。</p>
         <label>GitHub token<input id="github-token" type="password" autocomplete="off" placeholder="github_pat_..."></label>
         <div class="dialog-actions">
           <button class="primary" id="save-token" type="button">この端末に保存</button>
@@ -121,6 +157,6 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=20260704-rt1" defer></script>
+    <script src="app.js?v=20260704-studio2" defer></script>
   </body>
 </html>

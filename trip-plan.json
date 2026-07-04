@@ -1,76 +1,132 @@
 {
-  "trip": {
-    "title": "ふたりの旅プラン",
-    "destination": "行き先未定",
-    "startDate": "2026-07-04",
-    "endDate": "2026-07-06",
-    "travelers": ["夫", "妻"],
-    "mood": "かわいいカフェ、歩きやすい街、写真を撮りたい場所",
-    "budget": 80000,
-    "status": "ラフ作成中",
-    "lastUpdated": "2026-07-04T00:00:00.000Z"
-  },
-  "pois": [
+  "schemaVersion": 2,
+  "activeTripId": "australia-2026",
+  "trips": [
     {
-      "id": "poi-cafe",
-      "name": "気になるカフェ",
-      "area": "駅周辺",
-      "category": "cafe",
-      "priority": "high",
-      "mapsUrl": "",
-      "memo": "Google Mapsで候補を見つけたらURLを貼る"
-    },
-    {
-      "id": "poi-photo",
-      "name": "写真を撮りたい場所",
-      "area": "TBD",
-      "category": "spot",
-      "priority": "medium",
-      "mapsUrl": "",
-      "memo": "滞在時間と混雑しにくい時間をメモ"
-    }
-  ],
-  "days": [
-    {
-      "id": "day-1",
-      "date": "2026-07-04",
-      "title": "Day 1",
-      "theme": "到着してゆっくり",
-      "items": [
+      "id": "australia-2026",
+      "title": "Australia 2026",
+      "destination": "Sydney / Perth / Rottnest Island",
+      "startDate": "2026-08-01",
+      "endDate": "2026-08-10",
+      "travelers": ["夫", "Rebecca"],
+      "mood": "かわいい動物、海沿い散歩、写真、無理しない移動。Sydneyを軸に、quokka目的でPerth/Rottnestを入れるか判断する。",
+      "budget": 450000,
+      "status": "ラフ設計",
+      "lastUpdated": "2026-07-04T00:00:00.000Z",
+      "archived": false,
+      "source": "Created in Trip Studio",
+      "pois": [
         {
-          "id": "item-1",
-          "time": "10:00",
-          "title": "移動",
-          "poiId": "",
-          "memo": "交通手段を決める"
+          "id": "poi-sydney-opera",
+          "name": "Sydney Opera House / Harbour",
+          "area": "Circular Quay",
+          "category": "spot",
+          "priority": "high",
+          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Sydney%20Opera%20House",
+          "memo": "初回の象徴。夕方から夜景まで残すと写真が強い。"
         },
         {
-          "id": "item-2",
-          "time": "14:00",
-          "title": "カフェ休憩",
-          "poiId": "poi-cafe",
-          "memo": "妻が好きそうな雰囲気優先"
-        }
-      ]
-    },
-    {
-      "id": "day-2",
-      "date": "2026-07-05",
-      "title": "Day 2",
-      "theme": "メイン観光",
-      "items": [
+          "id": "poi-bondi",
+          "name": "Bondi Beach",
+          "area": "Bondi",
+          "category": "nature",
+          "priority": "medium",
+          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Bondi%20Beach",
+          "memo": "海沿い散歩。天気がいい日の午前か夕方。"
+        },
         {
-          "id": "item-3",
-          "time": "11:00",
-          "title": "散歩と写真",
-          "poiId": "poi-photo",
-          "memo": "歩きすぎないように休憩を挟む"
+          "id": "poi-blue-mountains",
+          "name": "Blue Mountains day trip",
+          "area": "Katoomba",
+          "category": "nature",
+          "priority": "medium",
+          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Blue%20Mountains%20Katoomba",
+          "memo": "Sydneyから日帰り候補。移動負荷があるので休憩日とセットで判断。"
+        },
+        {
+          "id": "poi-rottnest",
+          "name": "Rottnest Island / Quokkas",
+          "area": "Western Australia",
+          "category": "nature",
+          "priority": "high",
+          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Rottnest%20Island%20quokka",
+          "memo": "quokka目的。Perth移動が必要なのでSydney単独旅に入れるか要判断。"
         }
+      ],
+      "days": [
+        {
+          "id": "day-aus-1",
+          "date": "2026-08-01",
+          "title": "Day 1",
+          "theme": "到着と時差調整",
+          "items": [
+            {
+              "id": "item-aus-1",
+              "time": "15:00",
+              "title": "ホテルチェックイン",
+              "poiId": "",
+              "memo": "到着日は詰め込まず、近場でごはん。"
+            }
+          ]
+        },
+        {
+          "id": "day-aus-2",
+          "date": "2026-08-02",
+          "title": "Day 2",
+          "theme": "Sydneyの王道をかわいく撮る",
+          "items": [
+            {
+              "id": "item-aus-2",
+              "time": "10:00",
+              "title": "Harbour散歩",
+              "poiId": "poi-sydney-opera",
+              "memo": "Opera House、Harbour Bridge、カフェ休憩。"
+            },
+            {
+              "id": "item-aus-3",
+              "time": "16:00",
+              "title": "海沿い散歩",
+              "poiId": "poi-bondi",
+              "memo": "天気次第でBondiかManlyに変更。"
+            }
+          ]
+        },
+        {
+          "id": "day-aus-3",
+          "date": "2026-08-03",
+          "title": "Day 3",
+          "theme": "自然の日",
+          "items": [
+            {
+              "id": "item-aus-4",
+              "time": "09:00",
+              "title": "Blue Mountains候補",
+              "poiId": "poi-blue-mountains",
+              "memo": "疲れそうなら市内ゆるめの日に変更。"
+            }
+          ]
+        },
+        {
+          "id": "day-aus-4",
+          "date": "2026-08-04",
+          "title": "Decision",
+          "theme": "Perth/Rottnestを入れるか決める",
+          "items": [
+            {
+              "id": "item-aus-5",
+              "time": "12:00",
+              "title": "Quokka旅の可否判断",
+              "poiId": "poi-rottnest",
+              "memo": "国内線、宿、フェリー、体力を見て決める。"
+            }
+          ]
+        }
+      ],
+      "notes": [
+        "このアプリで作ったTripは、完了後に「過去Tripへ移動」で履歴として残す。",
+        "Rottnest IslandはPerthからフェリー移動。quokkaを旅の主目的にするならSydney + Perth構成にする。",
+        "Sydneyだけなら、Harbour / Bondi or Manly / Blue Mountains / カフェ巡りで余裕を作る。"
       ]
     }
-  ],
-  "notes": [
-    "候補はまず多めに入れて、あとでDayごとに絞る",
-    "妻が疲れないように移動時間と休憩を先に置く"
   ]
 }
