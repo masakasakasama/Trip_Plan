@@ -578,6 +578,8 @@ function safeRender(label, fn) {
 }
 
 function renderAll() {
+  window.__tripStudioState = state;
+  window.__tripStudioTrip = currentTrip();
   safeRender("Hero", renderHero);
   safeRender("Quality", renderQuality);
   safeRender("Trips", renderTripList);
