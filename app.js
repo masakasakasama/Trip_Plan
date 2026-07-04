@@ -124,6 +124,9 @@ function decodeBase64Unicode(text) {
 }
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+  if (typeof fetch !== "function") {
+    return xhrRequest(url, options, timeoutMs);
+  }
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -131,6 +134,28 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
   } finally {
     window.clearTimeout(timer);
   }
+}
+
+function xhrRequest(url, options = {}, timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open(options.method || "GET", url, true);
+    request.timeout = timeoutMs;
+    Object.entries(options.headers || {}).forEach(([key, value]) => {
+      request.setRequestHeader(key, value);
+    });
+    request.onload = () => {
+      resolve({
+        ok: request.status >= 200 && request.status < 300,
+        status: request.status,
+        json: async () => JSON.parse(request.responseText),
+        text: async () => request.responseText
+      });
+    };
+    request.onerror = () => reject(new Error("通信に失敗しました"));
+    request.ontimeout = () => reject(new Error("通信がタイムアウトしました"));
+    request.send(options.body || null);
+  });
 }
 
 function mapsUrl(poi) {
