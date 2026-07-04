@@ -543,14 +543,23 @@ function renderNotes() {
   });
 }
 
+function safeRender(label, fn) {
+  try {
+    fn();
+  } catch (error) {
+    console.error(`${label} render failed`, error);
+    setSync(`${label}表示エラー: ${error.message}`, "error");
+  }
+}
+
 function renderAll() {
-  renderHero();
-  renderQuality();
-  renderTripList();
-  syncTripForm();
-  renderPois();
-  renderSchedule();
-  renderNotes();
+  safeRender("Hero", renderHero);
+  safeRender("Quality", renderQuality);
+  safeRender("Trips", renderTripList);
+  safeRender("Form", syncTripForm);
+  safeRender("POI", renderPois);
+  safeRender("Schedule", renderSchedule);
+  safeRender("Notes", renderNotes);
   els.githubToken.value = token();
   els.syncHelp.textContent = token()
     ? "入力後すぐに自動保存します。他端末の更新も数秒ごとに自動反映します。"
