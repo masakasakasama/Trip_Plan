@@ -6,6 +6,7 @@ const GITHUB = {
 };
 
 const API_URL = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/${GITHUB.path}`;
+const DATA_URL = "trip-plan.json";
 const TOKEN_KEY = "trip-plan-github-token-v1";
 const CACHE_KEY = "trip-plan-last-good-cache-v2";
 const POLL_MS = 5000;
@@ -200,11 +201,18 @@ function quality(trip) {
 }
 
 async function fetchRemote() {
+  if (!token()) {
+    const response = await fetchWithTimeout(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`データ読み込み失敗: ${response.status}`);
+    const json = await response.text();
+    return { data: normalize(JSON.parse(json)), sha: remoteSha, json };
+  }
+
   const headers = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28"
   };
-  if (token()) headers.Authorization = `Bearer ${token()}`;
+  headers.Authorization = `Bearer ${token()}`;
   const response = await fetchWithTimeout(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, { headers, cache: "no-store" });
   if (!response.ok) throw new Error(`GitHub読み込み失敗: ${response.status}`);
   const payload = await response.json();
@@ -277,6 +285,10 @@ async function saveRemote({ automatic = false } = {}) {
 
   const nextJson = `${JSON.stringify(state, null, 2)}\n`;
   try {
+    if (!remoteSha) {
+      const latest = await fetchRemote();
+      remoteSha = latest.sha;
+    }
     let response = null;
     for (let attempt = 0; attempt < 2; attempt += 1) {
       response = await fetchWithTimeout(API_URL, {
