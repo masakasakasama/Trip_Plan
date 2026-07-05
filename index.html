@@ -3,174 +3,82 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Trip Plan</title>
-    <link rel="stylesheet" href="styles.css?v=20260705-realtime1">
+    <title>Sydney Trip Plan</title>
+    <link rel="stylesheet" href="styles.css?v=20260705-sydney1">
   </head>
   <body>
-    <main class="stage">
-      <p class="theme-label"><span>1b</span>すっきりタイムライン</p>
+    <header class="topbar">
+      <div>
+        <p id="trip-range">2026.08.10 - 08.16</p>
+        <h1 id="trip-title">Sydney Trip Plan</h1>
+      </div>
+      <label class="edit-toggle">
+        <input id="edit-mode" type="checkbox">
+        <span>編集</span>
+      </label>
+    </header>
 
-      <section class="phone" aria-label="Trip Plan">
-        <div class="notch"></div>
+    <nav class="jump-nav" id="date-jump" aria-label="日付ジャンプ"></nav>
 
-        <header class="app-header">
-          <button class="ghost-button" id="trip-switcher" type="button" aria-label="Trip切替">⌄</button>
-          <div>
-            <p id="trip-dates">2026・8.1 - 8.10</p>
-            <h1 id="trip-title">Australia 2026</h1>
+    <main class="shell">
+      <section class="hero-card">
+        <div>
+          <p class="eyebrow">旅行中に見る用</p>
+          <h2>マニラ乗継・シドニー旅程</h2>
+          <p id="timezone-note">時刻は各現地時刻</p>
+        </div>
+        <button id="reset-data" class="subtle-button" type="button">初期状態に戻す</button>
+      </section>
+
+      <section class="panel alert-panel" aria-labelledby="alert-title">
+        <div class="section-head">
+          <h2 id="alert-title">重要アラート</h2>
+          <span id="alert-count">0</span>
+        </div>
+        <div id="alerts" class="alert-list"></div>
+      </section>
+
+      <section class="summary-grid">
+        <article class="panel">
+          <div class="section-head">
+            <h2>フライト概要</h2>
           </div>
-          <button class="ghost-button" id="sync-settings" type="button" aria-label="共有リンク">🔗</button>
-        </header>
-
-        <section class="soft-card status-card">
-          <div class="weather-icon" id="weather-icon">☀️</div>
-          <div>
-            <strong id="trip-place">Sydney・晴れ 26°</strong>
-            <p id="trip-status">航空券確定</p>
+          <div id="flight-summary" class="flight-list"></div>
+        </article>
+        <article class="panel">
+          <div class="section-head">
+            <h2>ホテル</h2>
           </div>
-          <div class="countdown">
-            <span>あと</span>
-            <strong id="countdown-days">--日</strong>
+          <div id="hotel-summary" class="hotel-card"></div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>日別タイムライン</h2>
+          <p id="edit-help">通常は閲覧専用。編集ONで時刻・日付・並び替えを変更できます。</p>
+        </div>
+        <div id="timeline" class="days"></div>
+      </section>
+
+      <section class="summary-grid">
+        <article class="panel">
+          <div class="section-head">
+            <h2>地図リンク</h2>
           </div>
-        </section>
-
-        <nav class="day-tabs" id="day-tabs" aria-label="日付"></nav>
-
-        <section class="view is-active" id="view-home" aria-label="ホーム">
-          <div class="timeline" id="timeline"></div>
-          <div class="progress-grid">
-            <article class="progress-card pink">
-              <div><strong>やること</strong><span id="packing-score">0%</span></div>
-              <meter min="0" max="100" value="75"></meter>
-            </article>
-            <article class="progress-card blue">
-              <div><strong>予算</strong><span id="budget-score">52%</span></div>
-              <meter min="0" max="100" value="52"></meter>
-            </article>
+          <div id="map-links" class="map-links"></div>
+        </article>
+        <article class="panel">
+          <div class="section-head">
+            <h2>持ち物</h2>
+            <span id="checklist-progress">0/0</span>
           </div>
-        </section>
-
-        <section class="view" id="view-todos" aria-label="やること">
-          <div class="section-title">
-            <h2>やること</h2>
-            <button id="add-todo" type="button">追加</button>
-          </div>
-          <div class="todo-summary" id="todo-summary"></div>
-          <div class="stack-list" id="todo-list"></div>
-        </section>
-
-        <section class="view" id="view-itinerary" aria-label="旅程">
-          <div class="section-title">
-            <h2>旅程</h2>
-            <button id="add-day" type="button">日を追加</button>
-          </div>
-          <div class="stack-list" id="day-list"></div>
-        </section>
-
-        <section class="view" id="view-spots" aria-label="スポット">
-          <div class="section-title">
-            <h2>スポット</h2>
-            <button id="add-spot" type="button">追加</button>
-          </div>
-          <section class="map-panel" aria-label="Google Maps">
-            <div class="map-panel-head">
-              <div>
-                <h3 id="map-day-title">Map</h3>
-                <p id="map-day-subtitle">この日の場所を表示</p>
-              </div>
-              <a id="open-day-route" href="https://www.google.com/maps" target="_blank" rel="noreferrer">Google Maps</a>
-            </div>
-            <iframe
-              id="route-map"
-              title="Trip route on Google Maps"
-              loading="lazy"
-              referrerpolicy="strict-origin-when-cross-origin"
-              allowfullscreen></iframe>
-            <div id="map-route-summary" class="map-route-summary"></div>
-          </section>
-          <div class="stack-list" id="spot-list"></div>
-        </section>
-
-        <section class="view" id="view-budget" aria-label="予算">
-          <div class="section-title">
-            <h2>予算</h2>
-            <button id="add-budget-item" type="button">追加</button>
-          </div>
-          <div class="budget-summary" id="budget-summary"></div>
-          <div class="stack-list" id="budget-list"></div>
-        </section>
-
-        <nav class="bottom-nav" aria-label="メインナビ">
-          <button class="is-active" data-view="home" type="button"><span>🏠</span>ホーム</button>
-          <button data-view="todos" type="button"><span>✅</span>やること</button>
-          <button data-view="itinerary" type="button"><span>🗓️</span>旅程</button>
-          <button data-view="spots" type="button"><span>📍</span>スポット</button>
-          <button data-view="budget" type="button"><span>💰</span>予算</button>
-        </nav>
+          <div id="checklist" class="checklist"></div>
+        </article>
       </section>
     </main>
 
-    <dialog id="trip-dialog">
-      <form method="dialog">
-        <div class="dialog-head">
-          <h2>Trip</h2>
-          <button type="submit">閉じる</button>
-        </div>
-        <div id="trip-list" class="trip-list"></div>
-        <button id="new-trip" class="wide-action" type="button">新しいTripを作る</button>
-      </form>
-    </dialog>
-
-    <dialog id="settings-dialog">
-      <form method="dialog">
-        <div class="dialog-head">
-          <h2>同期設定</h2>
-          <button type="submit">閉じる</button>
-        </div>
-        <p class="hint">このリンクを開いた端末は同じTripに自動同期します。別PC・別ブラウザ・スマホはこのリンクを共有。</p>
-        <label>共有リンク<input id="share-link" type="text" readonly></label>
-        <div class="dialog-actions">
-          <button id="copy-share-link" class="wide-action" type="button">リンクをコピー</button>
-          <button id="save-now" type="button">今すぐ同期</button>
-        </div>
-        <details class="advanced-sync">
-          <summary>同期キーを差し替える</summary>
-          <label>GitHub token<input id="github-token" type="password" autocomplete="off" placeholder="github_pat_..."></label>
-          <div class="dialog-actions">
-            <button id="save-token" class="wide-action" type="button">保存する</button>
-            <button id="clear-token" type="button">削除</button>
-          </div>
-        </details>
-        <details class="advanced-sync">
-          <summary>Google Maps埋め込みを有効にする</summary>
-          <p class="hint">ルート地図をアプリ内で正式表示する場合だけ設定。未設定でもGoogle Mapsで開くリンクは使えます。</p>
-          <label>Maps Embed API key<input id="maps-api-key" type="password" autocomplete="off" placeholder="AIza..."></label>
-          <div class="dialog-actions">
-            <button id="save-maps-key" class="wide-action" type="button">保存</button>
-            <button id="clear-maps-key" type="button">削除</button>
-          </div>
-        </details>
-      </form>
-    </dialog>
-
-    <dialog id="editor-dialog" class="editor-dialog">
-      <form method="dialog" id="editor-form">
-        <div class="dialog-head">
-          <h2 id="editor-title">編集</h2>
-          <button id="editor-close" type="button">閉じる</button>
-        </div>
-        <div id="editor-fields" class="editor-fields"></div>
-        <div class="editor-actions">
-          <button id="editor-delete" class="danger-action" type="button">削除</button>
-          <div>
-            <button id="editor-cancel" type="button">キャンセル</button>
-            <button id="editor-save" class="wide-action" type="submit">保存</button>
-          </div>
-        </div>
-      </form>
-    </dialog>
-
-    <p id="sync-status" class="sync-feedback" aria-live="polite"></p>
-    <script src="app.js?v=20260705-realtime2" defer></script>
+    <script src="sydney-trip-data.js?v=20260705-sydney1"></script>
+    <script src="app.js?v=20260705-sydney1" defer></script>
   </body>
 </html>

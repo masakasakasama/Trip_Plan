@@ -1,4 +1,4 @@
-{
+window.INITIAL_TRIP_DATA = {
   "meta": {
     "title": "フィリピン航空で行くマニラ乗継、シドニー旅行",
     "travelers": "大人2名",
@@ -757,3 +757,4 @@
   },
   "checklistState": {}
 }
+;
