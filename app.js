@@ -979,12 +979,16 @@ function renderTrips() {
   });
 }
 
+// 日付(day-tabs)がその日の中身を左右するビューだけで表示する。
+const DAY_TAB_VIEWS = new Set(["home", "spots"]);
+
 function renderView() {
   document.querySelectorAll(".view").forEach((view) => view.classList.remove("is-active"));
   document.querySelector(`#view-${activeView}`).classList.add("is-active");
   document.querySelectorAll(".bottom-nav button").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.view === activeView);
   });
+  if (els.dayTabs) els.dayTabs.hidden = !DAY_TAB_VIEWS.has(activeView);
 }
 
 function addSpot() {
