@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260706-swipe1";
+const BUILD_VERSION = "20260706-swipe2";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -184,10 +184,21 @@ function bindDaySwipe() {
   let startX = 0;
   let startY = 0;
   let tracking = false;
+  let pointerTracking = false;
+  let suppressNextClick = false;
+
+  const finishSwipe = (x, y, event) => {
+    const dx = x - startX;
+    const dy = y - startY;
+    if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    event.preventDefault();
+    suppressNextClick = true;
+    switchDay(activeDayIndex + (dx < 0 ? 1 : -1));
+  };
 
   homeView.addEventListener("touchstart", (event) => {
     if (event.touches.length !== 1) return;
-    if (event.target.closest("button, a, input, textarea, select, dialog")) return;
+    if (event.target.closest("button, input, textarea, select, dialog")) return;
     startX = event.touches[0].clientX;
     startY = event.touches[0].clientY;
     tracking = true;
@@ -197,11 +208,29 @@ function bindDaySwipe() {
     if (!tracking) return;
     tracking = false;
     const touch = event.changedTouches[0];
-    const dx = touch.clientX - startX;
-    const dy = touch.clientY - startY;
-    if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
-    switchDay(activeDayIndex + (dx < 0 ? 1 : -1));
-  }, { passive: true });
+    finishSwipe(touch.clientX, touch.clientY, event);
+  }, { passive: false });
+
+  homeView.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch") return;
+    if (event.target.closest("button, input, textarea, select, dialog")) return;
+    startX = event.clientX;
+    startY = event.clientY;
+    pointerTracking = true;
+  });
+
+  homeView.addEventListener("pointerup", (event) => {
+    if (!pointerTracking) return;
+    pointerTracking = false;
+    finishSwipe(event.clientX, event.clientY, event);
+  });
+
+  homeView.addEventListener("click", (event) => {
+    if (!suppressNextClick) return;
+    suppressNextClick = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
 }
 
 function normalizeTrip(trip) {
