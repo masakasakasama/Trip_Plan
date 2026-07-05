@@ -217,6 +217,17 @@ h1 {
   color: rgba(255, 255, 255, 0.78);
 }
 
+.day-tab-add {
+  flex: 0 0 auto;
+  min-width: 44px;
+  border-radius: 999px;
+  background: #faf4f7;
+  color: #a89faa;
+  font-size: 1.2rem;
+  font-weight: 900;
+  padding: 11px 17px;
+}
+
 .view {
   display: none;
 }
@@ -310,6 +321,46 @@ h1 {
   margin-top: 5px;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+/* イベントカード: サムネイル + Googleマップへのリンク本体 + 編集アイコン */
+.event-card {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding-right: 46px;
+}
+
+.event-thumb {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--pink-soft);
+  font-size: 1.3rem;
+}
+
+.event-body {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.event-edit {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #f8f2f5;
+  color: var(--deep);
+  font-size: 0.95rem;
 }
 
 .event-card .flight-info {
@@ -682,6 +733,28 @@ meter::-webkit-meter-bar {
   font-size: 0.76rem;
 }
 
+.spot-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.spot-thumb {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--blue-soft);
+  font-size: 1.3rem;
+}
+
+.spot-body {
+  flex: 1;
+  min-width: 0;
+}
+
 .spot-card a {
   display: inline-flex;
   margin-top: 10px;
@@ -707,7 +780,7 @@ meter::-webkit-meter-bar {
   bottom: 0;
   left: 0;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   min-height: var(--nav-height);
   border-top: 1px solid var(--line);
   background: rgba(255, 253, 251, 0.94);

@@ -35,7 +35,6 @@ const els = {
   budgetScore: document.querySelector("#budget-score"),
   todoSummary: document.querySelector("#todo-summary"),
   todoList: document.querySelector("#todo-list"),
-  dayList: document.querySelector("#day-list"),
   spotList: document.querySelector("#spot-list"),
   budgetSummary: document.querySelector("#budget-summary"),
   budgetList: document.querySelector("#budget-list"),
@@ -472,6 +471,28 @@ function mapQuery(poi) {
   return [poi.name, poi.area, currentTrip().destination].filter(Boolean).join(", ");
 }
 
+// 旅程の予定(item)からGoogleマップのリンクを作る。POIが紐づいていればそのURL、無ければ予定名で検索。
+function eventMapsUrl(item) {
+  const poi = poiById(item.poiId);
+  if (poi) return mapsUrl(poi);
+  const q = encodeURIComponent(`${item.title} ${currentTrip().destination}`);
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
+
+// カード用の絵文字サムネイル。手動指定(item/poi.emoji)を優先し、無ければ内容から推測。
+function defaultEmoji(item, poi) {
+  if (item?.emoji) return item.emoji;
+  if (poi?.emoji) return poi.emoji;
+  if (item?.flightNumber) return "✈️";
+  const text = `${item?.title || ""} ${item?.memo || ""} ${poi?.name || ""} ${poi?.category || ""}`;
+  if (/乗継|レイオーバー|layover/i.test(text)) return "🛫";
+  if (/ホテル|hotel/i.test(text)) return "🏨";
+  if (/ビーチ|beach|mountain|マウンテン|nature|自然|公園/i.test(text)) return "🌿";
+  if (/食|カフェ|レストラン|ランチ|ディナー|café|restaurant/i.test(text)) return "🍽️";
+  if (/空港|airport/i.test(text)) return "🛫";
+  return "📍";
+}
+
 function uniquePois(items) {
   const seen = new Set();
   return items
@@ -688,7 +709,6 @@ function render() {
   renderTimeline();
   renderProgress();
   renderTodos();
-  renderDayList();
   renderSpots();
   renderBudget();
   renderMap();
@@ -728,11 +748,17 @@ function renderDayTabs() {
   const trip = currentTrip();
   els.dayTabs.replaceChildren();
   trip.days.forEach((day, index) => {
+    const isActive = index === activeDayIndex;
     const button = document.createElement("button");
     button.type = "button";
-    button.className = index === activeDayIndex ? "is-active" : "";
+    button.className = isActive ? "is-active" : "";
     button.innerHTML = `<strong>${escapeHtml(day.title || `Day ${index + 1}`)}</strong><span>${escapeHtml(formatTabDate(day.date))}</span>`;
     button.addEventListener("click", () => {
+      // アクティブなタブをもう一度押すと、その日を編集する(旅程タブの代替)。
+      if (isActive) {
+        editDay(day.id);
+        return;
+      }
       activeDayIndex = index;
       renderTimeline();
       renderMap();
@@ -740,6 +766,14 @@ function renderDayTabs() {
     });
     els.dayTabs.append(button);
   });
+
+  const addButton = document.createElement("button");
+  addButton.type = "button";
+  addButton.className = "day-tab-add";
+  addButton.textContent = "+";
+  addButton.setAttribute("aria-label", "日を追加");
+  addButton.addEventListener("click", addDay);
+  els.dayTabs.append(addButton);
 }
 
 function renderTimeline() {
@@ -787,14 +821,18 @@ function renderTimeline() {
         ${zone}
       </div>
       <span class="dot ${index % 2 ? "blue" : "pink"}"></span>
-      <button class="event-card" type="button">
-        <strong>${escapeHtml(item.title)}</strong>
-        <small>${escapeHtml(poi ? poi.name : item.memo || "メモなし")}</small>
-        ${flightInfo}
-        <div class="event-foot">${homeTime}${elapsed}</div>
-      </button>
+      <article class="event-card">
+        <div class="event-thumb" aria-hidden="true">${escapeHtml(defaultEmoji(item, poi))}</div>
+        <a class="event-body" href="${escapeHtml(eventMapsUrl(item))}" target="_blank" rel="noreferrer">
+          <strong>${escapeHtml(item.title)}</strong>
+          <small>${escapeHtml(poi ? poi.name : item.memo || "メモなし")}</small>
+          ${flightInfo}
+          <div class="event-foot">${homeTime}${elapsed}</div>
+        </a>
+        <button class="event-edit" type="button" aria-label="予定を編集">✏️</button>
+      </article>
     `;
-    row.querySelector(".event-card").addEventListener("click", () => editItem(day.id, item.id));
+    row.querySelector(".event-edit").addEventListener("click", () => editItem(day.id, item.id));
     els.timeline.append(row);
   });
 }
@@ -870,25 +908,20 @@ function renderTodos() {
   });
 }
 
-function renderDayList() {
-  const trip = currentTrip();
-  els.dayList.replaceChildren();
-  trip.days.forEach((day) => {
-    const card = document.createElement("article");
-    card.className = "list-card";
-    card.innerHTML = `<strong>${escapeHtml(day.title)} / ${escapeHtml(formatShortDate(day.date))}</strong><p>${escapeHtml(day.theme || "テーマ未設定")}</p><small>${day.items.length}予定</small>`;
-    card.addEventListener("click", () => editDay(day.id));
-    els.dayList.append(card);
-  });
-}
-
 function renderSpots() {
   const trip = currentTrip();
   els.spotList.replaceChildren();
   trip.pois.forEach((poi) => {
     const card = document.createElement("article");
     card.className = "list-card spot-card";
-    card.innerHTML = `<strong>${escapeHtml(poi.name)}</strong><p>${escapeHtml(poi.area)}・${escapeHtml(poi.memo || "メモなし")}</p><a href="${escapeHtml(mapsUrl(poi))}" target="_blank" rel="noreferrer">Mapで開く</a>`;
+    card.innerHTML = `
+      <div class="spot-thumb" aria-hidden="true">${escapeHtml(defaultEmoji(null, poi))}</div>
+      <div class="spot-body">
+        <strong>${escapeHtml(poi.name)}</strong>
+        <p>${escapeHtml(poi.area)}・${escapeHtml(poi.memo || "メモなし")}</p>
+        <a href="${escapeHtml(mapsUrl(poi))}" target="_blank" rel="noreferrer">Mapで開く</a>
+      </div>
+    `;
     card.addEventListener("click", (event) => {
       if (event.target.tagName !== "A") editPoi(poi.id);
     });
@@ -1006,6 +1039,7 @@ function addSpot() {
       { name: "name", label: "場所名", required: true, placeholder: "例: Sydney Opera House" },
       { name: "area", label: "エリア・住所", value: trip.destination },
       { name: "mapsUrl", label: "Google Maps URL" },
+      { name: "emoji", label: "画像(絵文字)", placeholder: "例: 🏖️（空欄なら自動）" },
       { name: "memo", label: "メモ", type: "textarea", rows: 3 }
     ],
     onSave: () => {
@@ -1016,6 +1050,7 @@ function addSpot() {
         category: "spot",
         priority: "medium",
         mapsUrl: formValue("mapsUrl"),
+        emoji: formValue("emoji"),
         memo: formValue("memo")
       });
       render();
@@ -1034,12 +1069,14 @@ function editPoi(id) {
       { name: "name", label: "場所名", value: poi.name, required: true },
       { name: "area", label: "エリア・住所", value: poi.area },
       { name: "mapsUrl", label: "Google Maps URL", value: poi.mapsUrl },
+      { name: "emoji", label: "画像(絵文字)", value: poi.emoji, placeholder: "例: 🏖️（空欄なら自動）" },
       { name: "memo", label: "メモ", type: "textarea", value: poi.memo, rows: 3 }
     ],
     onSave: () => {
       poi.name = formValue("name");
       poi.area = formValue("area");
       poi.mapsUrl = formValue("mapsUrl");
+      poi.emoji = formValue("emoji");
       poi.memo = formValue("memo");
       render();
       markDirty();
@@ -1100,6 +1137,7 @@ function editItem(dayId, itemId) {
       { name: "flightNumber", label: "便名（任意）", value: item.flightNumber, placeholder: "例: PR423" },
       { name: "airline", label: "航空会社（任意）", value: item.airline },
       { name: "aircraft", label: "機材（任意）", value: item.aircraft },
+      { name: "emoji", label: "画像(絵文字)", value: item.emoji, placeholder: "例: ✈️（空欄なら自動）" },
       { name: "memo", label: "メモ", type: "textarea", value: item.memo, rows: 4 }
     ],
     onSave: () => {
@@ -1111,6 +1149,7 @@ function editItem(dayId, itemId) {
       item.flightNumber = formValue("flightNumber");
       item.airline = formValue("airline");
       item.aircraft = formValue("aircraft");
+      item.emoji = formValue("emoji");
       item.memo = formValue("memo");
       render();
       markDirty();
@@ -1332,7 +1371,6 @@ function bind() {
   document.querySelector("#new-trip").addEventListener("click", newTrip);
   document.querySelector("#add-todo").addEventListener("click", addTodo);
   document.querySelector("#add-spot").addEventListener("click", addSpot);
-  document.querySelector("#add-day").addEventListener("click", addDay);
   document.querySelector("#add-budget-item")?.addEventListener("click", addBudgetItem);
   document.querySelector("#archive-toggle")?.addEventListener("click", () => {
     currentTrip().archived = !currentTrip().archived;
