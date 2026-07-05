@@ -1,27 +1,11 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260705-1link1";
+const BUILD_VERSION = "20260705-worker1";
 
-const GITHUB = {
-  owner: "masakasakasama",
-  repo: "Trip_Plan",
-  branch: "main",
-  path: "trip-plan.json"
-};
-
-const API_URL = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/${GITHUB.path}`;
 const DATA_URL = "trip-plan.json";
-
-// このリポジトリ専用のFine-grained PAT(Contents: Read and write)。
-// GitHub Pagesは静的ホスティングでサーバーを持たないため、
-// どの端末でリンクを開いても常に自動書き込み同期させるにはクライアント側にトークンが要る。
-// この値は誰でも閲覧できる公開ソースになるため、スコープはこのリポジトリのcontentsのみに限定している。
-const EMBEDDED_TOKEN = "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";
-
-const TOKEN_KEY = "trip-plan-github-token-v1";
+const WORKER_URL_KEY = "trip-plan-worker-url-v1";
 const MAPS_KEY = "trip-plan-google-maps-key-v1";
 const CACHE_KEY = "trip-plan-cache-v3";
-const SHARE_TOKEN_PARAM = "gh";
 const POLL_MS = 5000;
 const AUTO_SAVE_MS = 1400;
 
@@ -45,7 +29,6 @@ const els = {
   tripDialog: document.querySelector("#trip-dialog"),
   tripList: document.querySelector("#trip-list"),
   settingsDialog: document.querySelector("#settings-dialog"),
-  token: document.querySelector("#github-token"),
   mapsKey: document.querySelector("#maps-api-key"),
   shareLink: document.querySelector("#share-link"),
   buildVersion: document.querySelector("#build-version"),
@@ -74,37 +57,17 @@ let saving = false;
 let autoSaveTimer = null;
 let activeEditor = null;
 
-// このリンクを開いた全端末が、追加設定なしで常に埋め込みトークンで同期する。
-// 過去の共有リンクで保存された古い(失効済みの)トークンを優先して
-// 保存が失敗し続ける事故を防ぐため、常に埋め込みトークンを使う。
-function getToken() {
-  return EMBEDDED_TOKEN;
-}
-
-// 旧共有リンクでlocalStorageに残った古いトークンを消す(1回きりの掃除)。
-function clearLegacyToken() {
-  try {
-    if (localStorage.getItem(TOKEN_KEY)) localStorage.removeItem(TOKEN_KEY);
-  } catch {}
+function workerUrl() {
+  const configured = window.TRIP_SYNC_WORKER_URL || localStorage.getItem(WORKER_URL_KEY) || "";
+  return configured.replace(/\/$/, "");
 }
 
 function getMapsKey() {
   return localStorage.getItem(MAPS_KEY) || "";
 }
 
-function getHashParams() {
-  return new URLSearchParams(window.location.hash.replace(/^#/, ""));
-}
-
-// 昔の共有リンク(#gh=...)を開いても、古いトークンは保存せずURLだけ綺麗にする。
 function importTokenFromLink() {
-  const params = getHashParams();
-  if (!params.get(SHARE_TOKEN_PARAM)) return false;
-  params.delete(SHARE_TOKEN_PARAM);
-  const nextHash = params.toString();
-  const nextUrl = `${window.location.pathname}${window.location.search}${nextHash ? `#${nextHash}` : ""}`;
-  window.history.replaceState(null, "", nextUrl);
-  return true;
+  return false;
 }
 
 // 共有リンクは素のURL。埋め込みトークンで同期するので #gh= は付けない。
@@ -601,34 +564,13 @@ function request(url, options = {}, timeoutMs = 10000) {
   });
 }
 
-function encodeBase64(text) {
-  const bytes = new TextEncoder().encode(text);
-  let binary = "";
-  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
-  return btoa(binary);
-}
-
-function decodeBase64(text) {
-  const binary = atob(text.replace(/\n/g, ""));
-  return new TextDecoder().decode(Uint8Array.from(binary, (ch) => ch.charCodeAt(0)));
-}
-
-// トークンがあればGitHub APIから直接読む(コミット直後の最新が即返る)。
-async function fetchStateViaApi() {
-  const token = getToken();
-  if (!token) return null;
-  const response = await request(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${token}`,
-      "X-GitHub-Api-Version": "2022-11-28"
-    },
-    cache: "no-store"
-  });
+async function fetchStateViaWorker() {
+  const endpoint = workerUrl();
+  if (!endpoint) return null;
+  const response = await request(`${endpoint}/state?t=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`同期できません (${response.status})`);
-  const payload = await response.json();
-  remoteSha = payload.sha;
-  return normalize(JSON.parse(decodeBase64(payload.content)));
+  remoteSha = response.headers?.get?.("X-Trip-Sha") || response.headers?.get?.("ETag") || "";
+  return normalize(await response.json());
 }
 
 // トークン無し/失敗時のフォールバック。Pages配信の静的JSON(反映が遅れることがある)。
@@ -645,7 +587,7 @@ async function loadRemote() {
   const previousDayId = state?.trips?.length ? currentDay()?.id : "";
   let next = null;
   try {
-    next = await fetchStateViaApi();
+    next = await fetchStateViaWorker();
   } catch {
     // APIが失敗(トークン失効・レート制限など)。静的JSONへフォールバック。
   }
@@ -667,7 +609,7 @@ async function loadRemote() {
       activeDayIndex = Math.min(activeDayIndex, Math.max(0, currentTrip().days.length - 1));
     }
     render();
-    setStatus(getToken() ? "共有リンク同期中" : "共有リンク待ち", getToken() ? "" : "soft");
+    setStatus(workerUrl() ? "共有リンク同期中" : "Worker未設定・閲覧のみ", workerUrl() ? "" : "soft");
   } catch (error) {
     const cache = localStorage.getItem(CACHE_KEY);
     if (cache) {
@@ -682,69 +624,36 @@ async function loadRemote() {
 
 function markDirty() {
   dirty = true;
-  setStatus(getToken() ? "保存待ち" : "共有リンク待ち", "soft");
+  setStatus(workerUrl() ? "保存待ち" : "Worker未設定・この端末だけ保存", "soft");
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(saveRemote, AUTO_SAVE_MS);
 }
 
 async function saveRemote() {
-  if (!dirty || saving || !getToken()) return;
+  const endpoint = workerUrl();
+  if (!dirty || saving || !endpoint) return;
   saving = true;
   setStatus("自動保存中");
   const trip = currentTrip();
   trip.lastUpdated = new Date().toISOString();
-  const body = `${JSON.stringify(state, null, 2)}\n`;
   try {
-    if (!remoteSha) {
-      const latest = await request(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
-        headers: { Authorization: `Bearer ${getToken()}`, Accept: "application/vnd.github+json" }
-      });
-      if (latest.ok) remoteSha = (await latest.json()).sha;
-    }
-    let response = await request(API_URL, {
+    const response = await request(`${endpoint}/state`, {
       method: "PUT",
       headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${getToken()}`,
-        "Content-Type": "application/json",
-        "X-GitHub-Api-Version": "2022-11-28"
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        message: `Update trip plan ${new Date().toISOString()}`,
-        content: encodeBase64(body),
-        sha: remoteSha,
-        branch: GITHUB.branch
-      })
+      body: JSON.stringify(state)
     }, 15000);
-    if (response.status === 409) {
-      const latest = await request(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
-        headers: { Authorization: `Bearer ${getToken()}`, Accept: "application/vnd.github+json" }
-      });
-      if (latest.ok) remoteSha = (await latest.json()).sha;
-      response = await request(API_URL, {
-        method: "PUT",
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${getToken()}`,
-          "Content-Type": "application/json",
-          "X-GitHub-Api-Version": "2022-11-28"
-        },
-        body: JSON.stringify({
-          message: `Update trip plan ${new Date().toISOString()}`,
-          content: encodeBase64(body),
-          sha: remoteSha,
-          branch: GITHUB.branch
-        })
-      }, 15000);
-    }
     if (!response.ok) throw new Error(`保存失敗 (${response.status})`);
     const payload = await response.json();
-    remoteSha = payload.content.sha;
+    remoteSha = payload.sha || response.headers?.get?.("X-Trip-Sha") || "";
     dirty = false;
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
     setStatus("保存済み");
   } catch (error) {
     setStatus(error.message, "warn");
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(saveRemote, 3000);
   } finally {
     saving = false;
   }
@@ -766,12 +675,10 @@ function render() {
 }
 
 function renderShareLink() {
-  const token = getToken();
   const shareUrl = buildShareUrl();
   if (els.shareLink) {
-    els.shareLink.value = token ? shareUrl : "同期キー未設定。同期できる端末でリンクをコピー。";
+    els.shareLink.value = shareUrl;
   }
-  if (els.token) els.token.value = getToken();
   if (els.mapsKey) els.mapsKey.value = getMapsKey();
   if (els.buildVersion) els.buildVersion.textContent = `v${BUILD_VERSION}`;
 }
@@ -1113,7 +1020,7 @@ function addSpot() {
     title: "スポットを追加",
     fields: [
       { name: "name", label: "場所名", required: true, placeholder: "例: Sydney Opera House" },
-      { name: "area", label: "エリア・住所", value: trip.destination },
+      { name: "area", label: "エリア・場所", value: trip.destination },
       { name: "mapsUrl", label: "Google Maps URL" },
       { name: "emoji", label: "画像(絵文字)", placeholder: "例: 🏖️（空欄なら自動）" },
       { name: "memo", label: "メモ", type: "textarea", rows: 3 }
@@ -1143,7 +1050,7 @@ function editPoi(id) {
     title: "スポットを編集",
     fields: [
       { name: "name", label: "場所名", value: poi.name, required: true },
-      { name: "area", label: "エリア・住所", value: poi.area },
+      { name: "area", label: "エリア・場所", value: poi.area },
       { name: "mapsUrl", label: "Google Maps URL", value: poi.mapsUrl },
       { name: "emoji", label: "画像(絵文字)", value: poi.emoji, placeholder: "例: 🏖️（空欄なら自動）" },
       { name: "memo", label: "メモ", type: "textarea", value: poi.memo, rows: 3 }
