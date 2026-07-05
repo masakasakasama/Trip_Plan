@@ -11,9 +11,12 @@ permissions:
   pages: write
   id-token: write
 
+# デプロイ実行中に新しいpushが来ても中断せずキューに積む。
+# cancel-in-progress: true で実行中デプロイを止めるとPages環境が
+# 中途半端な状態になり "Deployment failed, try again later" を起こしやすい。
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
