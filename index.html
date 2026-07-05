@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Plan</title>
-    <link rel="stylesheet" href="styles.css?v=20260705-mapthumb1">
+    <link rel="stylesheet" href="styles.css?v=20260705-1link1">
   </head>
   <body>
     <main class="stage">
@@ -118,20 +118,12 @@
           <h2>同期設定</h2>
           <button type="submit">閉じる</button>
         </div>
-        <p class="hint">このリンクを開いた端末は同じTripに自動同期します。別PC・別ブラウザ・スマホはこのリンクを共有。</p>
+        <p class="hint">このリンクを開いた端末はすべて同じTripに自動同期します。別PC・別ブラウザ・スマホもこのリンクを開くだけ。追加設定は不要です。</p>
         <label>共有リンク<input id="share-link" type="text" readonly></label>
         <div class="dialog-actions">
           <button id="copy-share-link" class="wide-action" type="button">リンクをコピー</button>
           <button id="save-now" type="button">今すぐ同期</button>
         </div>
-        <details class="advanced-sync">
-          <summary>同期キーを差し替える</summary>
-          <label>GitHub token<input id="github-token" type="password" autocomplete="off" placeholder="github_pat_..."></label>
-          <div class="dialog-actions">
-            <button id="save-token" class="wide-action" type="button">保存する</button>
-            <button id="clear-token" type="button">削除</button>
-          </div>
-        </details>
         <details class="advanced-sync">
           <summary>Google Mapsルート地図を高品質にする</summary>
           <p class="hint">スポットのサムネイル地図は設定なしで表示されます。ここはルート地図(スポットタブ上部)を正式なEmbed APIで表示したい場合だけ設定。未設定でも簡易地図で動きます。</p>
@@ -163,6 +155,6 @@
     </dialog>
 
     <p id="sync-status" class="sync-feedback" aria-live="polite"></p>
-    <script src="app.js?v=20260705-mapthumb1" defer></script>
+    <script src="app.js?v=20260705-1link1" defer></script>
   </body>
 </html>

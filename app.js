@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260705-mapthumb1";
+const BUILD_VERSION = "20260705-1link1";
 
 const GITHUB = {
   owner: "masakasakasama",
@@ -74,8 +74,18 @@ let saving = false;
 let autoSaveTimer = null;
 let activeEditor = null;
 
+// このリンクを開いた全端末が、追加設定なしで常に埋め込みトークンで同期する。
+// 過去の共有リンクで保存された古い(失効済みの)トークンを優先して
+// 保存が失敗し続ける事故を防ぐため、常に埋め込みトークンを使う。
 function getToken() {
-  return localStorage.getItem(TOKEN_KEY) || EMBEDDED_TOKEN;
+  return EMBEDDED_TOKEN;
+}
+
+// 旧共有リンクでlocalStorageに残った古いトークンを消す(1回きりの掃除)。
+function clearLegacyToken() {
+  try {
+    if (localStorage.getItem(TOKEN_KEY)) localStorage.removeItem(TOKEN_KEY);
+  } catch {}
 }
 
 function getMapsKey() {
@@ -86,11 +96,10 @@ function getHashParams() {
   return new URLSearchParams(window.location.hash.replace(/^#/, ""));
 }
 
+// 昔の共有リンク(#gh=...)を開いても、古いトークンは保存せずURLだけ綺麗にする。
 function importTokenFromLink() {
   const params = getHashParams();
-  const token = params.get(SHARE_TOKEN_PARAM);
-  if (!token) return false;
-  localStorage.setItem(TOKEN_KEY, token);
+  if (!params.get(SHARE_TOKEN_PARAM)) return false;
   params.delete(SHARE_TOKEN_PARAM);
   const nextHash = params.toString();
   const nextUrl = `${window.location.pathname}${window.location.search}${nextHash ? `#${nextHash}` : ""}`;
@@ -98,13 +107,10 @@ function importTokenFromLink() {
   return true;
 }
 
+// 共有リンクは素のURL。埋め込みトークンで同期するので #gh= は付けない。
 function buildShareUrl() {
-  const token = getToken();
   const url = new URL(window.location.href);
   url.hash = "";
-  if (token) {
-    url.hash = `${SHARE_TOKEN_PARAM}=${encodeURIComponent(token)}`;
-  }
   return url.toString();
 }
 
@@ -1405,25 +1411,8 @@ function bind() {
     els.settingsDialog.showModal();
   });
   document.querySelector("#copy-share-link").addEventListener("click", async () => {
-    if (!getToken()) {
-      setStatus("同期キー未設定", "warn");
-      return;
-    }
     await copyText(buildShareUrl());
     setStatus("共有リンクをコピー済み");
-  });
-  document.querySelector("#save-token").addEventListener("click", () => {
-    localStorage.setItem(TOKEN_KEY, els.token.value.trim());
-    els.settingsDialog.close();
-    renderShareLink();
-    setStatus("共有リンク同期中");
-    markDirty();
-  });
-  document.querySelector("#clear-token").addEventListener("click", () => {
-    localStorage.removeItem(TOKEN_KEY);
-    els.token.value = "";
-    renderShareLink();
-    setStatus("個人トークンを削除。共有設定で同期は継続", "soft");
   });
   document.querySelector("#save-maps-key")?.addEventListener("click", () => {
     localStorage.setItem(MAPS_KEY, els.mapsKey.value.trim());
@@ -1455,6 +1444,7 @@ function bind() {
   });
 }
 
+clearLegacyToken();
 importTokenFromLink();
 bind();
 loadRemote();
