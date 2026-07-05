@@ -8,6 +8,7 @@ const GITHUB = {
 const API_URL = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/${GITHUB.path}`;
 const DATA_URL = "trip-plan.json";
 const TOKEN_KEY = "trip-plan-github-token-v1";
+const MAPS_KEY = "trip-plan-google-maps-key-v1";
 const CACHE_KEY = "trip-plan-cache-v3";
 const SHARE_TOKEN_PARAM = "gh";
 const POLL_MS = 5000;
@@ -33,8 +34,14 @@ const els = {
   tripList: document.querySelector("#trip-list"),
   settingsDialog: document.querySelector("#settings-dialog"),
   token: document.querySelector("#github-token"),
+  mapsKey: document.querySelector("#maps-api-key"),
   shareLink: document.querySelector("#share-link"),
-  archiveToggle: document.querySelector("#archive-toggle")
+  archiveToggle: document.querySelector("#archive-toggle"),
+  routeMap: document.querySelector("#route-map"),
+  mapDayTitle: document.querySelector("#map-day-title"),
+  mapDaySubtitle: document.querySelector("#map-day-subtitle"),
+  openDayRoute: document.querySelector("#open-day-route"),
+  mapRouteSummary: document.querySelector("#map-route-summary")
 };
 
 let state = null;
@@ -47,6 +54,10 @@ let autoSaveTimer = null;
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY) || "";
+}
+
+function getMapsKey() {
+  return localStorage.getItem(MAPS_KEY) || "";
 }
 
 function getHashParams() {
@@ -190,6 +201,70 @@ function mapsUrl(poi) {
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 
+function mapQuery(poi) {
+  return [poi.name, poi.area, currentTrip().destination].filter(Boolean).join(", ");
+}
+
+function uniquePois(items) {
+  const seen = new Set();
+  return items
+    .map((item) => item.poiId && poiById(item.poiId))
+    .filter((poi) => {
+      if (!poi || seen.has(poi.id)) return false;
+      seen.add(poi.id);
+      return true;
+    });
+}
+
+function routePoisForDay() {
+  const trip = currentTrip();
+  const day = currentDay();
+  const dayPois = uniquePois(day?.items || []);
+  return dayPois.length ? { pois: dayPois, fallback: false } : { pois: trip.pois || [], fallback: true };
+}
+
+function googleMapsSearchUrl(query) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}&utm_source=trip_studio&utm_campaign=place_details_search`;
+}
+
+function googleMapsDirectionsUrl(points) {
+  if (points.length < 2) return googleMapsSearchUrl(points[0] || currentTrip().destination);
+  const params = new URLSearchParams({
+    api: "1",
+    origin: points[0],
+    destination: points[points.length - 1],
+    travelmode: "walking",
+    utm_source: "trip_studio",
+    utm_campaign: "directions_request"
+  });
+  const waypoints = points.slice(1, -1);
+  if (waypoints.length) params.set("waypoints", waypoints.join("|"));
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+function googleMapsEmbedUrl(points) {
+  const key = getMapsKey();
+  if (!key) {
+    const query = points[0] || currentTrip().destination;
+    return `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+  }
+
+  if (points.length < 2) {
+    const params = new URLSearchParams({ key, q: points[0] || currentTrip().destination });
+    return `https://www.google.com/maps/embed/v1/place?${params.toString()}`;
+  }
+
+  const params = new URLSearchParams({
+    key,
+    origin: points[0],
+    destination: points[points.length - 1],
+    mode: "walking"
+  });
+  const waypoints = points.slice(1, -1);
+  if (waypoints.length) params.set("waypoints", waypoints.join("|"));
+  return `https://www.google.com/maps/embed/v1/directions?${params.toString()}`;
+}
+
 function request(url, options = {}, timeoutMs = 10000) {
   if (typeof fetch === "function") {
     const controller = new AbortController();
@@ -227,6 +302,7 @@ function decodeBase64(text) {
 }
 
 async function loadRemote() {
+  const previousDayId = state?.trips?.length ? currentDay()?.id : "";
   try {
     const token = getToken();
     if (token) {
@@ -248,7 +324,12 @@ async function loadRemote() {
       state = normalize(JSON.parse(await response.text()));
     }
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
-    activeDayIndex = 0;
+    if (previousDayId) {
+      const nextDayIndex = currentTrip().days.findIndex((day) => day.id === previousDayId);
+      activeDayIndex = nextDayIndex >= 0 ? nextDayIndex : 0;
+    } else {
+      activeDayIndex = Math.min(activeDayIndex, Math.max(0, currentTrip().days.length - 1));
+    }
     render();
     setStatus(token ? "共有リンク同期中" : "共有リンク待ち", token ? "" : "soft");
   } catch (error) {
@@ -342,6 +423,7 @@ function render() {
   renderTodos();
   renderDayList();
   renderSpots();
+  renderMap();
   renderTrips();
   renderView();
   renderShareLink();
@@ -354,6 +436,7 @@ function renderShareLink() {
     els.shareLink.value = token ? shareUrl : "同期キー未設定。同期できる端末でリンクをコピー。";
   }
   if (els.token) els.token.value = getToken();
+  if (els.mapsKey) els.mapsKey.value = getMapsKey();
 }
 
 function renderHeader() {
@@ -379,6 +462,7 @@ function renderDayTabs() {
     button.addEventListener("click", () => {
       activeDayIndex = index;
       renderTimeline();
+      renderMap();
       renderDayTabs();
     });
     els.dayTabs.append(button);
@@ -501,6 +585,47 @@ function renderSpots() {
       if (event.target.tagName !== "A") editPoi(poi.id);
     });
     els.spotList.append(card);
+  });
+}
+
+function renderMap() {
+  if (!els.routeMap || !els.openDayRoute) return;
+  const day = currentDay();
+  const { pois, fallback } = routePoisForDay();
+  const points = pois.map(mapQuery);
+  const mapTitle = day ? `${day.title || "Day"} / ${formatTabDate(day.date)}` : "Trip map";
+  const countLabel = points.length >= 2 ? `${points.length}スポットのルート` : points.length === 1 ? "1スポット" : "目的地";
+
+  if (els.mapDayTitle) els.mapDayTitle.textContent = mapTitle;
+  if (els.mapDaySubtitle) {
+    els.mapDaySubtitle.textContent = fallback
+      ? `この日に場所が未登録なので、旅行全体の${countLabel}を表示`
+      : `この日の${countLabel}を表示`;
+  }
+  els.openDayRoute.href = googleMapsDirectionsUrl(points);
+  els.openDayRoute.textContent = points.length >= 2 ? "ルートを開く" : "Mapで開く";
+  els.routeMap.src = googleMapsEmbedUrl(points);
+  renderRouteSummary(points);
+}
+
+function renderRouteSummary(points) {
+  if (!els.mapRouteSummary) return;
+  els.mapRouteSummary.replaceChildren();
+  if (!points.length) {
+    const empty = document.createElement("span");
+    empty.textContent = currentTrip().destination;
+    els.mapRouteSummary.append(empty);
+    return;
+  }
+  points.forEach((point, index) => {
+    if (index) {
+      const arrow = document.createElement("b");
+      arrow.textContent = "→";
+      els.mapRouteSummary.append(arrow);
+    }
+    const chip = document.createElement("span");
+    chip.textContent = point.split(",")[0];
+    els.mapRouteSummary.append(chip);
   });
 }
 
@@ -678,6 +803,15 @@ function bind() {
     renderShareLink();
     setStatus("共有リンク待ち", "soft");
   });
+  document.querySelector("#save-maps-key")?.addEventListener("click", () => {
+    localStorage.setItem(MAPS_KEY, els.mapsKey.value.trim());
+    renderMap();
+  });
+  document.querySelector("#clear-maps-key")?.addEventListener("click", () => {
+    localStorage.removeItem(MAPS_KEY);
+    if (els.mapsKey) els.mapsKey.value = "";
+    renderMap();
+  });
   document.querySelector("#save-now").addEventListener("click", () => {
     dirty = true;
     saveRemote();
@@ -691,10 +825,6 @@ function bind() {
     currentTrip().archived = !currentTrip().archived;
     render();
     markDirty();
-  });
-  document.querySelector("#open-map-search").addEventListener("click", () => {
-    const trip = currentTrip();
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trip.destination)}`, "_blank", "noreferrer");
   });
   document.querySelectorAll(".bottom-nav button").forEach((button) => {
     button.addEventListener("click", () => {
