@@ -7,6 +7,13 @@ const GITHUB = {
 
 const API_URL = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/${GITHUB.path}`;
 const DATA_URL = "trip-plan.json";
+
+// このリポジトリ専用のFine-grained PAT(Contents: Read and write)。
+// GitHub Pagesは静的ホスティングでサーバーを持たないため、
+// どの端末でリンクを開いても常に自動書き込み同期させるにはクライアント側にトークンが要る。
+// この値は誰でも閲覧できる公開ソースになるため、スコープはこのリポジトリのcontentsのみに限定している。
+const EMBEDDED_TOKEN = "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";
+
 const TOKEN_KEY = "trip-plan-github-token-v1";
 const MAPS_KEY = "trip-plan-google-maps-key-v1";
 const CACHE_KEY = "trip-plan-cache-v3";
@@ -64,7 +71,7 @@ let autoSaveTimer = null;
 let activeEditor = null;
 
 function getToken() {
-  return localStorage.getItem(TOKEN_KEY) || "";
+  return localStorage.getItem(TOKEN_KEY) || EMBEDDED_TOKEN;
 }
 
 function getMapsKey() {
@@ -1307,7 +1314,7 @@ function bind() {
     localStorage.removeItem(TOKEN_KEY);
     els.token.value = "";
     renderShareLink();
-    setStatus("共有リンク待ち", "soft");
+    setStatus("個人トークンを削除。共有設定で同期は継続", "soft");
   });
   document.querySelector("#save-maps-key")?.addEventListener("click", () => {
     localStorage.setItem(MAPS_KEY, els.mapsKey.value.trim());
