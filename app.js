@@ -41,7 +41,15 @@ const els = {
   mapDayTitle: document.querySelector("#map-day-title"),
   mapDaySubtitle: document.querySelector("#map-day-subtitle"),
   openDayRoute: document.querySelector("#open-day-route"),
-  mapRouteSummary: document.querySelector("#map-route-summary")
+  mapRouteSummary: document.querySelector("#map-route-summary"),
+  editorDialog: document.querySelector("#editor-dialog"),
+  editorForm: document.querySelector("#editor-form"),
+  editorTitle: document.querySelector("#editor-title"),
+  editorFields: document.querySelector("#editor-fields"),
+  editorSave: document.querySelector("#editor-save"),
+  editorDelete: document.querySelector("#editor-delete"),
+  editorCancel: document.querySelector("#editor-cancel"),
+  editorClose: document.querySelector("#editor-close")
 };
 
 let state = null;
@@ -51,6 +59,7 @@ let activeView = "home";
 let dirty = false;
 let saving = false;
 let autoSaveTimer = null;
+let activeEditor = null;
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY) || "";
@@ -114,6 +123,55 @@ function uid(prefix) {
 
 function valueOr(value, fallback = "") {
   return value === undefined || value === null || value === "" ? fallback : String(value);
+}
+
+function formValue(name) {
+  const field = els.editorForm?.elements?.[name];
+  return field ? field.value.trim() : "";
+}
+
+function closeEditor() {
+  activeEditor = null;
+  els.editorDialog?.close();
+}
+
+function showEditor({ title, fields, saveLabel = "保存", onSave, onDelete }) {
+  activeEditor = { onSave, onDelete };
+  els.editorTitle.textContent = title;
+  els.editorSave.textContent = saveLabel;
+  els.editorDelete.hidden = !onDelete;
+  els.editorFields.replaceChildren();
+
+  fields.forEach((field) => {
+    const label = document.createElement("label");
+    label.textContent = field.label;
+    const input = field.type === "textarea"
+      ? document.createElement("textarea")
+      : field.type === "select"
+        ? document.createElement("select")
+        : document.createElement("input");
+
+    input.name = field.name;
+    input.required = Boolean(field.required);
+    if (field.placeholder) input.placeholder = field.placeholder;
+    if (field.type && field.type !== "textarea" && field.type !== "select") input.type = field.type;
+    if (field.type === "textarea") input.rows = field.rows || 4;
+    if (field.type === "select") {
+      (field.options || []).forEach((option) => {
+        const opt = document.createElement("option");
+        opt.value = option.value;
+        opt.textContent = option.label;
+        input.append(opt);
+      });
+    }
+    input.value = valueOr(field.value);
+    label.append(input);
+    els.editorFields.append(label);
+  });
+
+  els.editorDialog.showModal();
+  const firstInput = els.editorFields.querySelector("input, textarea, select");
+  requestAnimationFrame(() => firstInput?.focus());
 }
 
 function currentTrip() {
@@ -635,14 +693,8 @@ function renderNotes() {
   trip.notes.forEach((note, index) => {
     const card = document.createElement("article");
     card.className = "list-card";
-    card.innerHTML = `<strong>Memo ${index + 1}</strong><p>${note || "空のメモ"}</p>`;
-    card.addEventListener("click", () => {
-      const next = prompt("メモ", note);
-      if (next === null) return;
-      trip.notes[index] = next;
-      render();
-      markDirty();
-    });
+    card.innerHTML = `<strong>Memo ${index + 1}</strong><p>${note || "メモなし"}</p>`;
+    card.addEventListener("click", () => editNote(index));
     els.noteList.append(card);
   });
 }
@@ -674,50 +726,118 @@ function renderView() {
 }
 
 function addSpot() {
-  const name = prompt("場所の名前");
-  if (!name) return;
   const trip = currentTrip();
-  trip.pois.unshift({
-    id: uid("poi"),
-    name,
-    area: prompt("エリア・住所", trip.destination) || "",
-    category: "spot",
-    priority: "medium",
-    mapsUrl: prompt("Google Maps URL", "") || "",
-    memo: prompt("メモ", "") || ""
+  showEditor({
+    title: "スポットを追加",
+    fields: [
+      { name: "name", label: "場所名", required: true, placeholder: "例: Sydney Opera House" },
+      { name: "area", label: "エリア・住所", value: trip.destination },
+      { name: "mapsUrl", label: "Google Maps URL" },
+      { name: "memo", label: "メモ", type: "textarea", rows: 3 }
+    ],
+    onSave: () => {
+      trip.pois.unshift({
+        id: uid("poi"),
+        name: formValue("name"),
+        area: formValue("area"),
+        category: "spot",
+        priority: "medium",
+        mapsUrl: formValue("mapsUrl"),
+        memo: formValue("memo")
+      });
+      render();
+      markDirty();
+    }
   });
-  render();
-  markDirty();
 }
 
 function editPoi(id) {
   const poi = currentTrip().pois.find((item) => item.id === id);
   if (!poi) return;
-  poi.name = prompt("場所の名前", poi.name) || poi.name;
-  poi.area = prompt("エリア", poi.area) ?? poi.area;
-  poi.memo = prompt("メモ", poi.memo) ?? poi.memo;
-  render();
-  markDirty();
+  const trip = currentTrip();
+  showEditor({
+    title: "スポットを編集",
+    fields: [
+      { name: "name", label: "場所名", value: poi.name, required: true },
+      { name: "area", label: "エリア・住所", value: poi.area },
+      { name: "mapsUrl", label: "Google Maps URL", value: poi.mapsUrl },
+      { name: "memo", label: "メモ", type: "textarea", value: poi.memo, rows: 3 }
+    ],
+    onSave: () => {
+      poi.name = formValue("name");
+      poi.area = formValue("area");
+      poi.mapsUrl = formValue("mapsUrl");
+      poi.memo = formValue("memo");
+      render();
+      markDirty();
+    },
+    onDelete: () => {
+      trip.pois = trip.pois.filter((item) => item.id !== id);
+      trip.days.forEach((day) => {
+        day.items.forEach((item) => {
+          if (item.poiId === id) item.poiId = "";
+        });
+      });
+      render();
+      markDirty();
+    }
+  });
 }
 
 function editDay(id) {
   const day = currentTrip().days.find((item) => item.id === id);
   if (!day) return;
-  day.title = prompt("タイトル", day.title) || day.title;
-  day.theme = prompt("テーマ", day.theme) ?? day.theme;
-  render();
-  markDirty();
+  showEditor({
+    title: "日程を編集",
+    fields: [
+      { name: "title", label: "表示名", value: day.title, required: true },
+      { name: "date", label: "日付", type: "date", value: day.date },
+      { name: "theme", label: "テーマ", type: "textarea", value: day.theme, rows: 3 }
+    ],
+    onSave: () => {
+      day.title = formValue("title");
+      day.date = formValue("date");
+      day.theme = formValue("theme");
+      render();
+      markDirty();
+    }
+  });
 }
 
 function editItem(dayId, itemId) {
   const day = currentTrip().days.find((item) => item.id === dayId);
   const item = day?.items.find((entry) => entry.id === itemId);
   if (!item) return;
-  item.time = prompt("時間", item.time) || item.time;
-  item.title = prompt("予定", item.title) || item.title;
-  item.memo = prompt("メモ", item.memo) ?? item.memo;
-  render();
-  markDirty();
+  const poiOptions = [
+    { value: "", label: "場所なし" },
+    ...currentTrip().pois.map((poi) => ({ value: poi.id, label: poi.name }))
+  ];
+  showEditor({
+    title: "予定を編集",
+    fields: [
+      { name: "time", label: "現地時間", type: "time", value: item.time, required: true },
+      { name: "timezone", label: "タイムゾーン", value: item.timezone },
+      { name: "homeTime", label: "日本時間メモ", type: "time", value: item.homeTime },
+      { name: "title", label: "予定名", value: item.title, required: true },
+      { name: "poiId", label: "場所", type: "select", value: item.poiId, options: poiOptions },
+      { name: "memo", label: "メモ", type: "textarea", value: item.memo, rows: 4 }
+    ],
+    onSave: () => {
+      item.time = formValue("time");
+      item.timezone = formValue("timezone");
+      item.homeTime = formValue("homeTime");
+      item.title = formValue("title");
+      item.poiId = formValue("poiId");
+      item.memo = formValue("memo");
+      render();
+      markDirty();
+    },
+    onDelete: () => {
+      day.items = day.items.filter((entry) => entry.id !== itemId);
+      render();
+      markDirty();
+    }
+  });
 }
 
 function addDay() {
@@ -735,36 +855,113 @@ function addDay() {
 }
 
 function addNote() {
-  currentTrip().notes.push("新しいメモ");
-  render();
-  markDirty();
+  showEditor({
+    title: "メモを追加",
+    fields: [
+      { name: "note", label: "メモ", type: "textarea", rows: 5, required: true }
+    ],
+    onSave: () => {
+      currentTrip().notes.push(formValue("note"));
+      render();
+      markDirty();
+    }
+  });
 }
 
 function addTodo() {
-  const title = prompt("やること");
-  if (!title) return;
-  currentTrip().todos.push({
-    id: uid("todo"),
-    title,
-    detail: prompt("メモ", "") || "",
-    due: prompt("期限", "出発1か月前") || "",
-    priority: "medium",
-    owner: "2人",
-    status: "open"
+  showEditor({
+    title: "やることを追加",
+    fields: [
+      { name: "title", label: "やること", required: true },
+      { name: "detail", label: "メモ", type: "textarea", rows: 3 },
+      { name: "due", label: "期限", value: "出発1か月前" },
+      { name: "owner", label: "担当", value: "2人" },
+      {
+        name: "priority",
+        label: "重要度",
+        type: "select",
+        value: "medium",
+        options: [
+          { value: "high", label: "重要" },
+          { value: "medium", label: "確認" },
+          { value: "low", label: "あとで" }
+        ]
+      }
+    ],
+    onSave: () => {
+      currentTrip().todos.push({
+        id: uid("todo"),
+        title: formValue("title"),
+        detail: formValue("detail"),
+        due: formValue("due"),
+        priority: formValue("priority") || "medium",
+        owner: formValue("owner"),
+        status: "open"
+      });
+      render();
+      markDirty();
+    }
   });
-  render();
-  markDirty();
 }
 
 function editTodo(id) {
   const todo = currentTrip().todos.find((item) => item.id === id);
   if (!todo) return;
-  todo.title = prompt("やること", todo.title) || todo.title;
-  todo.detail = prompt("メモ", todo.detail) ?? todo.detail;
-  todo.due = prompt("期限", todo.due) ?? todo.due;
-  todo.owner = prompt("担当", todo.owner) ?? todo.owner;
-  render();
-  markDirty();
+  const trip = currentTrip();
+  showEditor({
+    title: "やることを編集",
+    fields: [
+      { name: "title", label: "やること", value: todo.title, required: true },
+      { name: "detail", label: "メモ", type: "textarea", value: todo.detail, rows: 3 },
+      { name: "due", label: "期限", value: todo.due },
+      { name: "owner", label: "担当", value: todo.owner },
+      {
+        name: "priority",
+        label: "重要度",
+        type: "select",
+        value: todo.priority || "medium",
+        options: [
+          { value: "high", label: "重要" },
+          { value: "medium", label: "確認" },
+          { value: "low", label: "あとで" }
+        ]
+      }
+    ],
+    onSave: () => {
+      todo.title = formValue("title");
+      todo.detail = formValue("detail");
+      todo.due = formValue("due");
+      todo.owner = formValue("owner");
+      todo.priority = formValue("priority") || "medium";
+      render();
+      markDirty();
+    },
+    onDelete: () => {
+      trip.todos = trip.todos.filter((item) => item.id !== id);
+      render();
+      markDirty();
+    }
+  });
+}
+
+function editNote(index) {
+  const trip = currentTrip();
+  showEditor({
+    title: "メモを編集",
+    fields: [
+      { name: "note", label: "メモ", type: "textarea", value: trip.notes[index], rows: 5, required: true }
+    ],
+    onSave: () => {
+      trip.notes[index] = formValue("note");
+      render();
+      markDirty();
+    },
+    onDelete: () => {
+      trip.notes.splice(index, 1);
+      render();
+      markDirty();
+    }
+  });
 }
 
 function newTrip() {
@@ -777,6 +974,17 @@ function newTrip() {
 }
 
 function bind() {
+  els.editorForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    activeEditor?.onSave?.();
+    closeEditor();
+  });
+  els.editorCancel?.addEventListener("click", closeEditor);
+  els.editorClose?.addEventListener("click", closeEditor);
+  els.editorDelete?.addEventListener("click", () => {
+    activeEditor?.onDelete?.();
+    closeEditor();
+  });
   document.querySelector("#trip-switcher").addEventListener("click", () => els.tripDialog.showModal());
   document.querySelector("#sync-settings").addEventListener("click", () => {
     renderShareLink();
