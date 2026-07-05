@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Studio</title>
-    <link rel="stylesheet" href="styles.css?v=20260704-todos1">
+    <link rel="stylesheet" href="styles.css?v=20260704-todos2">
   </head>
   <body>
     <main class="stage">
@@ -26,7 +26,7 @@
           <div class="weather-icon">☀️</div>
           <div>
             <strong id="trip-place">Sydney・晴れ 26°</strong>
-            <p id="sync-status">自動同期を準備中</p>
+            <p id="trip-status">航空券確定</p>
           </div>
           <div class="countdown">
             <span>あと</span>
@@ -119,6 +119,7 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=20260704-todos1" defer></script>
+    <p id="sync-status" class="sync-feedback" aria-live="polite"></p>
+    <script src="app.js?v=20260704-todos2" defer></script>
   </body>
 </html>
