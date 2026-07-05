@@ -23,6 +23,8 @@ const els = {
   timeline: document.querySelector("#timeline"),
   packingScore: document.querySelector("#packing-score"),
   budgetScore: document.querySelector("#budget-score"),
+  todoSummary: document.querySelector("#todo-summary"),
+  todoList: document.querySelector("#todo-list"),
   dayList: document.querySelector("#day-list"),
   spotList: document.querySelector("#spot-list"),
   noteList: document.querySelector("#note-list"),
@@ -125,6 +127,7 @@ function normalizeTrip(trip) {
     archived: Boolean(trip.archived),
     timezones: trip.timezones || {},
     flights: Array.isArray(trip.flights) ? trip.flights : [],
+    todos: Array.isArray(trip.todos) ? trip.todos : [],
     pois: Array.isArray(trip.pois) ? trip.pois : [],
     days: Array.isArray(trip.days) ? trip.days : [],
     notes: Array.isArray(trip.notes) ? trip.notes : []
@@ -325,9 +328,9 @@ function render() {
   renderDayTabs();
   renderTimeline();
   renderProgress();
+  renderTodos();
   renderDayList();
   renderSpots();
-  renderNotes();
   renderTrips();
   renderView();
   renderShareLink();
@@ -350,7 +353,7 @@ function renderHeader() {
     ? `${trip.destination.split("/")[0].trim()}・${trip.timezones.destination}`
     : `${trip.destination.split("/")[0].trim()}・晴れ 26°`;
   els.countdown.textContent = `${daysUntil(trip.startDate)}日`;
-  els.archiveToggle.textContent = trip.archived ? "現在Tripに戻す" : "過去Tripへ移動";
+  if (els.archiveToggle) els.archiveToggle.textContent = trip.archived ? "現在Tripに戻す" : "過去Tripへ移動";
 }
 
 function renderDayTabs() {
@@ -402,12 +405,65 @@ function renderTimeline() {
 
 function renderProgress() {
   const trip = currentTrip();
-  const packing = Math.min(95, 45 + trip.notes.length * 10);
+  const stats = todoStats(trip);
+  const packing = stats.total ? Math.round((stats.done / stats.total) * 100) : 0;
   const budget = trip.budget ? 64 : 20;
   els.packingScore.textContent = `${packing}%`;
   els.budgetScore.textContent = `${budget}%`;
   document.querySelector(".progress-card.pink meter").value = packing;
   document.querySelector(".progress-card.blue meter").value = budget;
+}
+
+function todoStats(trip) {
+  const total = trip.todos.length;
+  const done = trip.todos.filter((todo) => todo.status === "done").length;
+  const urgent = trip.todos.filter((todo) => todo.status !== "done" && todo.priority === "high").length;
+  return { total, done, urgent };
+}
+
+function priorityLabel(priority) {
+  if (priority === "high") return "重要";
+  if (priority === "medium") return "確認";
+  return "あとで";
+}
+
+function renderTodos() {
+  const trip = currentTrip();
+  const stats = todoStats(trip);
+  if (els.todoSummary) {
+    els.todoSummary.innerHTML = `
+      <strong>${stats.done}/${stats.total} 完了</strong>
+      <span>${stats.urgent ? `重要 ${stats.urgent}件` : "重要項目は処理済み"}</span>
+    `;
+  }
+  if (!els.todoList) return;
+  els.todoList.replaceChildren();
+  trip.todos.forEach((todo) => {
+    const card = document.createElement("article");
+    card.className = `todo-card ${todo.status === "done" ? "is-done" : ""}`;
+    card.innerHTML = `
+      <button class="todo-check" type="button" aria-label="完了切替">${todo.status === "done" ? "✓" : ""}</button>
+      <div>
+        <div class="todo-meta">
+          <span class="priority ${todo.priority || "medium"}">${priorityLabel(todo.priority)}</span>
+          <span>${todo.due || "期限未定"}</span>
+          <span>${todo.owner || "2人"}</span>
+        </div>
+        <strong>${todo.title}</strong>
+        <p>${todo.detail || ""}</p>
+      </div>
+    `;
+    card.querySelector(".todo-check").addEventListener("click", () => {
+      todo.status = todo.status === "done" ? "open" : "done";
+      render();
+      markDirty();
+    });
+    card.addEventListener("click", (event) => {
+      if (event.target.classList.contains("todo-check")) return;
+      editTodo(todo.id);
+    });
+    els.todoList.append(card);
+  });
 }
 
 function renderDayList() {
@@ -547,9 +603,36 @@ function addNote() {
   markDirty();
 }
 
+function addTodo() {
+  const title = prompt("やること");
+  if (!title) return;
+  currentTrip().todos.push({
+    id: uid("todo"),
+    title,
+    detail: prompt("メモ", "") || "",
+    due: prompt("期限", "出発1か月前") || "",
+    priority: "medium",
+    owner: "2人",
+    status: "open"
+  });
+  render();
+  markDirty();
+}
+
+function editTodo(id) {
+  const todo = currentTrip().todos.find((item) => item.id === id);
+  if (!todo) return;
+  todo.title = prompt("やること", todo.title) || todo.title;
+  todo.detail = prompt("メモ", todo.detail) ?? todo.detail;
+  todo.due = prompt("期限", todo.due) ?? todo.due;
+  todo.owner = prompt("担当", todo.owner) ?? todo.owner;
+  render();
+  markDirty();
+}
+
 function newTrip() {
   const id = uid("trip");
-  state.trips.unshift(normalizeTrip({ id, title: "新しい旅", destination: "行き先未定", notes: ["まず行きたい場所を3つ入れる。"] }));
+  state.trips.unshift(normalizeTrip({ id, title: "新しい旅", destination: "行き先未定", todos: [], notes: ["まず行きたい場所を3つ入れる。"] }));
   state.activeTripId = id;
   els.tripDialog.close();
   render();
@@ -588,10 +671,11 @@ function bind() {
     saveRemote();
   });
   document.querySelector("#new-trip").addEventListener("click", newTrip);
+  document.querySelector("#add-todo").addEventListener("click", addTodo);
   document.querySelector("#add-spot").addEventListener("click", addSpot);
   document.querySelector("#add-day").addEventListener("click", addDay);
-  document.querySelector("#add-note").addEventListener("click", addNote);
-  document.querySelector("#archive-toggle").addEventListener("click", () => {
+  document.querySelector("#add-note")?.addEventListener("click", addNote);
+  document.querySelector("#archive-toggle")?.addEventListener("click", () => {
     currentTrip().archived = !currentTrip().archived;
     render();
     markDirty();
