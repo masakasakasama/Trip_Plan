@@ -1,0 +1,10 @@
+name = "trip-plan-sync"
+main = "worker.js"
+compatibility_date = "2026-07-05"
+
+[vars]
+GITHUB_OWNER = "masakasakasama"
+GITHUB_REPO = "Trip_Plan"
+GITHUB_BRANCH = "main"
+STATE_PATH = "trip-plan.json"
+ALLOWED_ORIGIN = "https://masakasakasama.github.io"

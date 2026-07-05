@@ -72,7 +72,7 @@
         {
           "id": "todo-sydney-hotel",
           "title": "Sydney宿を確定",
-          "detail": "8/12朝着。荷物預け、早朝到着、空港からの移動、住所を確認。",
+          "detail": "8/12朝着。荷物預け、早朝到着、空港からの移動、ホテル周辺情報を確認。",
           "due": "7月中",
           "priority": "medium",
           "owner": "2人",
@@ -105,7 +105,7 @@
           "category": "hotel",
           "priority": "high",
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=BreakFree%20on%20Broadway%20Sydney",
-          "memo": "宿泊ホテル。3泊・大人2名・1室。チェックイン 8/12 14:00、チェックアウト 8/15 10:00。確認番号 C142AHB0512（Expedia確認番号 73488737906655）。"
+          "memo": "宿泊ホテル。3泊・大人2名・1室。チェックイン 8/12 14:00、チェックアウト 8/15 10:00。"
         },
         {
           "id": "poi-sydney-opera",
