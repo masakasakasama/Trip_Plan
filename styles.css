@@ -764,6 +764,14 @@ meter::-webkit-meter-bar {
   font-weight: 900;
 }
 
+.budget-summary small {
+  display: block;
+  margin-top: 4px;
+  color: #b09aaa;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
 .budget-summary meter {
   grid-column: 1 / -1;
   margin-top: 2px;
