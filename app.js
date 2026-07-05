@@ -16,7 +16,7 @@ const DATA_URL = "trip-plan.json";
 // GitHub Pagesは静的ホスティングでサーバーを持たないため、
 // どの端末でリンクを開いても常に自動書き込み同期させるにはクライアント側にトークンが要る。
 // この値は誰でも閲覧できる公開ソースになるため、スコープはこのリポジトリのcontentsのみに限定している。
-const EMBEDDED_TOKEN = "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";
+const EMBEDDED_TOKEN = "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";
 
 const TOKEN_KEY = "trip-plan-github-token-v1";
 const MAPS_KEY = "trip-plan-google-maps-key-v1";
