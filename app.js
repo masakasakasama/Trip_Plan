@@ -18,6 +18,7 @@ const els = {
   title: document.querySelector("#trip-title"),
   dates: document.querySelector("#trip-dates"),
   place: document.querySelector("#trip-place"),
+  weatherIcon: document.querySelector("#weather-icon"),
   tripStatus: document.querySelector("#trip-status"),
   status: document.querySelector("#sync-status"),
   countdown: document.querySelector("#countdown-days"),
@@ -29,7 +30,8 @@ const els = {
   todoList: document.querySelector("#todo-list"),
   dayList: document.querySelector("#day-list"),
   spotList: document.querySelector("#spot-list"),
-  noteList: document.querySelector("#note-list"),
+  budgetSummary: document.querySelector("#budget-summary"),
+  budgetList: document.querySelector("#budget-list"),
   tripDialog: document.querySelector("#trip-dialog"),
   tripList: document.querySelector("#trip-list"),
   settingsDialog: document.querySelector("#settings-dialog"),
@@ -197,11 +199,10 @@ function normalizeTrip(trip) {
     lastUpdated: valueOr(trip.lastUpdated, new Date().toISOString()),
     archived: Boolean(trip.archived),
     timezones: trip.timezones || {},
-    flights: Array.isArray(trip.flights) ? trip.flights : [],
     todos: Array.isArray(trip.todos) ? trip.todos : [],
     pois: Array.isArray(trip.pois) ? trip.pois : [],
     days: Array.isArray(trip.days) ? trip.days : [],
-    notes: Array.isArray(trip.notes) ? trip.notes : []
+    budgetItems: Array.isArray(trip.budgetItems) ? trip.budgetItems : []
   };
 }
 
@@ -219,10 +220,16 @@ function normalize(data) {
     id: "legacy-trip",
     ...(data.trip || {}),
     pois: data.pois || [],
-    days: data.days || [],
-    notes: data.notes || []
+    days: data.days || []
   });
   return { schemaVersion: 2, activeTripId: trip.id, trips: [trip] };
+}
+
+// innerHTML に差し込む前にユーザー入力をエスケープ。
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
 }
 
 function formatShortDate(value) {
@@ -247,6 +254,63 @@ function daysUntil(value) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return Math.max(0, Math.ceil((start - today) / 86400000));
+}
+
+// 都市名(小文字)ごとの月別平年値。実測予報ではなく季節の目安。
+const CLIMATE_BY_CITY = {
+  sydney: [
+    { high: 26, icon: "☀️", label: "夏・晴れ多め" },
+    { high: 26, icon: "☀️", label: "夏・晴れ多め" },
+    { high: 24, icon: "🌤️", label: "晩夏・穏やか" },
+    { high: 22, icon: "🌤️", label: "秋・過ごしやすい" },
+    { high: 19, icon: "⛅", label: "秋・肌寒い朝" },
+    { high: 17, icon: "⛅", label: "冬・肌寒い" },
+    { high: 16, icon: "🌥️", label: "冬・涼しい" },
+    { high: 17, icon: "🌤️", label: "冬・涼しく乾燥" },
+    { high: 19, icon: "🌤️", label: "春先・穏やか" },
+    { high: 22, icon: "🌤️", label: "春・過ごしやすい" },
+    { high: 23, icon: "☀️", label: "初夏・晴れ増加" },
+    { high: 25, icon: "☀️", label: "夏・晴れ多め" }
+  ],
+  tokyo: [
+    { high: 10, icon: "🌥️", label: "冬・乾燥" },
+    { high: 11, icon: "🌥️", label: "冬・乾燥" },
+    { high: 14, icon: "🌤️", label: "春先" },
+    { high: 19, icon: "🌤️", label: "春・穏やか" },
+    { high: 23, icon: "🌦️", label: "初夏" },
+    { high: 26, icon: "🌧️", label: "梅雨" },
+    { high: 30, icon: "☀️", label: "夏・蒸し暑い" },
+    { high: 31, icon: "☀️", label: "夏・蒸し暑い" },
+    { high: 27, icon: "🌦️", label: "台風シーズン" },
+    { high: 22, icon: "🌤️", label: "秋・過ごしやすい" },
+    { high: 17, icon: "🌤️", label: "晩秋" },
+    { high: 12, icon: "🌥️", label: "冬・乾燥" }
+  ],
+  manila: [
+    { high: 30, icon: "☀️", label: "乾季・暑い" },
+    { high: 31, icon: "☀️", label: "乾季・暑い" },
+    { high: 32, icon: "☀️", label: "乾季・暑い" },
+    { high: 33, icon: "☀️", label: "乾季・猛暑" },
+    { high: 33, icon: "⛈️", label: "雨季入り" },
+    { high: 32, icon: "⛈️", label: "雨季・スコール" },
+    { high: 31, icon: "🌧️", label: "雨季・スコール" },
+    { high: 31, icon: "🌧️", label: "雨季・スコール" },
+    { high: 31, icon: "🌧️", label: "雨季・スコール" },
+    { high: 31, icon: "🌦️", label: "雨季後半" },
+    { high: 31, icon: "🌤️", label: "乾季入り" },
+    { high: 30, icon: "☀️", label: "乾季・暑い" }
+  ]
+};
+
+// destinationの文字列から都市キーを推定し、月の平年値を返す（実測天気予報ではなく季節目安）。
+function climateEstimate(destination, dateStr) {
+  if (!destination || !dateStr) return null;
+  const lower = destination.toLowerCase();
+  const key = Object.keys(CLIMATE_BY_CITY).find((city) => lower.includes(city));
+  if (!key) return null;
+  const month = Number(dateStr.slice(5, 7)) - 1;
+  const entry = CLIMATE_BY_CITY[key][month];
+  return entry ? { ...entry } : null;
 }
 
 // タイムゾーン略称 -> UTCオフセット(分)。trip.timezones に無い略称の保険。
@@ -370,6 +434,21 @@ function flatTimelineItems(trip) {
     });
   });
   return list;
+}
+
+// このtripで実際に使われている（または想定される）タイムゾーン略称一覧。
+function tzOptionsForTrip(trip) {
+  const found = new Set();
+  Object.values(trip.timezones || {}).forEach((value) => {
+    const parsed = parseZoneString(value);
+    if (parsed) found.add(parsed.abbr);
+  });
+  (trip.days || []).forEach((day) => {
+    (day.items || []).forEach((item) => {
+      if (item.timezone) found.add(String(item.timezone).toUpperCase());
+    });
+  });
+  return Array.from(found).sort().map((abbr) => ({ value: abbr, label: abbr }));
 }
 
 function poiById(id) {
@@ -604,6 +683,7 @@ function render() {
   renderTodos();
   renderDayList();
   renderSpots();
+  renderBudget();
   renderMap();
   renderTrips();
   renderView();
@@ -624,9 +704,14 @@ function renderHeader() {
   const trip = currentTrip();
   els.title.textContent = trip.title;
   els.dates.textContent = `${trip.startDate?.replaceAll("-", "・")} - ${formatShortDate(trip.endDate)}`;
-  els.place.textContent = trip.timezones?.destination
-    ? `${trip.destination.split("/")[0].trim()}・${trip.timezones.destination}`
-    : `${trip.destination.split("/")[0].trim()}・晴れ 26°`;
+
+  const cityLabel = trip.destination.split("/")[0].trim();
+  const climate = climateEstimate(trip.destination, trip.startDate);
+  if (els.weatherIcon) els.weatherIcon.textContent = climate?.icon || "🌡️";
+  els.place.textContent = climate
+    ? `${cityLabel}・${climate.label} 平年${climate.high}°`
+    : `${cityLabel}・季節の目安なし`;
+
   if (els.tripStatus) els.tripStatus.textContent = trip.status || "旅行準備中";
   els.countdown.textContent = `${daysUntil(trip.startDate)}日`;
   if (els.archiveToggle) els.archiveToggle.textContent = trip.archived ? "現在Tripに戻す" : "過去Tripへ移動";
@@ -639,7 +724,7 @@ function renderDayTabs() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = index === activeDayIndex ? "is-active" : "";
-    button.innerHTML = `<strong>${day.title || `Day ${index + 1}`}</strong><span>${formatTabDate(day.date)}</span>`;
+    button.innerHTML = `<strong>${escapeHtml(day.title || `Day ${index + 1}`)}</strong><span>${escapeHtml(formatTabDate(day.date))}</span>`;
     button.addEventListener("click", () => {
       activeDayIndex = index;
       renderTimeline();
@@ -661,7 +746,7 @@ function renderTimeline() {
   const flat = flatTimelineItems(trip);
   day.items.forEach((item, index) => {
     const poi = poiById(item.poiId);
-    const zone = item.timezone ? `<span>${item.timezone}</span>` : "";
+    const zone = item.timezone ? `<span>${escapeHtml(item.timezone)}</span>` : "";
 
     const flatIndex = flat.findIndex((entry) => entry.item.id === item.id);
     const current = flat[flatIndex];
@@ -673,7 +758,7 @@ function renderTimeline() {
       const label = formatDuration(current.instant - previous.instant);
       if (label) {
         const cross = previous.item.timezone && item.timezone && previous.item.timezone !== item.timezone;
-        const suffix = cross ? ` <b>${previous.item.timezone}→${item.timezone}</b>` : "";
+        const suffix = cross ? ` <b>${escapeHtml(previous.item.timezone)}→${escapeHtml(item.timezone)}</b>` : "";
         elapsed = `<span class="elapsed${cross ? " is-cross" : ""}">前から ${label}${suffix}</span>`;
       }
     }
@@ -681,19 +766,24 @@ function renderTimeline() {
     // JST補助表示は現地時刻から自動換算（手入力 homeTime はフォールバック）。
     const computedHome = homeTimeLabel(current?.instant, current?.date, trip);
     const homeText = computedHome || (item.homeTime ? `JST ${item.homeTime}` : "");
-    const homeTime = homeText ? `<em>${homeText}</em>` : "";
+    const homeTime = homeText ? `<em>${escapeHtml(homeText)}</em>` : "";
+
+    // 航空券の便名・航空会社・機材を旅程に統合表示。
+    const flightBits = [item.flightNumber, item.airline, item.aircraft].filter(Boolean);
+    const flightInfo = flightBits.length ? `<small class="flight-info">${escapeHtml(flightBits.join(" ・ "))}</small>` : "";
 
     const row = document.createElement("article");
     row.className = "timeline-row";
     row.innerHTML = `
       <div class="time-cell">
-        <time>${item.time || "--:--"}</time>
+        <time>${escapeHtml(item.time || "--:--")}</time>
         ${zone}
       </div>
       <span class="dot ${index % 2 ? "blue" : "pink"}"></span>
       <button class="event-card" type="button">
-        <strong>${item.title}</strong>
-        <small>${poi ? poi.name : item.memo || "メモなし"}</small>
+        <strong>${escapeHtml(item.title)}</strong>
+        <small>${escapeHtml(poi ? poi.name : item.memo || "メモなし")}</small>
+        ${flightInfo}
         <div class="event-foot">${homeTime}${elapsed}</div>
       </button>
     `;
@@ -702,11 +792,19 @@ function renderTimeline() {
   });
 }
 
+function budgetStats(trip) {
+  const spent = trip.budgetItems.reduce((sum, entry) => sum + (Number(entry.actual) || 0), 0);
+  const planned = trip.budgetItems.reduce((sum, entry) => sum + (Number(entry.planned) || 0), 0);
+  const total = trip.budget || 0;
+  const percent = total ? Math.min(100, Math.round((spent / total) * 100)) : 0;
+  return { spent, planned, total, percent };
+}
+
 function renderProgress() {
   const trip = currentTrip();
   const stats = todoStats(trip);
   const packing = stats.total ? Math.round((stats.done / stats.total) * 100) : 0;
-  const budget = trip.budget ? 64 : 20;
+  const budget = budgetStats(trip).percent;
   els.packingScore.textContent = `${packing}%`;
   els.budgetScore.textContent = `${budget}%`;
   document.querySelector(".progress-card.pink meter").value = packing;
@@ -744,12 +842,12 @@ function renderTodos() {
       <button class="todo-check" type="button" aria-label="完了切替">${todo.status === "done" ? "✓" : ""}</button>
       <div>
         <div class="todo-meta">
-          <span class="priority ${todo.priority || "medium"}">${priorityLabel(todo.priority)}</span>
-          <span>${todo.due || "期限未定"}</span>
-          <span>${todo.owner || "2人"}</span>
+          <span class="priority ${todo.priority || "medium"}">${escapeHtml(priorityLabel(todo.priority))}</span>
+          <span>${escapeHtml(todo.due || "期限未定")}</span>
+          <span>${escapeHtml(todo.owner || "2人")}</span>
         </div>
-        <strong>${todo.title}</strong>
-        <p>${todo.detail || ""}</p>
+        <strong>${escapeHtml(todo.title)}</strong>
+        <p>${escapeHtml(todo.detail || "")}</p>
       </div>
     `;
     card.querySelector(".todo-check").addEventListener("click", () => {
@@ -771,7 +869,7 @@ function renderDayList() {
   trip.days.forEach((day) => {
     const card = document.createElement("article");
     card.className = "list-card";
-    card.innerHTML = `<strong>${day.title} / ${formatShortDate(day.date)}</strong><p>${day.theme || "テーマ未設定"}</p><small>${day.items.length}予定</small>`;
+    card.innerHTML = `<strong>${escapeHtml(day.title)} / ${escapeHtml(formatShortDate(day.date))}</strong><p>${escapeHtml(day.theme || "テーマ未設定")}</p><small>${day.items.length}予定</small>`;
     card.addEventListener("click", () => editDay(day.id));
     els.dayList.append(card);
   });
@@ -783,7 +881,7 @@ function renderSpots() {
   trip.pois.forEach((poi) => {
     const card = document.createElement("article");
     card.className = "list-card spot-card";
-    card.innerHTML = `<strong>${poi.name}</strong><p>${poi.area}・${poi.memo || "メモなし"}</p><a href="${mapsUrl(poi)}" target="_blank" rel="noreferrer">Mapで開く</a>`;
+    card.innerHTML = `<strong>${escapeHtml(poi.name)}</strong><p>${escapeHtml(poi.area)}・${escapeHtml(poi.memo || "メモなし")}</p><a href="${escapeHtml(mapsUrl(poi))}" target="_blank" rel="noreferrer">Mapで開く</a>`;
     card.addEventListener("click", (event) => {
       if (event.target.tagName !== "A") editPoi(poi.id);
     });
@@ -832,15 +930,34 @@ function renderRouteSummary(points) {
   });
 }
 
-function renderNotes() {
+function renderBudget() {
   const trip = currentTrip();
-  els.noteList.replaceChildren();
-  trip.notes.forEach((note, index) => {
+  const stats = budgetStats(trip);
+  if (els.budgetSummary) {
+    els.budgetSummary.innerHTML = `
+      <div><strong>${stats.total.toLocaleString()}円</strong><span>予算</span></div>
+      <div><strong>${stats.spent.toLocaleString()}円</strong><span>使った</span></div>
+      <div><strong>${Math.max(0, stats.total - stats.spent).toLocaleString()}円</strong><span>残り</span></div>
+      <meter min="0" max="100" value="${stats.percent}"></meter>
+    `;
+  }
+  if (!els.budgetList) return;
+  els.budgetList.replaceChildren();
+  trip.budgetItems.forEach((entry) => {
     const card = document.createElement("article");
-    card.className = "list-card";
-    card.innerHTML = `<strong>Memo ${index + 1}</strong><p>${note || "メモなし"}</p>`;
-    card.addEventListener("click", () => editNote(index));
-    els.noteList.append(card);
+    card.className = "list-card budget-card";
+    card.innerHTML = `
+      <div>
+        <strong>${escapeHtml(entry.label)}</strong>
+        <p>${escapeHtml(entry.category || "未分類")}${entry.memo ? `・${escapeHtml(entry.memo)}` : ""}</p>
+      </div>
+      <div class="amount">
+        ${(Number(entry.actual) || 0).toLocaleString()}円
+        <small>予定 ${(Number(entry.planned) || 0).toLocaleString()}円</small>
+      </div>
+    `;
+    card.addEventListener("click", () => editBudgetItem(entry.id));
+    els.budgetList.append(card);
   });
 }
 
@@ -850,7 +967,7 @@ function renderTrips() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = trip.id === state.activeTripId ? "trip-choice is-active" : "trip-choice";
-    button.innerHTML = `<strong>${trip.title}</strong><span>${trip.archived ? "過去Trip" : "現在Trip"}・${trip.destination}</span>`;
+    button.innerHTML = `<strong>${escapeHtml(trip.title)}</strong><span>${trip.archived ? "過去Trip" : "現在Trip"}・${escapeHtml(trip.destination)}</span>`;
     button.addEventListener("click", () => {
       state.activeTripId = trip.id;
       activeDayIndex = 0;
@@ -957,14 +1074,21 @@ function editItem(dayId, itemId) {
     { value: "", label: "場所なし" },
     ...currentTrip().pois.map((poi) => ({ value: poi.id, label: poi.name }))
   ];
+  const tzOptions = tzOptionsForTrip(currentTrip());
+  const timezoneOptions = tzOptions.some((option) => option.value === item.timezone)
+    ? tzOptions
+    : [...tzOptions, { value: item.timezone || "", label: item.timezone || "未設定" }];
   showEditor({
     title: "予定を編集",
     fields: [
       { name: "time", label: "現地時間", type: "time", value: item.time, required: true },
-      { name: "timezone", label: "タイムゾーン (例: JST / PHT / AEST)", value: item.timezone },
+      { name: "timezone", label: "タイムゾーン", type: "select", value: item.timezone, options: timezoneOptions },
       { name: "homeTime", label: "JST補助メモ（空なら自動換算）", type: "time", value: item.homeTime },
       { name: "title", label: "予定名", value: item.title, required: true },
       { name: "poiId", label: "場所", type: "select", value: item.poiId, options: poiOptions },
+      { name: "flightNumber", label: "便名（任意）", value: item.flightNumber, placeholder: "例: PR423" },
+      { name: "airline", label: "航空会社（任意）", value: item.airline },
+      { name: "aircraft", label: "機材（任意）", value: item.aircraft },
       { name: "memo", label: "メモ", type: "textarea", value: item.memo, rows: 4 }
     ],
     onSave: () => {
@@ -973,6 +1097,9 @@ function editItem(dayId, itemId) {
       item.homeTime = formValue("homeTime");
       item.title = formValue("title");
       item.poiId = formValue("poiId");
+      item.flightNumber = formValue("flightNumber");
+      item.airline = formValue("airline");
+      item.aircraft = formValue("aircraft");
       item.memo = formValue("memo");
       render();
       markDirty();
@@ -997,20 +1124,6 @@ function addDay() {
   activeDayIndex = trip.days.length - 1;
   render();
   markDirty();
-}
-
-function addNote() {
-  showEditor({
-    title: "メモを追加",
-    fields: [
-      { name: "note", label: "メモ", type: "textarea", rows: 5, required: true }
-    ],
-    onSave: () => {
-      currentTrip().notes.push(formValue("note"));
-      render();
-      markDirty();
-    }
-  });
 }
 
 function addTodo() {
@@ -1089,20 +1202,56 @@ function editTodo(id) {
   });
 }
 
-function editNote(index) {
+function addBudgetItem() {
   const trip = currentTrip();
   showEditor({
-    title: "メモを編集",
+    title: "予算項目を追加",
     fields: [
-      { name: "note", label: "メモ", type: "textarea", value: trip.notes[index], rows: 5, required: true }
+      { name: "label", label: "項目名", required: true, placeholder: "例: 航空券" },
+      { name: "category", label: "カテゴリ", value: "その他" },
+      { name: "planned", label: "予定金額", type: "number" },
+      { name: "actual", label: "使った金額", type: "number" },
+      { name: "memo", label: "メモ", type: "textarea", rows: 3 }
     ],
     onSave: () => {
-      trip.notes[index] = formValue("note");
+      trip.budgetItems.push({
+        id: uid("budget"),
+        label: formValue("label"),
+        category: formValue("category"),
+        planned: Number(formValue("planned")) || 0,
+        actual: Number(formValue("actual")) || 0,
+        memo: formValue("memo")
+      });
+      render();
+      markDirty();
+    }
+  });
+}
+
+function editBudgetItem(id) {
+  const trip = currentTrip();
+  const entry = trip.budgetItems.find((item) => item.id === id);
+  if (!entry) return;
+  showEditor({
+    title: "予算項目を編集",
+    fields: [
+      { name: "label", label: "項目名", value: entry.label, required: true },
+      { name: "category", label: "カテゴリ", value: entry.category },
+      { name: "planned", label: "予定金額", type: "number", value: entry.planned },
+      { name: "actual", label: "使った金額", type: "number", value: entry.actual },
+      { name: "memo", label: "メモ", type: "textarea", value: entry.memo, rows: 3 }
+    ],
+    onSave: () => {
+      entry.label = formValue("label");
+      entry.category = formValue("category");
+      entry.planned = Number(formValue("planned")) || 0;
+      entry.actual = Number(formValue("actual")) || 0;
+      entry.memo = formValue("memo");
       render();
       markDirty();
     },
     onDelete: () => {
-      trip.notes.splice(index, 1);
+      trip.budgetItems = trip.budgetItems.filter((item) => item.id !== id);
       render();
       markDirty();
     }
@@ -1111,7 +1260,7 @@ function editNote(index) {
 
 function newTrip() {
   const id = uid("trip");
-  state.trips.unshift(normalizeTrip({ id, title: "新しい旅", destination: "行き先未定", todos: [], notes: ["まず行きたい場所を3つ入れる。"] }));
+  state.trips.unshift(normalizeTrip({ id, title: "新しい旅", destination: "行き先未定" }));
   state.activeTripId = id;
   els.tripDialog.close();
   render();
@@ -1173,7 +1322,7 @@ function bind() {
   document.querySelector("#add-todo").addEventListener("click", addTodo);
   document.querySelector("#add-spot").addEventListener("click", addSpot);
   document.querySelector("#add-day").addEventListener("click", addDay);
-  document.querySelector("#add-note")?.addEventListener("click", addNote);
+  document.querySelector("#add-budget-item")?.addEventListener("click", addBudgetItem);
   document.querySelector("#archive-toggle")?.addEventListener("click", () => {
     currentTrip().archived = !currentTrip().archived;
     render();
@@ -1191,5 +1340,8 @@ importTokenFromLink();
 bind();
 loadRemote();
 setInterval(() => {
-  if (!dirty && !saving) loadRemote();
+  if (!dirty && !saving && document.visibilityState === "visible") loadRemote();
 }, POLL_MS);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && !dirty && !saving) loadRemote();
+});

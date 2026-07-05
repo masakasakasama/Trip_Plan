@@ -22,132 +22,7 @@
         "destination": "AEST UTC+10",
         "rule": "主表示は各空港の現地時刻。日本時間は補助表示。Sydneyは2026年8月はAEST UTC+10で、夏時間ではない。"
       },
-      "flights": [
-        {
-          "id": "flight-outbound",
-          "route": "Tokyo - Sydney",
-          "status": "Confirmed",
-          "departureDate": "2026-08-11",
-          "arrivalDate": "2026-08-12",
-          "totalFlightTime": "28h 55m",
-          "segments": [
-            {
-              "flightNumber": "PR423",
-              "route": "Tokyo - Manila",
-              "airline": "Philippine Airlines",
-              "aircraft": "Airbus A321",
-              "depart": {
-                "airport": "Tokyo International Haneda",
-                "code": "HND",
-                "city": "Tokyo",
-                "date": "2026-08-11",
-                "time": "02:05",
-                "timezone": "JST"
-              },
-              "arrive": {
-                "airport": "Ninoy Aquino International",
-                "code": "MNL",
-                "city": "Manila",
-                "date": "2026-08-11",
-                "time": "05:40",
-                "timezone": "PHT"
-              },
-              "duration": "4h 35m"
-            },
-            {
-              "layover": true,
-              "airport": "Ninoy Aquino International",
-              "code": "MNL",
-              "duration": "15h 55m"
-            },
-            {
-              "flightNumber": "PR211",
-              "route": "Manila - Sydney",
-              "airline": "Philippine Airlines",
-              "aircraft": "Airbus A330-300",
-              "depart": {
-                "airport": "Ninoy Aquino International",
-                "code": "MNL",
-                "city": "Manila",
-                "date": "2026-08-11",
-                "time": "21:35",
-                "timezone": "PHT"
-              },
-              "arrive": {
-                "airport": "Kingsford Smith",
-                "code": "SYD",
-                "city": "Sydney",
-                "date": "2026-08-12",
-                "time": "08:00",
-                "timezone": "AEST"
-              },
-              "duration": "8h 25m"
-            }
-          ]
-        },
-        {
-          "id": "flight-return",
-          "route": "Sydney - Tokyo",
-          "status": "Confirmed",
-          "departureDate": "2026-08-15",
-          "arrivalDate": "2026-08-16",
-          "totalFlightTime": "15h 30m",
-          "segments": [
-            {
-              "flightNumber": "PR212",
-              "route": "Sydney - Manila",
-              "airline": "Philippine Airlines",
-              "aircraft": "Airbus A330-300",
-              "depart": {
-                "airport": "Kingsford Smith",
-                "code": "SYD",
-                "city": "Sydney",
-                "date": "2026-08-15",
-                "time": "10:15",
-                "timezone": "AEST"
-              },
-              "arrive": {
-                "airport": "Ninoy Aquino International",
-                "code": "MNL",
-                "city": "Manila",
-                "date": "2026-08-15",
-                "time": "16:40",
-                "timezone": "PHT"
-              },
-              "duration": "8h 25m"
-            },
-            {
-              "layover": true,
-              "airport": "Ninoy Aquino International",
-              "code": "MNL",
-              "duration": "2h 35m"
-            },
-            {
-              "flightNumber": "PR424",
-              "route": "Manila - Tokyo",
-              "airline": "Philippine Airlines",
-              "aircraft": "Airbus A321",
-              "depart": {
-                "airport": "Ninoy Aquino International",
-                "code": "MNL",
-                "city": "Manila",
-                "date": "2026-08-15",
-                "time": "19:15",
-                "timezone": "PHT"
-              },
-              "arrive": {
-                "airport": "Tokyo International Haneda",
-                "code": "HND",
-                "city": "Tokyo",
-                "date": "2026-08-16",
-                "time": "00:45",
-                "timezone": "JST"
-              },
-              "duration": "4h 30m"
-            }
-          ]
-        }
-      ],
+      "budgetItems": [],
       "todos": [
         {
           "id": "todo-passport",
@@ -265,6 +140,9 @@
               "homeTime": "02:05",
               "title": "PR423 Haneda発",
               "poiId": "",
+              "flightNumber": "PR423",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A321",
               "memo": "Tokyo HND → Manila MNL。航空券どおり羽田の現地時刻。"
             },
             {
@@ -274,6 +152,9 @@
               "homeTime": "06:40",
               "title": "Manila着",
               "poiId": "",
+              "flightNumber": "PR423",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A321",
               "memo": "MNL到着。ここからManila現地時刻で読む。"
             },
             {
@@ -292,6 +173,9 @@
               "homeTime": "22:35",
               "title": "PR211 Manila発",
               "poiId": "",
+              "flightNumber": "PR211",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A330-300",
               "memo": "Manila MNL → Sydney SYD。出発はManila現地時刻。"
             }
           ]
@@ -309,6 +193,9 @@
               "homeTime": "07:00",
               "title": "Sydney着",
               "poiId": "",
+              "flightNumber": "PR211",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A330-300",
               "memo": "SYD到着。到着日は詰め込まず時差と疲労を吸収。"
             },
             {
@@ -378,6 +265,9 @@
               "homeTime": "09:15",
               "title": "PR212 Sydney発",
               "poiId": "",
+              "flightNumber": "PR212",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A330-300",
               "memo": "Sydney SYD → Manila MNL。航空券どおりSydney現地時刻。"
             },
             {
@@ -387,6 +277,9 @@
               "homeTime": "17:40",
               "title": "Manila着",
               "poiId": "",
+              "flightNumber": "PR212",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A330-300",
               "memo": "MNL到着。ここからManila現地時刻。"
             },
             {
@@ -405,6 +298,9 @@
               "homeTime": "20:15",
               "title": "PR424 Manila発",
               "poiId": "",
+              "flightNumber": "PR424",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A321",
               "memo": "Manila MNL → Tokyo HND。出発はManila現地時刻。"
             }
           ]
@@ -422,16 +318,13 @@
               "homeTime": "00:45",
               "title": "Haneda着",
               "poiId": "",
+              "flightNumber": "PR424",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A321",
               "memo": "Tokyo HND到着 / JST。深夜帰着なので帰宅手段を確認。"
             }
           ]
         }
-      ],
-      "notes": [
-        "航空券の出発/到着時刻は、それぞれの空港の現地時刻で読む。予定表も同じく現地時刻を主表示にする。",
-        "日本時間は体内時計・連絡・睡眠調整のために補助メモで表示する。",
-        "日付またぎは +1 day だけでなく、実際の日付のDayを分けると混乱しにくい。",
-        "Sydneyは2026年8月はAEST UTC+10。ManilaはPHT UTC+8。TokyoはJST UTC+9。"
       ]
     }
   ]

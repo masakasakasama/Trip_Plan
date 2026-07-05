@@ -312,6 +312,14 @@ h1 {
   font-size: 0.9rem;
 }
 
+.event-card .flight-info {
+  display: block;
+  margin-top: 5px;
+  color: #93a0c9;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .event-foot {
   display: flex;
   flex-wrap: wrap;
@@ -611,6 +619,69 @@ meter::-webkit-meter-bar {
   color: #5d9aaa;
 }
 
+.budget-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+  border-radius: 18px;
+  background: var(--blue-soft);
+  padding: 15px;
+}
+
+.budget-summary div {
+  text-align: center;
+}
+
+.budget-summary strong {
+  display: block;
+  color: #5d9aaa;
+  font-size: 1.05rem;
+}
+
+.budget-summary span {
+  color: #8ca4ab;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.budget-summary meter {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+}
+
+.budget-summary meter::-webkit-meter-optimum-value {
+  border-radius: 999px;
+  background: #83c9d8;
+}
+
+.budget-summary meter::-moz-meter-bar {
+  background: #83c9d8;
+}
+
+.budget-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.budget-card .amount {
+  flex: 0 0 auto;
+  text-align: right;
+  font-weight: 900;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.budget-card .amount small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.76rem;
+}
+
 .spot-card a {
   display: inline-flex;
   margin-top: 10px;
@@ -636,7 +707,7 @@ meter::-webkit-meter-bar {
   bottom: 0;
   left: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   min-height: var(--nav-height);
   border-top: 1px solid var(--line);
   background: rgba(255, 253, 251, 0.94);
