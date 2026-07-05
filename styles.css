@@ -146,9 +146,17 @@ h1 {
   font-size: 0.9rem;
 }
 
-.status-card p[data-tone="warn"],
-#sync-status[data-tone="warn"] {
+.status-card p[data-tone="warn"] {
   color: #c1874d;
+}
+
+.sync-feedback {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .countdown {

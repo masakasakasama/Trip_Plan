@@ -17,6 +17,7 @@ const els = {
   title: document.querySelector("#trip-title"),
   dates: document.querySelector("#trip-dates"),
   place: document.querySelector("#trip-place"),
+  tripStatus: document.querySelector("#trip-status"),
   status: document.querySelector("#sync-status"),
   countdown: document.querySelector("#countdown-days"),
   dayTabs: document.querySelector("#day-tabs"),
@@ -91,7 +92,8 @@ async function copyText(text) {
 }
 
 function setStatus(text, tone = "") {
-  els.status.textContent = text;
+  if (!els.status) return;
+  els.status.textContent = "";
   els.status.dataset.tone = tone;
 }
 
@@ -352,6 +354,7 @@ function renderHeader() {
   els.place.textContent = trip.timezones?.destination
     ? `${trip.destination.split("/")[0].trim()}・${trip.timezones.destination}`
     : `${trip.destination.split("/")[0].trim()}・晴れ 26°`;
+  if (els.tripStatus) els.tripStatus.textContent = trip.status || "旅行準備中";
   els.countdown.textContent = `${daysUntil(trip.startDate)}日`;
   if (els.archiveToggle) els.archiveToggle.textContent = trip.archived ? "現在Tripに戻す" : "過去Tripへ移動";
 }
