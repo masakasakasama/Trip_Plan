@@ -1,887 +1,336 @@
 {
   "schemaVersion": 2,
-  "activeTripId": "sydney-2026",
+  "activeTripId": "australia-2026",
   "trips": [
     {
-      "id": "sydney-2026",
-      "title": "Sydney 2026",
-      "destination": "Sydney / Manila transit",
-      "startDate": "2026-08-10",
+      "id": "australia-2026",
+      "title": "Australia 2026",
+      "destination": "Sydney",
+      "startDate": "2026-08-11",
       "endDate": "2026-08-16",
-      "travelers": [
-        "2?"
-      ],
-      "mood": "??????????????????????????????",
-      "budget": 0,
-      "status": "?????",
-      "lastUpdated": "2026-07-05T04:30:34.492Z",
+      "travelers": ["夫", "Rebecca"],
+      "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
+      "budget": 450000,
+      "status": "航空券確定",
+      "lastUpdated": "2026-07-05T01:09:53.426Z",
       "archived": false,
-      "source": "Sanitized Sydney trip data",
+      "source": "Flight booking screenshots",
       "timezones": {
         "home": "JST UTC+9",
         "tokyo": "JST UTC+9",
         "manila": "PHT UTC+8",
         "destination": "AEST UTC+10",
-        "rule": "時刻は各現地時刻"
+        "rule": "主表示は各空港の現地時刻。日本時間は補助表示。Sydneyは2026年8月はAEST UTC+10で、夏時間ではない。"
       },
       "budgetItems": [],
       "todos": [
         {
-          "id": "check-1",
-          "title": "パスポート",
-          "detail": "",
-          "due": "????",
+          "id": "todo-passport",
+          "title": "パスポート有効期限を2人分確認",
+          "detail": "夫・Rebeccaそれぞれ。2026年8月旅行なので、残存期間と氏名表記を航空券と照合する。",
+          "due": "今週",
           "priority": "high",
-          "owner": "2?",
+          "owner": "2人",
           "status": "open"
         },
         {
-          "id": "check-2",
-          "title": "ETA承認PDF",
-          "detail": "",
-          "due": "????",
+          "id": "todo-australia-eta",
+          "title": "オーストラリアETAを2人分申請",
+          "detail": "国籍ごとに条件確認。日本パスポート前提ならETA subclass 601。パスポート更新後に申請。",
+          "due": "出発1か月前まで",
           "priority": "high",
-          "owner": "2?",
+          "owner": "2人",
           "status": "open"
         },
         {
-          "id": "check-3",
-          "title": "フィリピンeTravel QR",
-          "detail": "",
-          "due": "????",
+          "id": "todo-insurance-rebecca",
+          "title": "Rebeccaの海外旅行保険を加入確認",
+          "detail": "医療費、キャッシュレス診療、携行品、航空機遅延、乗継ミス、既往症条件を確認。",
+          "due": "航空券確定後すぐ",
           "priority": "high",
-          "owner": "2?",
+          "owner": "Rebecca",
           "status": "open"
         },
         {
-          "id": "check-4",
-          "title": "航空券PDF",
-          "detail": "",
-          "due": "????",
+          "id": "todo-insurance-husband",
+          "title": "夫の海外旅行保険を加入確認",
+          "detail": "Rebeccaと同じ条件で比較。クレカ付帯なら利用条件と補償額を確認。",
+          "due": "航空券確定後すぐ",
           "priority": "high",
-          "owner": "2?",
+          "owner": "夫",
           "status": "open"
         },
         {
-          "id": "check-5",
-          "title": "ホテル控えPDF",
-          "detail": "",
-          "due": "????",
+          "id": "todo-manila-transit",
+          "title": "Manila長時間乗継の方針を決める",
+          "detail": "往路MNL 15h55m。空港内待機か入国するかを決める。入国するならeTravelと残存期間を確認。",
+          "due": "7月中",
           "priority": "high",
-          "owner": "2?",
+          "owner": "2人",
           "status": "open"
         },
         {
-          "id": "check-6",
-          "title": "クレカ2枚",
-          "detail": "",
-          "due": "????",
+          "id": "todo-sydney-hotel",
+          "title": "Sydney宿を確定",
+          "detail": "8/12朝着。荷物預け、早朝到着、空港からの移動、住所を確認。",
+          "due": "7月中",
           "priority": "medium",
-          "owner": "2?",
+          "owner": "2人",
           "status": "open"
         },
         {
-          "id": "check-7",
-          "title": "少額現金",
-          "detail": "",
-          "due": "????",
+          "id": "todo-airport-transport",
+          "title": "羽田深夜移動と帰国日の帰宅手段を決める",
+          "detail": "往路は8/11 02:05発なので前日深夜移動。復路は8/16 00:45羽田着。",
+          "due": "出発2週間前まで",
           "priority": "medium",
-          "owner": "2?",
+          "owner": "夫",
           "status": "open"
         },
         {
-          "id": "check-8",
-          "title": "eSIM",
-          "detail": "",
-          "due": "????",
+          "id": "todo-sydney-plan",
+          "title": "Sydneyで行きたい場所を絞る",
+          "detail": "Opera House / Harbour、Bondi、Blue Mountainsを体力と天気で調整。",
+          "due": "出発2週間前まで",
           "priority": "medium",
-          "owner": "2?",
-          "status": "open"
-        },
-        {
-          "id": "check-9",
-          "title": "モバイルバッテリー",
-          "detail": "",
-          "due": "????",
-          "priority": "medium",
-          "owner": "2?",
-          "status": "open"
-        },
-        {
-          "id": "check-10",
-          "title": "充電器",
-          "detail": "",
-          "due": "????",
-          "priority": "medium",
-          "owner": "2?",
-          "status": "open"
-        },
-        {
-          "id": "check-11",
-          "title": "変換プラグ",
-          "detail": "",
-          "due": "????",
-          "priority": "medium",
-          "owner": "2?",
-          "status": "open"
-        },
-        {
-          "id": "check-12",
-          "title": "歯ブラシ",
-          "detail": "",
-          "due": "????",
-          "priority": "medium",
-          "owner": "2?",
-          "status": "open"
-        },
-        {
-          "id": "check-13",
-          "title": "羽織り",
-          "detail": "",
-          "due": "????",
-          "priority": "medium",
-          "owner": "2?",
-          "status": "open"
-        },
-        {
-          "id": "check-14",
-          "title": "常備薬",
-          "detail": "",
-          "due": "????",
-          "priority": "medium",
-          "owner": "2?",
-          "status": "open"
-        },
-        {
-          "id": "check-15",
-          "title": "日焼け止め",
-          "detail": "",
-          "due": "????",
-          "priority": "medium",
-          "owner": "2?",
-          "status": "open"
-        },
-        {
-          "id": "check-16",
-          "title": "サングラス",
-          "detail": "",
-          "due": "????",
-          "priority": "medium",
-          "owner": "2?",
-          "status": "open"
-        },
-        {
-          "id": "check-17",
-          "title": "雨具",
-          "detail": "",
-          "due": "????",
-          "priority": "medium",
-          "owner": "2?",
+          "owner": "2人",
           "status": "open"
         }
       ],
       "pois": [
         {
-          "id": "hndT3",
-          "name": "羽田空港第3ターミナル",
-          "area": "Japan",
-          "category": "spot",
-          "priority": "high",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Haneda+Airport+Terminal+3",
-          "memo": ""
-        },
-        {
-          "id": "mnlT1",
-          "name": "NAIA Terminal 1",
-          "area": "Philippines",
-          "category": "spot",
-          "priority": "high",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=NAIA+Terminal+1",
-          "memo": ""
-        },
-        {
-          "id": "manilaAmericanCemetery",
-          "name": "Manila American Cemetery",
-          "area": "Philippines",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Manila+American+Cemetery",
-          "memo": ""
-        },
-        {
-          "id": "bgc",
-          "name": "Bonifacio Global City",
-          "area": "Philippines",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=BGC+Taguig",
-          "memo": ""
-        },
-        {
-          "id": "bonifacioHighStreet",
-          "name": "Bonifacio High Street",
-          "area": "Philippines",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Bonifacio+High+Street+BGC",
-          "memo": ""
-        },
-        {
-          "id": "veniceGrandCanalMall",
-          "name": "Venice Grand Canal Mall",
-          "area": "Philippines",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Venice+Grand+Canal+Mall+Taguig",
-          "memo": ""
-        },
-        {
-          "id": "sydT1",
-          "name": "Sydney Airport Terminal 1",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "high",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Sydney+Airport+Terminal+1",
-          "memo": ""
-        },
-        {
-          "id": "hotel",
-          "name": "ブレイクフリー・オン・ブロードウェイ・シドニー",
-          "area": "Australia",
+          "id": "poi-hotel-breakfree-broadway",
+          "name": "BreakFree on Broadway Sydney",
+          "area": "Broadway, Sydney",
           "category": "hotel",
           "priority": "high",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=BreakFree+on+Broadway+Sydney",
-          "memo": ""
+          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=BreakFree%20on%20Broadway%20Sydney",
+          "memo": "宿泊ホテル。3泊・大人2名・1室。チェックイン 8/12 14:00、チェックアウト 8/15 10:00。確認番号 C142AHB0512（Expedia確認番号 73488737906655）。"
         },
         {
-          "id": "spiceAlley",
-          "name": "Spice Alley",
-          "area": "Australia",
+          "id": "poi-sydney-opera",
+          "name": "Sydney Opera House / Harbour",
+          "area": "Circular Quay",
           "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Spice+Alley+Sydney",
-          "memo": ""
+          "priority": "high",
+          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Sydney%20Opera%20House",
+          "memo": "初回の象徴。夕方から夜景まで残すと写真が強い。"
         },
         {
-          "id": "darlingHarbour",
-          "name": "Darling Harbour",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Darling+Harbour+Sydney",
-          "memo": ""
-        },
-        {
-          "id": "circularQuay",
-          "name": "Circular Quay",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Circular+Quay+Sydney",
-          "memo": ""
-        },
-        {
-          "id": "operaHouse",
-          "name": "Sydney Opera House",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Sydney+Opera+House",
-          "memo": ""
-        },
-        {
-          "id": "theRocks",
-          "name": "The Rocks",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=The+Rocks+Sydney",
-          "memo": ""
-        },
-        {
-          "id": "harbourBridge",
-          "name": "Sydney Harbour Bridge",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Sydney+Harbour+Bridge",
-          "memo": ""
-        },
-        {
-          "id": "bondiBeach",
+          "id": "poi-bondi",
           "name": "Bondi Beach",
-          "area": "Australia",
-          "category": "spot",
+          "area": "Bondi",
+          "category": "nature",
           "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Bondi+Beach",
-          "memo": ""
+          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Bondi%20Beach",
+          "memo": "海沿い散歩。天気がいい日の午前か夕方。"
         },
         {
-          "id": "bondiIcebergs",
-          "name": "Bondi Icebergs",
-          "area": "Australia",
-          "category": "spot",
+          "id": "poi-blue-mountains",
+          "name": "Blue Mountains day trip",
+          "area": "Katoomba",
+          "category": "nature",
           "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Bondi+Icebergs",
-          "memo": ""
-        },
-        {
-          "id": "bondiToCoogee",
-          "name": "Bondi to Coogee Coastal Walk",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Bondi+to+Coogee+Coastal+Walk",
-          "memo": ""
-        },
-        {
-          "id": "coogeeBeach",
-          "name": "Coogee Beach",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Coogee+Beach",
-          "memo": ""
-        },
-        {
-          "id": "surryHills",
-          "name": "Surry Hills",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Surry+Hills+Sydney",
-          "memo": ""
-        },
-        {
-          "id": "fishMarket",
-          "name": "Sydney Fish Market",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Sydney+Fish+Market",
-          "memo": ""
-        },
-        {
-          "id": "manlyWharf",
-          "name": "Manly Wharf",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Manly+Wharf",
-          "memo": ""
-        },
-        {
-          "id": "manlyBeach",
-          "name": "Manly Beach",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Manly+Beach",
-          "memo": ""
-        },
-        {
-          "id": "shellyBeach",
-          "name": "Shelly Beach Manly",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Shelly+Beach+Manly",
-          "memo": ""
-        },
-        {
-          "id": "barangaroo",
-          "name": "Barangaroo Reserve",
-          "area": "Australia",
-          "category": "spot",
-          "priority": "medium",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Barangaroo+Reserve",
-          "memo": ""
+          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Blue%20Mountains%20Katoomba",
+          "memo": "Sydneyから日帰り候補。移動負荷があるので休憩日とセットで判断。"
         }
       ],
       "days": [
         {
-          "id": "day-2026-08-10",
-          "date": "2026-08-10",
-          "title": "Day 1",
-          "theme": "Sydney????",
-          "items": [
-            {
-              "id": "e001",
-              "time": "22:30",
-              "timezone": "JST",
-              "title": "羽田へ移動開始",
-              "poiId": "",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "深夜便なので8月10日の夜に羽田へ向かう。 / 22:30-23:30"
-            },
-            {
-              "id": "e002",
-              "time": "23:30",
-              "timezone": "JST",
-              "title": "羽田空港第3ターミナル到着",
-              "poiId": "hndT3",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "チェックイン、預け荷物タグ、マイル登録状況を確認。 / 23:30-23:45"
-            }
-          ]
-        },
-        {
-          "id": "day-2026-08-11",
+          "id": "day-flight-out",
           "date": "2026-08-11",
-          "title": "Day 2",
-          "theme": "Manila???????15:30??????NAIA T1?17:00??????",
+          "title": "出発",
+          "theme": "Tokyo → Manila → Sydney。主表示は空港の現地時刻。",
           "items": [
             {
-              "id": "e003",
+              "id": "item-pr423-depart",
               "time": "02:05",
-              "timezone": "PHT",
-              "title": "PR423 HND発、MNL着",
+              "timezone": "JST",
+              "homeTime": "02:05",
+              "title": "PR423 Haneda発",
               "poiId": "",
               "flightNumber": "PR423",
               "airline": "Philippine Airlines",
-              "memo": "02:05-05:40"
+              "aircraft": "Airbus A321",
+              "memo": "Tokyo HND → Manila MNL。航空券どおり羽田の現地時刻。"
             },
             {
-              "id": "e004",
+              "id": "item-pr423-arrive",
               "time": "05:40",
               "timezone": "PHT",
-              "title": "MNL到着、入国、通信確認",
-              "poiId": "mnlT1",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "マニラ観光のため入国。eTravel、パスポート、次の航空券を出せる状態にする。 / 05:40-07:15"
+              "homeTime": "06:40",
+              "title": "Manila着",
+              "poiId": "",
+              "flightNumber": "PR423",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A321",
+              "memo": "MNL到着。ここからManila現地時刻で読む。"
             },
             {
-              "id": "e005",
-              "time": "07:15",
+              "id": "item-mnl-layover-out",
+              "time": "05:40",
               "timezone": "PHT",
-              "title": "GrabでBGC方面へ移動",
-              "poiId": "bgc",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "流しタクシーは使わない。Grabのみ。 / 07:15-08:00 / Google Maps?????"
+              "homeTime": "06:40",
+              "title": "MNL乗継 15h55m",
+              "poiId": "",
+              "memo": "Manila現地時刻。長い乗継なので休憩・食事・再集合時間を別途メモ。"
             },
             {
-              "id": "e006",
-              "time": "09:00",
-              "timezone": "PHT",
-              "title": "Manila American Cemetery",
-              "poiId": "manilaAmericanCemetery",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "BGC近く。移動リスクを抑えた観光先。 / 09:00-10:30"
-            },
-            {
-              "id": "e007",
-              "time": "10:45",
-              "timezone": "PHT",
-              "title": "Bonifacio High Street",
-              "poiId": "bonifacioHighStreet",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "カフェ、買い物、散歩。安全寄りのエリア。 / 10:45-12:30"
-            },
-            {
-              "id": "e008",
-              "time": "12:30",
-              "timezone": "PHT",
-              "title": "BGCで昼食",
-              "poiId": "bgc",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "無理にローカル店へ行かず、モールか評価の高い店にする。 / 12:30-14:00"
-            },
-            {
-              "id": "e009",
-              "time": "14:00",
-              "timezone": "PHT",
-              "title": "Venice Grand Canal Mall",
-              "poiId": "veniceGrandCanalMall",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "写真向き。空港に戻りやすい範囲に留める。 / 14:00-15:15"
-            },
-            {
-              "id": "e010",
-              "time": "15:30",
-              "timezone": "PHT",
-              "title": "NAIA Terminal 1へ戻る",
-              "poiId": "mnlT1",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "15:30が市内出発の絶対リミット。 / 15:30-16:30 / Google Maps?????"
-            },
-            {
-              "id": "e011",
-              "time": "16:30",
-              "timezone": "PHT",
-              "title": "NAIA Terminal 1到着",
-              "poiId": "mnlT1",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "17:00までに空港へ戻る。 / 16:30-17:00"
-            },
-            {
-              "id": "e012",
-              "time": "17:00",
-              "timezone": "PHT",
-              "title": "出国、保安検査",
-              "poiId": "mnlT1",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "先に出国と保安検査を済ませる。 / 17:00-18:30"
-            },
-            {
-              "id": "e013",
-              "time": "18:30",
-              "timezone": "PHT",
-              "title": "Priority Passラウンジ、シャワー、食事",
-              "poiId": "mnlT1",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "PAGSSまたはMarhabaを優先。混雑時は入れない可能性あり。 / 18:30-20:30"
-            },
-            {
-              "id": "e014",
+              "id": "item-pr211-depart",
               "time": "21:35",
               "timezone": "PHT",
-              "title": "PR211 MNL発、SYD着",
+              "homeTime": "22:35",
+              "title": "PR211 Manila発",
               "poiId": "",
               "flightNumber": "PR211",
               "airline": "Philippine Airlines",
-              "memo": "21:35-08:00"
+              "aircraft": "Airbus A330-300",
+              "memo": "Manila MNL → Sydney SYD。出発はManila現地時刻。"
             }
           ]
         },
         {
-          "id": "day-2026-08-12",
+          "id": "day-arrive-sydney",
           "date": "2026-08-12",
-          "title": "Day 3",
-          "theme": "Sydney????",
+          "title": "到着",
+          "theme": "Sydney到着。AEST UTC+10で行動開始。",
           "items": [
             {
-              "id": "e015",
+              "id": "item-pr211-arrive",
               "time": "08:00",
               "timezone": "AEST",
-              "title": "SYD Terminal 1到着、入国、荷物受取",
-              "poiId": "sydT1",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "08:00-09:45"
+              "homeTime": "07:00",
+              "title": "Sydney着",
+              "poiId": "",
+              "flightNumber": "PR211",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A330-300",
+              "memo": "SYD到着。到着日は詰め込まず時差と疲労を吸収。"
             },
             {
-              "id": "e016",
-              "time": "09:45",
-              "timezone": "AEST",
-              "title": "ホテルへ移動",
-              "poiId": "hotel",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "初日は荷物があるのでUberかタクシーが現実的。 / 09:45-10:30 / Google Maps?????"
-            },
-            {
-              "id": "e017",
-              "time": "10:30",
-              "timezone": "AEST",
-              "title": "ホテルに荷物預け",
-              "poiId": "hotel",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "10:30-11:00"
-            },
-            {
-              "id": "e018",
-              "time": "12:30",
-              "timezone": "AEST",
-              "title": "Spice Alleyで昼食",
-              "poiId": "spiceAlley",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "12:30-13:30"
-            },
-            {
-              "id": "e019",
+              "id": "item-sydney-light",
               "time": "14:00",
               "timezone": "AEST",
-              "title": "ホテルチェックイン",
-              "poiId": "hotel",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "14:00-15:00"
-            },
-            {
-              "id": "e020",
-              "time": "15:30",
-              "timezone": "AEST",
-              "title": "Darling Harbour散歩",
-              "poiId": "darlingHarbour",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "15:30-17:00"
-            },
-            {
-              "id": "e021",
-              "time": "17:00",
-              "timezone": "AEST",
-              "title": "Circular Quay、Opera House外観",
-              "poiId": "operaHouse",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "17:00-18:30"
-            },
-            {
-              "id": "e022",
-              "time": "18:30",
-              "timezone": "AEST",
-              "title": "The Rocksで夕食",
-              "poiId": "theRocks",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "18:30-20:00"
-            },
-            {
-              "id": "e023",
-              "time": "20:00",
-              "timezone": "AEST",
-              "title": "Harbour Bridge夜景",
-              "poiId": "harbourBridge",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "20:00-21:00"
+              "homeTime": "13:00",
+              "title": "ホテル周辺で軽く散歩",
+              "poiId": "poi-hotel-breakfree-broadway",
+              "memo": "眠気が強ければ無理しない。夜まで起きて現地時間に合わせる。"
             }
           ]
         },
         {
-          "id": "day-2026-08-13",
+          "id": "day-sydney-main",
           "date": "2026-08-13",
-          "title": "Day 4",
-          "theme": "Sydney????",
+          "title": "Day 3",
+          "theme": "Sydneyの王道をかわいく撮る",
           "items": [
             {
-              "id": "e024",
+              "id": "item-harbour",
+              "time": "10:00",
+              "timezone": "AEST",
+              "homeTime": "09:00",
+              "title": "Harbour散歩",
+              "poiId": "poi-sydney-opera",
+              "memo": "Opera House、Harbour Bridge、カフェ休憩。"
+            },
+            {
+              "id": "item-bondi",
+              "time": "16:00",
+              "timezone": "AEST",
+              "homeTime": "15:00",
+              "title": "海沿い散歩",
+              "poiId": "poi-bondi",
+              "memo": "天気次第でBondiかManlyに変更。"
+            }
+          ]
+        },
+        {
+          "id": "day-sydney-nature",
+          "date": "2026-08-14",
+          "title": "Day 4",
+          "theme": "自然の日",
+          "items": [
+            {
+              "id": "item-blue-mountains",
               "time": "09:00",
               "timezone": "AEST",
-              "title": "ホテル出発、Bondi Beachへ",
-              "poiId": "bondiBeach",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "09:00-10:00 / Google Maps?????"
-            },
-            {
-              "id": "e025",
-              "time": "10:00",
-              "timezone": "AEST",
-              "title": "Bondi Beach、Bondi Icebergs",
-              "poiId": "bondiBeach",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "10:00-11:00"
-            },
-            {
-              "id": "e026",
-              "time": "11:00",
-              "timezone": "AEST",
-              "title": "Bondi to Coogee Coastal Walk",
-              "poiId": "bondiToCoogee",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "天気が悪い場合は短縮または屋内プランへ変更。 / 11:00-13:30"
-            },
-            {
-              "id": "e027",
-              "time": "13:30",
-              "timezone": "AEST",
-              "title": "Coogeeで昼食",
-              "poiId": "coogeeBeach",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "13:30-14:30"
-            },
-            {
-              "id": "e028",
-              "time": "18:00",
-              "timezone": "AEST",
-              "title": "Surry Hillsで夕食",
-              "poiId": "surryHills",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "18:00-20:00"
+              "homeTime": "08:00",
+              "title": "Blue Mountains候補",
+              "poiId": "poi-blue-mountains",
+              "memo": "疲れそうなら市内ゆるめの日に変更。"
             }
           ]
         },
         {
-          "id": "day-2026-08-14",
-          "date": "2026-08-14",
-          "title": "Day 5",
-          "theme": "Sydney????",
-          "items": [
-            {
-              "id": "e029",
-              "time": "10:00",
-              "timezone": "AEST",
-              "title": "Sydney Fish Market",
-              "poiId": "fishMarket",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "10:00-11:30"
-            },
-            {
-              "id": "e030",
-              "time": "12:30",
-              "timezone": "AEST",
-              "title": "Manly行きフェリー",
-              "poiId": "manlyWharf",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "12:30-13:10 / Google Maps?????"
-            },
-            {
-              "id": "e031",
-              "time": "13:10",
-              "timezone": "AEST",
-              "title": "Manly Beach、Shelly Beach",
-              "poiId": "manlyBeach",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "13:10-15:30"
-            },
-            {
-              "id": "e032",
-              "time": "17:00",
-              "timezone": "AEST",
-              "title": "フェリーでCircular Quayへ戻る",
-              "poiId": "circularQuay",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "17:00-17:40 / Google Maps?????"
-            },
-            {
-              "id": "e033",
-              "time": "18:00",
-              "timezone": "AEST",
-              "title": "Barangaroo Reserve",
-              "poiId": "barangaroo",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "18:00-19:00"
-            },
-            {
-              "id": "e034",
-              "time": "21:30",
-              "timezone": "AEST",
-              "title": "ホテル戻り、荷造り",
-              "poiId": "hotel",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "翌朝06:30出発なので荷造りしておく。 / 21:30-22:30"
-            }
-          ]
-        },
-        {
-          "id": "day-2026-08-15",
+          "id": "day-flight-return",
           "date": "2026-08-15",
-          "title": "Day 6",
-          "theme": "????06:30??????",
+          "title": "帰国",
+          "theme": "Sydney → Manila → Tokyo。到着は翌日。",
           "items": [
             {
-              "id": "e035",
-              "time": "05:45",
-              "timezone": "AEST",
-              "title": "起床、準備",
-              "poiId": "hotel",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "05:45-06:15"
-            },
-            {
-              "id": "e036",
-              "time": "06:15",
-              "timezone": "AEST",
-              "title": "チェックアウト",
-              "poiId": "hotel",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "06:15-06:30"
-            },
-            {
-              "id": "e037",
-              "time": "06:30",
-              "timezone": "AEST",
-              "title": "SYD Terminal 1へ移動",
-              "poiId": "sydT1",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "06:30ホテル出発が安全ライン。 / 06:30-07:15 / Google Maps?????"
-            },
-            {
-              "id": "e038",
-              "time": "07:15",
-              "timezone": "AEST",
-              "title": "SYD Terminal 1到着、出国、保安検査",
-              "poiId": "sydT1",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "07:15-09:30"
-            },
-            {
-              "id": "e039",
+              "id": "item-pr212-depart",
               "time": "10:15",
               "timezone": "AEST",
-              "title": "PR212 SYD発、MNL着",
+              "homeTime": "09:15",
+              "title": "PR212 Sydney発",
               "poiId": "",
               "flightNumber": "PR212",
               "airline": "Philippine Airlines",
-              "memo": "10:15-16:40"
+              "aircraft": "Airbus A330-300",
+              "memo": "Sydney SYD → Manila MNL。航空券どおりSydney現地時刻。"
             },
             {
-              "id": "e040",
-              "time": "17:00",
-              "timezone": "AEST",
-              "title": "MNL国際線乗継",
-              "poiId": "mnlT1",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "復路のマニラ乗継では空港外に出ない。 / 17:00-18:00"
+              "id": "item-pr212-arrive",
+              "time": "16:40",
+              "timezone": "PHT",
+              "homeTime": "17:40",
+              "title": "Manila着",
+              "poiId": "",
+              "flightNumber": "PR212",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A330-300",
+              "memo": "MNL到着。ここからManila現地時刻。"
             },
             {
-              "id": "e041",
+              "id": "item-mnl-layover-return",
+              "time": "16:40",
+              "timezone": "PHT",
+              "homeTime": "17:40",
+              "title": "MNL乗継 2h35m",
+              "poiId": "",
+              "memo": "短めの乗継。ゲート確認を優先。"
+            },
+            {
+              "id": "item-pr424-depart",
               "time": "19:15",
-              "timezone": "AEST",
-              "title": "PR424 MNL発、HND着",
+              "timezone": "PHT",
+              "homeTime": "20:15",
+              "title": "PR424 Manila発",
               "poiId": "",
               "flightNumber": "PR424",
               "airline": "Philippine Airlines",
-              "memo": "19:15-00:45"
+              "aircraft": "Airbus A321",
+              "memo": "Manila MNL → Tokyo HND。出発はManila現地時刻。"
             }
           ]
         },
         {
-          "id": "day-2026-08-16",
+          "id": "day-arrive-tokyo",
           "date": "2026-08-16",
-          "title": "Day 7",
-          "theme": "Sydney????",
+          "title": "帰着",
+          "theme": "Tokyo帰着。日本時間に戻す。",
           "items": [
             {
-              "id": "e042",
+              "id": "item-pr424-arrive",
               "time": "00:45",
               "timezone": "JST",
-              "title": "HND到着、入国、荷物受取",
-              "poiId": "hndT3",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "深夜到着。終電は基本あてにしない。 / 00:45-02:00"
-            },
-            {
-              "id": "e043",
-              "time": "02:00",
-              "timezone": "JST",
-              "title": "羽田到着後の帰路",
-              "poiId": "hndT3",
-              "flightNumber": "",
-              "airline": "",
-              "memo": "タクシー、定額タクシー、空港近く宿泊のいずれか。 / 02:00-03:00"
+              "homeTime": "00:45",
+              "title": "Haneda着",
+              "poiId": "",
+              "flightNumber": "PR424",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A321",
+              "memo": "Tokyo HND到着 / JST。深夜帰着なので帰宅手段を確認。"
             }
           ]
         }
