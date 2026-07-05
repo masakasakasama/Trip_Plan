@@ -12,7 +12,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-07-05T00:00:00.000Z",
+      "lastUpdated": "2026-07-05T01:09:53.426Z",
       "archived": false,
       "source": "Flight booking screenshots",
       "timezones": {
@@ -357,7 +357,8 @@
         "航空券の出発/到着時刻は、それぞれの空港の現地時刻で読む。予定表も同じく現地時刻を主表示にする。",
         "日本時間は体内時計・連絡・睡眠調整のために補助メモで表示する。",
         "日付またぎは +1 day だけでなく、実際の日付のDayを分けると混乱しにくい。",
-        "Sydneyは2026年8月はAEST UTC+10。ManilaはPHT UTC+8。TokyoはJST UTC+9。"
+        "Sydneyは2026年8月はAEST UTC+10。ManilaはPHT UTC+8。TokyoはJST UTC+9。",
+        "やること: 海外旅行保険は夫・Rebeccaそれぞれで加入確認。医療費、携行品、航空機遅延、乗継ミス、キャッシュレス診療、既往症条件を確認する。"
       ]
     }
   ]
