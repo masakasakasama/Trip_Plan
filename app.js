@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260706-popup1";
+const BUILD_VERSION = "20260706-savefix1";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -759,6 +759,7 @@ async function fetchStateViaStatic() {
 }
 
 async function loadRemote() {
+  if (activeEditor || els.editorDialog?.open) return;
   // まずAPI(最新)を試し、ダメなら静的JSON、それもダメならキャッシュ。
   // API優先なので、保存直後のポーリングで古いPagesを読んで
   // チェックが元に戻る(=同期していないように見える)問題が起きない。
@@ -777,6 +778,7 @@ async function loadRemote() {
     }
   }
   try {
+    if (activeEditor || els.editorDialog?.open) return;
     if (!next) throw new Error("読み込めません");
     if (remoteSha && remoteSha === lastRenderedSha) {
       return;
@@ -1589,17 +1591,17 @@ bind();
 bindDaySwipe();
 loadRemote();
 setInterval(() => {
-  if (!dirty && !saving && document.visibilityState === "visible") loadRemote();
+  if (!dirty && !saving && !activeEditor && document.visibilityState === "visible") loadRemote();
 }, POLL_MS);
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && !dirty && !saving) loadRemote();
+  if (document.visibilityState === "visible" && !dirty && !saving && !activeEditor) loadRemote();
 });
 window.addEventListener("focus", () => {
-  if (!dirty && !saving) loadRemote();
+  if (!dirty && !saving && !activeEditor) loadRemote();
 });
 window.addEventListener("pageshow", () => {
-  if (!dirty && !saving) loadRemote();
+  if (!dirty && !saving && !activeEditor) loadRemote();
 });
 window.addEventListener("online", () => {
-  if (!dirty && !saving) loadRemote();
+  if (!dirty && !saving && !activeEditor) loadRemote();
 });
