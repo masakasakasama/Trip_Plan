@@ -735,7 +735,7 @@ meter::-webkit-meter-bar {
 
 .budget-summary {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 16px;
   border-radius: 18px;
@@ -745,12 +745,17 @@ meter::-webkit-meter-bar {
 
 .budget-summary div {
   text-align: center;
+  min-width: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.56);
+  padding: 10px 8px;
 }
 
 .budget-summary strong {
   display: block;
   color: #5d9aaa;
-  font-size: 1.05rem;
+  font-size: 0.98rem;
+  overflow-wrap: anywhere;
 }
 
 .budget-summary span {
@@ -774,10 +779,40 @@ meter::-webkit-meter-bar {
 }
 
 .budget-card {
-  display: flex;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
+}
+
+.budget-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: #fff3f7;
+  font-size: 1.35rem;
+}
+
+.budget-body {
+  min-width: 0;
+}
+
+.budget-body strong,
+.budget-body p {
+  overflow-wrap: anywhere;
+}
+
+.budget-currency {
+  display: inline-flex;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: #eef9fb;
+  color: #5d9aaa;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 4px 8px;
 }
 
 .budget-card .amount {
