@@ -163,6 +163,15 @@ function formatShortDate(value) {
   return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(date);
 }
 
+function formatTabDate(value) {
+  if (!value) return "";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  const monthDay = new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(date);
+  const weekday = new Intl.DateTimeFormat("ja-JP", { weekday: "short" }).format(date);
+  return `${monthDay} ${weekday}`;
+}
+
 function daysUntil(value) {
   if (!value) return "--";
   const start = new Date(`${value}T00:00:00`);
@@ -366,7 +375,7 @@ function renderDayTabs() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = index === activeDayIndex ? "is-active" : "";
-    button.textContent = day.title || `Day ${index + 1}`;
+    button.innerHTML = `<strong>${day.title || `Day ${index + 1}`}</strong><span>${formatTabDate(day.date)}</span>`;
     button.addEventListener("click", () => {
       activeDayIndex = index;
       renderTimeline();
