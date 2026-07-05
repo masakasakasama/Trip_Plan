@@ -568,27 +568,42 @@ function decodeBase64(text) {
   return new TextDecoder().decode(Uint8Array.from(binary, (ch) => ch.charCodeAt(0)));
 }
 
+async function loadPublicData() {
+  const response = await request(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
+  if (!response.ok) throw new Error(`公開データを読めません (${response.status})`);
+  return normalize(JSON.parse(await response.text()));
+}
+
+async function loadGitHubData(token) {
+  const response = await request(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "X-GitHub-Api-Version": "2022-11-28"
+    },
+    cache: "no-store"
+  });
+  if (!response.ok) throw new Error(`同期データを読めません (${response.status})`);
+  const payload = await response.json();
+  remoteSha = payload.sha;
+  return normalize(JSON.parse(decodeBase64(payload.content)));
+}
+
 async function loadRemote() {
   const previousDayId = state?.trips?.length ? currentDay()?.id : "";
   try {
     const token = getToken();
+    let source = "public";
     if (token) {
-      const response = await request(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${token}`,
-          "X-GitHub-Api-Version": "2022-11-28"
-        },
-        cache: "no-store"
-      });
-      if (!response.ok) throw new Error(`同期できません (${response.status})`);
-      const payload = await response.json();
-      remoteSha = payload.sha;
-      state = normalize(JSON.parse(decodeBase64(payload.content)));
+      try {
+        state = await loadGitHubData(token);
+        source = "sync";
+      } catch (syncError) {
+        console.warn(syncError);
+        state = await loadPublicData();
+      }
     } else {
-      const response = await request(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
-      if (!response.ok) throw new Error(`読み込めません (${response.status})`);
-      state = normalize(JSON.parse(await response.text()));
+      state = await loadPublicData();
     }
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
     if (previousDayId) {
@@ -598,7 +613,7 @@ async function loadRemote() {
       activeDayIndex = Math.min(activeDayIndex, Math.max(0, currentTrip().days.length - 1));
     }
     render();
-    setStatus(token ? "共有リンク同期中" : "共有リンク待ち", token ? "" : "soft");
+    setStatus(source === "sync" ? "同期済み" : "公開データ表示", source === "sync" ? "" : "soft");
   } catch (error) {
     const cache = localStorage.getItem(CACHE_KEY);
     if (cache) {
@@ -762,11 +777,14 @@ function renderTimeline() {
     // タイムゾーンを跨いでも実際の経過時間を計算して表示。
     let elapsed = "";
     if (current?.instant != null && previous?.instant != null) {
-      const label = formatDuration(current.instant - previous.instant);
-      if (label) {
+      const elapsedMs = current.instant - previous.instant;
+      const label = formatDuration(elapsedMs);
+      if (label && elapsedMs > 0) {
         const cross = previous.item.timezone && item.timezone && previous.item.timezone !== item.timezone;
+        const sameFlight = item.flightNumber && previous.item.flightNumber && item.flightNumber === previous.item.flightNumber;
         const suffix = cross ? ` <b>${escapeHtml(previous.item.timezone)}→${escapeHtml(item.timezone)}</b>` : "";
-        elapsed = `<span class="elapsed${cross ? " is-cross" : ""}">前から ${label}${suffix}</span>`;
+        const prefix = sameFlight ? "飛行" : "前から";
+        elapsed = `<span class="elapsed${cross ? " is-cross" : ""}">${prefix} ${label}${suffix}</span>`;
       }
     }
 
