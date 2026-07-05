@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Plan</title>
-    <link rel="stylesheet" href="styles.css?v=20260705-errvis1">
+    <link rel="stylesheet" href="styles.css?v=20260705-mapthumb1">
   </head>
   <body>
     <main class="stage">
@@ -133,9 +133,9 @@
           </div>
         </details>
         <details class="advanced-sync">
-          <summary>Google Maps埋め込み・写真を有効にする</summary>
-          <p class="hint">ルート地図の埋め込みと、予定・スポットの実写サムネイルを使う場合だけ設定。Google CloudでMaps Embed APIとPlaces APIを有効にしたキーを入力(要課金アカウント。無料枠あり)。未設定でも地図リンクや絵文字サムネイルは使えます。写真はこの端末だけにキャッシュされ、trip-plan.jsonやキーは他端末と共有されません。</p>
-          <label>Google Maps/Places APIキー<input id="maps-api-key" type="password" autocomplete="off" placeholder="AIza..."></label>
+          <summary>Google Mapsルート地図を高品質にする</summary>
+          <p class="hint">スポットのサムネイル地図は設定なしで表示されます。ここはルート地図(スポットタブ上部)を正式なEmbed APIで表示したい場合だけ設定。未設定でも簡易地図で動きます。</p>
+          <label>Maps Embed APIキー<input id="maps-api-key" type="password" autocomplete="off" placeholder="AIza..."></label>
           <div class="dialog-actions">
             <button id="save-maps-key" class="wide-action" type="button">保存</button>
             <button id="clear-maps-key" type="button">削除</button>
@@ -163,6 +163,6 @@
     </dialog>
 
     <p id="sync-status" class="sync-feedback" aria-live="polite"></p>
-    <script src="app.js?v=20260705-errvis1" defer></script>
+    <script src="app.js?v=20260705-mapthumb1" defer></script>
   </body>
 </html>

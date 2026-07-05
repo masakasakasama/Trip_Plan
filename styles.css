@@ -204,6 +204,11 @@ h1 {
   display: none;
 }
 
+/* hidden属性がdisplay:flexに負けて効かないので明示的に隠す */
+.day-tabs[hidden] {
+  display: none;
+}
+
 .day-tabs button {
   display: grid;
   gap: 2px;
@@ -264,8 +269,8 @@ h1 {
 
 .timeline-row {
   display: grid;
-  grid-template-columns: 58px 28px 1fr;
-  gap: 10px;
+  grid-template-columns: 42px 16px 1fr;
+  gap: 7px;
   align-items: start;
 }
 
@@ -277,6 +282,8 @@ h1 {
   display: block;
   color: #c98ca4;
   font-weight: 900;
+  font-size: 0.92rem;
+  letter-spacing: -0.02em;
 }
 
 .time-cell span {
@@ -347,33 +354,39 @@ h1 {
 .event-card {
   position: relative;
   display: flex;
-  gap: 12px;
+  gap: 11px;
   align-items: flex-start;
-  padding-right: 46px;
+  padding: 14px 40px 14px 14px;
 }
 
-.event-thumb {
+.event-thumb,
+.spot-thumb {
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  height: 52px;
   display: grid;
   place-items: center;
   overflow: hidden;
   border-radius: 14px;
-  background: var(--pink-soft);
   font-size: 1.3rem;
 }
 
-.event-thumb.has-photo,
-.spot-thumb.has-photo {
-  background: none;
+.event-thumb {
+  background: var(--pink-soft);
 }
 
-.event-thumb img,
-.spot-thumb img {
+/* Googleマップ埋め込みサムネイル: 見た目だけ(操作はカードのリンクに任せる) */
+.event-thumb.is-map,
+.spot-thumb.is-map {
+  background: var(--line);
+}
+
+.event-thumb.is-map iframe,
+.spot-thumb.is-map iframe {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  border: 0;
+  pointer-events: none;
 }
 
 .event-body {
@@ -773,15 +786,7 @@ meter::-webkit-meter-bar {
 }
 
 .spot-thumb {
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border-radius: 14px;
   background: var(--blue-soft);
-  font-size: 1.3rem;
 }
 
 .spot-body {
