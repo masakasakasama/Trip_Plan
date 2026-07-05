@@ -113,7 +113,7 @@ async function copyText(text) {
 
 function setStatus(text, tone = "") {
   if (!els.status) return;
-  els.status.textContent = "";
+  els.status.textContent = text || "";
   els.status.dataset.tone = tone;
 }
 
@@ -247,6 +247,129 @@ function daysUntil(value) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return Math.max(0, Math.ceil((start - today) / 86400000));
+}
+
+// タイムゾーン略称 -> UTCオフセット(分)。trip.timezones に無い略称の保険。
+const TZ_OFFSETS = {
+  UTC: 0, GMT: 0,
+  JST: 540, KST: 540,
+  PHT: 480, SGT: 480, HKT: 480, AWST: 480, CST: 480, MYT: 480, WITA: 480,
+  ICT: 420, WIB: 420,
+  NPT: 345, IST: 330,
+  GST: 240,
+  CET: 60, BST: 60, WAT: 60,
+  CEST: 120, EET: 120,
+  ACST: 570, ACDT: 630,
+  AEST: 600, ChST: 600,
+  AEDT: 660,
+  NZST: 720, NZDT: 780,
+  HST: -600, AKST: -540, PST: -480, PDT: -420,
+  MST: -420, MDT: -360, EST: -300, CDT: -300,
+  EDT: -240, AST: -240, BRT: -180, ART: -180
+};
+
+// "JST UTC+9" や "AEST UTC+10:30" から {略称, オフセット分} を取り出す。
+function parseZoneString(raw) {
+  const str = String(raw || "");
+  const abbr = (str.match(/\b([A-Za-z]{2,5})\b/) || [])[1];
+  const off = str.match(/UTC\s*([+-])\s*(\d{1,2})(?::?(\d{2}))?/i);
+  if (!abbr || !off) return null;
+  const sign = off[1] === "-" ? -1 : 1;
+  const minutes = sign * (Number(off[2]) * 60 + Number(off[3] || 0));
+  return { abbr: abbr.toUpperCase(), offset: minutes };
+}
+
+// trip.timezones の値を優先し、無ければ組み込みテーブルから解決。
+function tzOffsetMinutes(abbr, trip) {
+  if (!abbr) return null;
+  const key = String(abbr).trim().toUpperCase();
+  const zones = trip?.timezones || {};
+  for (const value of Object.values(zones)) {
+    const parsed = parseZoneString(value);
+    if (parsed && parsed.abbr === key) return parsed.offset;
+  }
+  if (key in TZ_OFFSETS) return TZ_OFFSETS[key];
+  const upperMap = Object.fromEntries(Object.entries(TZ_OFFSETS).map(([k, v]) => [k.toUpperCase(), v]));
+  return key in upperMap ? upperMap[key] : null;
+}
+
+// 現地の日付+時刻+タイムゾーンから、絶対時刻(UTC epoch ms)を求める。
+function eventInstant(dateStr, timeStr, abbr, trip) {
+  if (!dateStr || !timeStr) return null;
+  const offset = tzOffsetMinutes(abbr, trip);
+  if (offset === null || offset === undefined) return null;
+  const [y, mo, d] = dateStr.split("-").map(Number);
+  const [hh, mm] = timeStr.split(":").map(Number);
+  if ([y, mo, d, hh, mm].some((n) => Number.isNaN(n))) return null;
+  return Date.UTC(y, mo - 1, d, hh, mm) - offset * 60000;
+}
+
+// ミリ秒差を "8h25m" / "45m" / "-30m" 形式に。
+function formatDuration(ms) {
+  if (ms === null || ms === undefined || Number.isNaN(ms)) return "";
+  const totalMin = Math.round(ms / 60000);
+  const sign = totalMin < 0 ? "-" : "";
+  const abs = Math.abs(totalMin);
+  const h = Math.floor(abs / 60);
+  const m = abs % 60;
+  if (h && m) return `${sign}${h}h${m}m`;
+  if (h) return `${sign}${h}h`;
+  return `${sign}${m}m`;
+}
+
+// このtripの「日本(home)時間」の略称とオフセット。
+function homeZone(trip) {
+  const parsed = parseZoneString(trip?.timezones?.home) || parseZoneString(trip?.timezones?.tokyo);
+  if (parsed) return parsed;
+  return { abbr: "JST", offset: 540 };
+}
+
+// 絶対時刻を指定オフセットの壁時計 "HH:MM" に。
+function clockAt(instant, offsetMinutes) {
+  const shifted = new Date(instant + offsetMinutes * 60000);
+  const hh = String(shifted.getUTCHours()).padStart(2, "0");
+  const mm = String(shifted.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+// 絶対時刻を指定オフセットの日付 "YYYY-MM-DD" に。
+function dateAt(instant, offsetMinutes) {
+  const shifted = new Date(instant + offsetMinutes * 60000);
+  const y = shifted.getUTCFullYear();
+  const mo = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${y}-${mo}-${d}`;
+}
+
+// home時間の表示ラベル。現地日付と跨ぐ場合は 翌/前日 を添える。
+function homeTimeLabel(instant, localDate, trip) {
+  if (instant === null || instant === undefined) return "";
+  const home = homeZone(trip);
+  const clock = clockAt(instant, home.offset);
+  const homeDate = dateAt(instant, home.offset);
+  let prefix = "";
+  if (localDate && homeDate) {
+    const diff = Math.round((Date.parse(`${homeDate}T00:00:00Z`) - Date.parse(`${localDate}T00:00:00Z`)) / 86400000);
+    if (diff > 0) prefix = "翌";
+    else if (diff < 0) prefix = "前日";
+  }
+  return `${home.abbr} ${prefix}${clock}`;
+}
+
+// 全dayのitemを時系列順にフラット化（前の予定との経過時間計算用）。
+function flatTimelineItems(trip) {
+  const list = [];
+  (trip.days || []).forEach((day, dayIndex) => {
+    (day.items || []).forEach((item) => {
+      list.push({
+        dayIndex,
+        date: day.date,
+        item,
+        instant: eventInstant(day.date, item.time, item.timezone, trip)
+      });
+    });
+  });
+  return list;
 }
 
 function poiById(id) {
@@ -528,16 +651,38 @@ function renderDayTabs() {
 }
 
 function renderTimeline() {
+  const trip = currentTrip();
   const day = currentDay();
   els.timeline.replaceChildren();
   if (!day) {
     els.timeline.innerHTML = `<p class="empty">日程を追加すると、ここにタイムラインが出ます。</p>`;
     return;
   }
+  const flat = flatTimelineItems(trip);
   day.items.forEach((item, index) => {
     const poi = poiById(item.poiId);
     const zone = item.timezone ? `<span>${item.timezone}</span>` : "";
-    const homeTime = item.homeTime ? `<em>JST ${item.homeTime}</em>` : "";
+
+    const flatIndex = flat.findIndex((entry) => entry.item.id === item.id);
+    const current = flat[flatIndex];
+    const previous = flatIndex > 0 ? flat[flatIndex - 1] : null;
+
+    // タイムゾーンを跨いでも実際の経過時間を計算して表示。
+    let elapsed = "";
+    if (current?.instant != null && previous?.instant != null) {
+      const label = formatDuration(current.instant - previous.instant);
+      if (label) {
+        const cross = previous.item.timezone && item.timezone && previous.item.timezone !== item.timezone;
+        const suffix = cross ? ` <b>${previous.item.timezone}→${item.timezone}</b>` : "";
+        elapsed = `<span class="elapsed${cross ? " is-cross" : ""}">前から ${label}${suffix}</span>`;
+      }
+    }
+
+    // JST補助表示は現地時刻から自動換算（手入力 homeTime はフォールバック）。
+    const computedHome = homeTimeLabel(current?.instant, current?.date, trip);
+    const homeText = computedHome || (item.homeTime ? `JST ${item.homeTime}` : "");
+    const homeTime = homeText ? `<em>${homeText}</em>` : "";
+
     const row = document.createElement("article");
     row.className = "timeline-row";
     row.innerHTML = `
@@ -549,7 +694,7 @@ function renderTimeline() {
       <button class="event-card" type="button">
         <strong>${item.title}</strong>
         <small>${poi ? poi.name : item.memo || "メモなし"}</small>
-        ${homeTime}
+        <div class="event-foot">${homeTime}${elapsed}</div>
       </button>
     `;
     row.querySelector(".event-card").addEventListener("click", () => editItem(day.id, item.id));
@@ -816,8 +961,8 @@ function editItem(dayId, itemId) {
     title: "予定を編集",
     fields: [
       { name: "time", label: "現地時間", type: "time", value: item.time, required: true },
-      { name: "timezone", label: "タイムゾーン", value: item.timezone },
-      { name: "homeTime", label: "日本時間メモ", type: "time", value: item.homeTime },
+      { name: "timezone", label: "タイムゾーン (例: JST / PHT / AEST)", value: item.timezone },
+      { name: "homeTime", label: "JST補助メモ（空なら自動換算）", type: "time", value: item.homeTime },
       { name: "title", label: "予定名", value: item.title, required: true },
       { name: "poiId", label: "場所", type: "select", value: item.poiId, options: poiOptions },
       { name: "memo", label: "メモ", type: "textarea", value: item.memo, rows: 4 }

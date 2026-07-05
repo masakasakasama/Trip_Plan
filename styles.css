@@ -312,9 +312,15 @@ h1 {
   font-size: 0.9rem;
 }
 
+.event-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
 .event-card em {
   display: inline-block;
-  margin-top: 10px;
   border-radius: 999px;
   background: #eef9fb;
   color: #6eb6c1;
@@ -322,6 +328,29 @@ h1 {
   font-style: normal;
   font-weight: 900;
   padding: 4px 9px;
+}
+
+.event-card .elapsed {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  background: #f4f0f6;
+  color: #8b7f92;
+  font-size: 0.74rem;
+  font-weight: 900;
+  padding: 4px 9px;
+}
+
+.event-card .elapsed.is-cross {
+  background: #fff3f7;
+  color: #c47494;
+}
+
+.event-card .elapsed b {
+  font-size: 0.66rem;
+  font-weight: 900;
+  opacity: 0.85;
 }
 
 .progress-grid {
