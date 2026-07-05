@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260705-worker3";
+const BUILD_VERSION = "20260706-photo1";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -476,9 +476,9 @@ function mapThumbEmbedUrl(query) {
 }
 
 // サムネイルのHTML。場所が特定できればミニ地図、無ければ絵文字。
-function thumbMarkup(query, emoji, className) {
-  if (query && query.trim()) {
-    return `<div class="${className} is-map" aria-hidden="true"><iframe src="${escapeHtml(mapThumbEmbedUrl(query))}" loading="lazy" tabindex="-1" title=""></iframe></div>`;
+function thumbMarkup(imageUrl, emoji, className, alt = "") {
+  if (imageUrl && imageUrl.trim()) {
+    return `<div class="${className} is-photo"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(alt)}" loading="lazy"></div>`;
   }
   return `<div class="${className}" aria-hidden="true">${escapeHtml(emoji)}</div>`;
 }
@@ -795,7 +795,7 @@ function renderTimeline() {
     const flightInfo = flightBits.length ? `<small class="flight-info">${escapeHtml(flightBits.join(" ・ "))}</small>` : "";
 
     // 地図サムネイルは場所(POI)が紐づく予定だけ。便や乗継などは絵文字のまま。
-    const thumbQuery = poi ? mapQuery(poi) : "";
+    const photoUrl = item.imageUrl || poi?.imageUrl || "";
 
     const row = document.createElement("article");
     row.className = "timeline-row";
@@ -806,7 +806,7 @@ function renderTimeline() {
       </div>
       <span class="dot ${index % 2 ? "blue" : "pink"}"></span>
       <article class="event-card">
-        ${thumbMarkup(thumbQuery, defaultEmoji(item, poi), "event-thumb")}
+        ${thumbMarkup(photoUrl, defaultEmoji(item, poi), "event-thumb", poi?.name || item.title)}
         <a class="event-body" href="${escapeHtml(eventMapsUrl(item))}" target="_blank" rel="noreferrer">
           <strong>${escapeHtml(item.title)}</strong>
           <small>${escapeHtml(poi ? poi.name : item.memo || "メモなし")}</small>
@@ -899,7 +899,7 @@ function renderSpots() {
     const card = document.createElement("article");
     card.className = "list-card spot-card";
     card.innerHTML = `
-      ${thumbMarkup(mapQuery(poi), defaultEmoji(null, poi), "spot-thumb")}
+      ${thumbMarkup(poi.imageUrl || "", defaultEmoji(null, poi), "spot-thumb", poi.name)}
       <div class="spot-body">
         <strong>${escapeHtml(poi.name)}</strong>
         <p>${escapeHtml(poi.area)}・${escapeHtml(poi.memo || "メモなし")}</p>
@@ -1025,6 +1025,7 @@ function addSpot() {
       { name: "name", label: "場所名", required: true, placeholder: "例: Sydney Opera House" },
       { name: "area", label: "エリア・場所", value: trip.destination },
       { name: "mapsUrl", label: "Google Maps URL" },
+      { name: "imageUrl", label: "写真URL" },
       { name: "emoji", label: "画像(絵文字)", placeholder: "例: 🏖️（空欄なら自動）" },
       { name: "memo", label: "メモ", type: "textarea", rows: 3 }
     ],
@@ -1036,6 +1037,7 @@ function addSpot() {
         category: "spot",
         priority: "medium",
         mapsUrl: formValue("mapsUrl"),
+        imageUrl: formValue("imageUrl"),
         emoji: formValue("emoji"),
         memo: formValue("memo")
       });
@@ -1055,6 +1057,7 @@ function editPoi(id) {
       { name: "name", label: "場所名", value: poi.name, required: true },
       { name: "area", label: "エリア・場所", value: poi.area },
       { name: "mapsUrl", label: "Google Maps URL", value: poi.mapsUrl },
+      { name: "imageUrl", label: "写真URL", value: poi.imageUrl },
       { name: "emoji", label: "画像(絵文字)", value: poi.emoji, placeholder: "例: 🏖️（空欄なら自動）" },
       { name: "memo", label: "メモ", type: "textarea", value: poi.memo, rows: 3 }
     ],
@@ -1062,6 +1065,7 @@ function editPoi(id) {
       poi.name = formValue("name");
       poi.area = formValue("area");
       poi.mapsUrl = formValue("mapsUrl");
+      poi.imageUrl = formValue("imageUrl");
       poi.emoji = formValue("emoji");
       poi.memo = formValue("memo");
       render();
