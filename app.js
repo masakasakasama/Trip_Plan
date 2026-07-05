@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260706-savefix1";
+const BUILD_VERSION = "20260706-budgetshare1";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -349,6 +349,19 @@ function budgetCurrency(code) {
 
 function budgetAmount(entry, key) {
   return Number(entry?.[key]) || 0;
+}
+
+function travelerCount(trip) {
+  return Math.max(1, Array.isArray(trip?.travelers) ? trip.travelers.length : 2);
+}
+
+function budgetPeopleCount(entry, trip) {
+  const count = Number(entry?.peopleCount);
+  return count === 1 ? 1 : Math.min(2, travelerCount(trip));
+}
+
+function budgetPeopleLabel(entry, trip) {
+  return budgetPeopleCount(entry, trip) === 1 ? "1人分" : "2人分";
 }
 
 function formatMoney(amount, currencyCode = "JPY") {
@@ -1000,12 +1013,17 @@ function renderTimeline() {
 function budgetStats(trip) {
   const totalsByCurrency = {};
   BUDGET_CURRENCIES.forEach((currency) => {
-    totalsByCurrency[currency.code] = { planned: 0, spent: 0 };
+    totalsByCurrency[currency.code] = { planned: 0, spent: 0, plannedPerPerson: 0, spentPerPerson: 0 };
   });
   trip.budgetItems.forEach((entry) => {
     const code = budgetCurrency(entry.currency).code;
-    totalsByCurrency[code].planned += budgetAmount(entry, "planned");
-    totalsByCurrency[code].spent += budgetAmount(entry, "actual");
+    const people = budgetPeopleCount(entry, trip);
+    const planned = budgetAmount(entry, "planned");
+    const spent = budgetAmount(entry, "actual");
+    totalsByCurrency[code].planned += planned;
+    totalsByCurrency[code].spent += spent;
+    totalsByCurrency[code].plannedPerPerson += planned / people;
+    totalsByCurrency[code].spentPerPerson += spent / people;
   });
   const spent = totalsByCurrency.JPY?.spent || 0;
   const planned = totalsByCurrency.JPY?.planned || 0;
@@ -1147,15 +1165,17 @@ function renderBudget() {
     const totals = BUDGET_CURRENCIES
       .filter((currency) => currency.showTotal)
       .map((currency) => {
-        const total = stats.totalsByCurrency[currency.code] || { spent: 0, planned: 0 };
+        const total = stats.totalsByCurrency[currency.code] || { spent: 0, planned: 0, spentPerPerson: 0, plannedPerPerson: 0 };
         return `
           <div>
             <strong>${formatMoney(total.spent, currency.code)}</strong>
-            <span>${currency.label} / 予定 ${formatMoney(total.planned, currency.code)}</span>
+            <span>${currency.label}合計 / 予定 ${formatMoney(total.planned, currency.code)}</span>
+            <small>1人あたり ${formatMoney(total.spentPerPerson, currency.code)}</small>
           </div>
         `;
       }).join("");
     els.budgetSummary.innerHTML = `
+      <div class="budget-total-jpy"><strong>${formatMoney(stats.total, "JPY")}</strong><span>総予算</span><small>2人合計</small></div>
       ${totals}
       <div class="budget-total-jpy"><strong>${formatMoney(Math.max(0, stats.total - stats.spent), "JPY")}</strong><span>日本円予算の残り</span></div>
       <meter min="0" max="100" value="${stats.percent}"></meter>
@@ -1173,6 +1193,7 @@ function renderBudget() {
         <strong>${escapeHtml(entry.label)}</strong>
         <p>${escapeHtml(entry.category || "未分類")}${entry.memo ? `・${escapeHtml(entry.memo)}` : ""}</p>
         <span class="budget-currency">${escapeHtml(currency.label)}</span>
+        <span class="budget-currency">${escapeHtml(budgetPeopleLabel(entry, trip))}</span>
       </div>
       <div class="amount">
         ${formatMoney(budgetAmount(entry, "actual"), currency.code)}
@@ -1445,6 +1466,10 @@ function addBudgetItem() {
   const trip = currentTrip();
   const categoryOptions = budgetCategories(trip).map((category) => ({ value: category, label: category }));
   const currencyOptions = BUDGET_CURRENCIES.map((currency) => ({ value: currency.code, label: currency.label }));
+  const peopleOptions = [
+    { value: "2", label: "2人分" },
+    { value: "1", label: "1人分" }
+  ];
   showEditor({
     title: "予算項目を追加",
     fields: [
@@ -1452,6 +1477,7 @@ function addBudgetItem() {
       { name: "category", label: "カテゴリ", type: "select", value: "その他", options: categoryOptions },
       { name: "newCategory", label: "カテゴリ追加", placeholder: "候補にない時だけ入力" },
       { name: "currency", label: "通貨", type: "select", value: "JPY", options: currencyOptions },
+      { name: "peopleCount", label: "対象人数", type: "select", value: "2", options: peopleOptions },
       { name: "planned", label: "予定金額", type: "number", step: "0.01", min: "0" },
       { name: "actual", label: "使った金額", type: "number", step: "0.01", min: "0" },
       { name: "memo", label: "メモ", type: "textarea", rows: 3 }
@@ -1463,6 +1489,7 @@ function addBudgetItem() {
         label: formValue("label"),
         category,
         currency: formValue("currency") || "JPY",
+        peopleCount: Number(formValue("peopleCount")) === 1 ? 1 : 2,
         planned: Number(formValue("planned")) || 0,
         actual: Number(formValue("actual")) || 0,
         memo: formValue("memo")
@@ -1479,6 +1506,10 @@ function editBudgetItem(id) {
   if (!entry) return;
   const categoryOptions = budgetCategories(trip).map((category) => ({ value: category, label: category }));
   const currencyOptions = BUDGET_CURRENCIES.map((currency) => ({ value: currency.code, label: currency.label }));
+  const peopleOptions = [
+    { value: "2", label: "2人分" },
+    { value: "1", label: "1人分" }
+  ];
   showEditor({
     title: "予算項目を編集",
     fields: [
@@ -1486,6 +1517,7 @@ function editBudgetItem(id) {
       { name: "category", label: "カテゴリ", type: "select", value: entry.category || "その他", options: categoryOptions },
       { name: "newCategory", label: "カテゴリ追加", placeholder: "候補にない時だけ入力" },
       { name: "currency", label: "通貨", type: "select", value: budgetCurrency(entry.currency).code, options: currencyOptions },
+      { name: "peopleCount", label: "対象人数", type: "select", value: String(budgetPeopleCount(entry, trip)), options: peopleOptions },
       { name: "planned", label: "予定金額", type: "number", value: budgetAmount(entry, "planned"), step: "0.01", min: "0" },
       { name: "actual", label: "使った金額", type: "number", value: budgetAmount(entry, "actual"), step: "0.01", min: "0" },
       { name: "memo", label: "メモ", type: "textarea", value: entry.memo, rows: 3 }
@@ -1495,6 +1527,7 @@ function editBudgetItem(id) {
       entry.label = formValue("label");
       entry.category = category;
       entry.currency = formValue("currency") || "JPY";
+      entry.peopleCount = Number(formValue("peopleCount")) === 1 ? 1 : 2;
       entry.planned = Number(formValue("planned")) || 0;
       entry.actual = Number(formValue("actual")) || 0;
       entry.memo = formValue("memo");
