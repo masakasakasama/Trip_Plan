@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260705-errvis1";
+const BUILD_VERSION = "20260705-mapthumb1";
 
 const GITHUB = {
   owner: "masakasakasama",
@@ -498,96 +498,17 @@ function defaultEmoji(item, poi) {
   return "📍";
 }
 
-// Google Places写真をパンフレット風サムネイルとして使う。
-// Places Web ServiceのJSON検索はブラウザからCORSで直接呼べないため、
-// Maps JavaScript APIのplacesライブラリ(PlacesService)経由で取得する。
-// 解決したURLはAPIキーを含むため、共有データ(trip-plan.json)には保存せず、
-// この端末のlocalStorageだけにキャッシュする。
-const PHOTO_CACHE_KEY = "trip-plan-photo-cache-v1";
-const PHOTO_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
-let mapsScriptPromise = null;
-let placesServiceInstance = null;
+// サムネイルはGoogleマップの埋め込み(APIキー不要)。場所名だけでミニ地図を出す。
+function mapThumbEmbedUrl(query) {
+  return `https://www.google.com/maps?q=${encodeURIComponent(query)}&z=14&output=embed`;
+}
 
-function readPhotoCache() {
-  try {
-    return JSON.parse(localStorage.getItem(PHOTO_CACHE_KEY) || "{}");
-  } catch {
-    return {};
+// サムネイルのHTML。場所が特定できればミニ地図、無ければ絵文字。
+function thumbMarkup(query, emoji, className) {
+  if (query && query.trim()) {
+    return `<div class="${className} is-map" aria-hidden="true"><iframe src="${escapeHtml(mapThumbEmbedUrl(query))}" loading="lazy" tabindex="-1" title=""></iframe></div>`;
   }
-}
-
-function photoCacheGet(query) {
-  const hit = readPhotoCache()[query];
-  return hit && Date.now() - hit.ts < PHOTO_CACHE_TTL_MS ? hit.url : null;
-}
-
-function photoCacheSet(query, url) {
-  const cache = readPhotoCache();
-  cache[query] = { url, ts: Date.now() };
-  localStorage.setItem(PHOTO_CACHE_KEY, JSON.stringify(cache));
-}
-
-function loadGoogleMapsPlaces() {
-  const key = getMapsKey();
-  if (!key) return Promise.reject(new Error("no key"));
-  if (window.google?.maps?.places) return Promise.resolve();
-  if (mapsScriptPromise) return mapsScriptPromise;
-  mapsScriptPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places`;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => {
-      mapsScriptPromise = null;
-      reject(new Error("Google Maps読み込み失敗"));
-    };
-    document.head.append(script);
-  });
-  return mapsScriptPromise;
-}
-
-function getPlacesService() {
-  if (placesServiceInstance) return placesServiceInstance;
-  placesServiceInstance = new google.maps.places.PlacesService(document.createElement("div"));
-  return placesServiceInstance;
-}
-
-async function fetchPlacePhotoUrl(query) {
-  const cached = photoCacheGet(query);
-  if (cached) return cached;
-  await loadGoogleMapsPlaces();
-  const service = getPlacesService();
-  const url = await new Promise((resolve, reject) => {
-    service.findPlaceFromQuery({ query, fields: ["photos"] }, (results, status) => {
-      const photo = status === google.maps.places.PlacesServiceStatus.OK && results?.[0]?.photos?.[0];
-      if (photo) resolve(photo.getUrl({ maxWidth: 240, maxHeight: 240 }));
-      else reject(new Error("写真が見つかりません"));
-    });
-  });
-  photoCacheSet(query, url);
-  return url;
-}
-
-function setThumbPhoto(el, url) {
-  if (!el) return;
-  el.replaceChildren();
-  const img = document.createElement("img");
-  img.src = url;
-  img.alt = "";
-  img.loading = "lazy";
-  el.append(img);
-  el.classList.add("has-photo");
-}
-
-// サムネイル要素に絵文字を先に出しつつ、裏で実写を探して見つかれば差し替える。
-function hydratePhotoThumb(el, query) {
-  if (!el || !query || !getMapsKey()) return;
-  const cached = photoCacheGet(query);
-  if (cached) {
-    setThumbPhoto(el, cached);
-    return;
-  }
-  fetchPlacePhotoUrl(query).then((url) => setThumbPhoto(el, url)).catch(() => {});
+  return `<div class="${className}" aria-hidden="true">${escapeHtml(emoji)}</div>`;
 }
 
 function uniquePois(items) {
@@ -686,15 +607,52 @@ function decodeBase64(text) {
   return new TextDecoder().decode(Uint8Array.from(binary, (ch) => ch.charCodeAt(0)));
 }
 
+// トークンがあればGitHub APIから直接読む(コミット直後の最新が即返る)。
+async function fetchStateViaApi() {
+  const token = getToken();
+  if (!token) return null;
+  const response = await request(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "X-GitHub-Api-Version": "2022-11-28"
+    },
+    cache: "no-store"
+  });
+  if (!response.ok) throw new Error(`同期できません (${response.status})`);
+  const payload = await response.json();
+  remoteSha = payload.sha;
+  return normalize(JSON.parse(decodeBase64(payload.content)));
+}
+
+// トークン無し/失敗時のフォールバック。Pages配信の静的JSON(反映が遅れることがある)。
+async function fetchStateViaStatic() {
+  const response = await request(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
+  if (!response.ok) throw new Error(`読み込めません (${response.status})`);
+  return normalize(JSON.parse(await response.text()));
+}
+
 async function loadRemote() {
-  // 読み込みは常に公開の静的JSONから(トークン不要)。書き込みのみトークンを使う。
-  // こうしないと、トークンの状態(失効・レート制限など)が原因で
-  // 単なる閲覧まで失敗し、古いローカルキャッシュに固定されてしまう。
+  // まずAPI(最新)を試し、ダメなら静的JSON、それもダメならキャッシュ。
+  // API優先なので、保存直後のポーリングで古いPagesを読んで
+  // チェックが元に戻る(=同期していないように見える)問題が起きない。
   const previousDayId = state?.trips?.length ? currentDay()?.id : "";
+  let next = null;
   try {
-    const response = await request(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
-    if (!response.ok) throw new Error(`読み込めません (${response.status})`);
-    state = normalize(JSON.parse(await response.text()));
+    next = await fetchStateViaApi();
+  } catch {
+    // APIが失敗(トークン失効・レート制限など)。静的JSONへフォールバック。
+  }
+  if (!next) {
+    try {
+      next = await fetchStateViaStatic();
+    } catch {
+      // 両方失敗。下でキャッシュにフォールバック。
+    }
+  }
+  try {
+    if (!next) throw new Error("読み込めません");
+    state = next;
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
     if (previousDayId) {
       const nextDayIndex = currentTrip().days.findIndex((day) => day.id === previousDayId);
@@ -812,10 +770,27 @@ function renderShareLink() {
   if (els.buildVersion) els.buildVersion.textContent = `v${BUILD_VERSION}`;
 }
 
+// "2026-08-11" と "2026-08-16" → "2026.8.11 – 8.16"（区切りを混ぜず一貫させる）
+function formatHeaderRange(start, end) {
+  const parts = (value) => {
+    if (!value) return null;
+    const [y, m, d] = value.split("-").map(Number);
+    if ([y, m, d].some(Number.isNaN)) return null;
+    return { y, m, d };
+  };
+  const s = parts(start);
+  const e = parts(end);
+  if (!s) return "";
+  const startLabel = `${s.y}.${s.m}.${s.d}`;
+  if (!e) return startLabel;
+  const endLabel = s.y === e.y ? `${e.m}.${e.d}` : `${e.y}.${e.m}.${e.d}`;
+  return `${startLabel} – ${endLabel}`;
+}
+
 function renderHeader() {
   const trip = currentTrip();
   els.title.textContent = trip.title;
-  els.dates.textContent = `${trip.startDate?.replaceAll("-", "・")} - ${formatShortDate(trip.endDate)}`;
+  els.dates.textContent = formatHeaderRange(trip.startDate, trip.endDate);
 
   const cityLabel = trip.destination.split("/")[0].trim();
   const climate = climateEstimate(trip.destination, trip.startDate);
@@ -870,6 +845,8 @@ function renderTimeline() {
     return;
   }
   const flat = flatTimelineItems(trip);
+  const homeAbbr = homeZone(trip).abbr;
+  const destAbbr = (parseZoneString(trip.timezones?.destination) || {}).abbr;
   day.items.forEach((item, index) => {
     const poi = poiById(item.poiId);
     const zone = item.timezone ? `<span>${escapeHtml(item.timezone)}</span>` : "";
@@ -889,14 +866,20 @@ function renderTimeline() {
       }
     }
 
-    // JST補助表示は現地時刻から自動換算（手入力 homeTime はフォールバック）。
+    // JST補助表示は「乗継など中間のタイムゾーンにいる時」だけ。
+    // 日本(home)にいる時は同じなので不要。現地(destination)にいる時も本人が言う通り不要。
+    const zoneAbbr = (item.timezone || "").toUpperCase();
+    const showHome = zoneAbbr && zoneAbbr !== homeAbbr && zoneAbbr !== (destAbbr || "").toUpperCase();
     const computedHome = homeTimeLabel(current?.instant, current?.date, trip);
-    const homeText = computedHome || (item.homeTime ? `JST ${item.homeTime}` : "");
+    const homeText = showHome ? (computedHome || (item.homeTime ? `JST ${item.homeTime}` : "")) : "";
     const homeTime = homeText ? `<em>${escapeHtml(homeText)}</em>` : "";
 
     // 航空券の便名・航空会社・機材を旅程に統合表示。
     const flightBits = [item.flightNumber, item.airline, item.aircraft].filter(Boolean);
     const flightInfo = flightBits.length ? `<small class="flight-info">${escapeHtml(flightBits.join(" ・ "))}</small>` : "";
+
+    // 地図サムネイルは場所(POI)が紐づく予定だけ。便や乗継などは絵文字のまま。
+    const thumbQuery = poi ? mapQuery(poi) : "";
 
     const row = document.createElement("article");
     row.className = "timeline-row";
@@ -907,7 +890,7 @@ function renderTimeline() {
       </div>
       <span class="dot ${index % 2 ? "blue" : "pink"}"></span>
       <article class="event-card">
-        <div class="event-thumb" aria-hidden="true">${escapeHtml(defaultEmoji(item, poi))}</div>
+        ${thumbMarkup(thumbQuery, defaultEmoji(item, poi), "event-thumb")}
         <a class="event-body" href="${escapeHtml(eventMapsUrl(item))}" target="_blank" rel="noreferrer">
           <strong>${escapeHtml(item.title)}</strong>
           <small>${escapeHtml(poi ? poi.name : item.memo || "メモなし")}</small>
@@ -919,7 +902,6 @@ function renderTimeline() {
     `;
     row.querySelector(".event-edit").addEventListener("click", () => editItem(day.id, item.id));
     els.timeline.append(row);
-    hydratePhotoThumb(row.querySelector(".event-thumb"), poi ? mapQuery(poi) : `${item.title} ${trip.destination}`);
   });
 }
 
@@ -1001,7 +983,7 @@ function renderSpots() {
     const card = document.createElement("article");
     card.className = "list-card spot-card";
     card.innerHTML = `
-      <div class="spot-thumb" aria-hidden="true">${escapeHtml(defaultEmoji(null, poi))}</div>
+      ${thumbMarkup(mapQuery(poi), defaultEmoji(null, poi), "spot-thumb")}
       <div class="spot-body">
         <strong>${escapeHtml(poi.name)}</strong>
         <p>${escapeHtml(poi.area)}・${escapeHtml(poi.memo || "メモなし")}</p>
@@ -1012,7 +994,6 @@ function renderSpots() {
       if (event.target.tagName !== "A") editPoi(poi.id);
     });
     els.spotList.append(card);
-    hydratePhotoThumb(card.querySelector(".spot-thumb"), mapQuery(poi));
   });
 }
 
@@ -1107,7 +1088,9 @@ function renderTrips() {
 }
 
 // 日付(day-tabs)がその日の中身を左右するビューだけで表示する。
-const DAY_TAB_VIEWS = new Set(["home", "spots"]);
+// 日付タブは「その日のタイムライン」を切り替えるためのもの。ホームだけで意味を持つ。
+// やること・スポット・予算では不要。
+const DAY_TAB_VIEWS = new Set(["home"]);
 
 function renderView() {
   document.querySelectorAll(".view").forEach((view) => view.classList.remove("is-active"));
