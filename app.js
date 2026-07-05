@@ -1,14 +1,14 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260705-worker2";
+const BUILD_VERSION = "20260705-worker3";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
 const WORKER_URL_KEY = "trip-plan-worker-url-v1";
 const MAPS_KEY = "trip-plan-google-maps-key-v1";
 const CACHE_KEY = "trip-plan-cache-v3";
-const POLL_MS = 5000;
-const AUTO_SAVE_MS = 1400;
+const POLL_MS = 1000;
+const AUTO_SAVE_MS = 350;
 
 const els = {
   title: document.querySelector("#trip-title"),
@@ -1363,4 +1363,13 @@ setInterval(() => {
 }, POLL_MS);
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && !dirty && !saving) loadRemote();
+});
+window.addEventListener("focus", () => {
+  if (!dirty && !saving) loadRemote();
+});
+window.addEventListener("pageshow", () => {
+  if (!dirty && !saving) loadRemote();
+});
+window.addEventListener("online", () => {
+  if (!dirty && !saving) loadRemote();
 });
