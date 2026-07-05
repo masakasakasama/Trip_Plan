@@ -99,6 +99,15 @@
       ],
       "pois": [
         {
+          "id": "poi-hotel-breakfree-broadway",
+          "name": "BreakFree on Broadway Sydney",
+          "area": "Broadway, Sydney",
+          "category": "hotel",
+          "priority": "high",
+          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=BreakFree%20on%20Broadway%20Sydney",
+          "memo": "宿泊ホテル。3泊・大人2名・1室。チェックイン 8/12 14:00、チェックアウト 8/15 10:00。確認番号 C142AHB0512（Expedia確認番号 73488737906655）。"
+        },
+        {
           "id": "poi-sydney-opera",
           "name": "Sydney Opera House / Harbour",
           "area": "Circular Quay",
@@ -204,7 +213,7 @@
               "timezone": "AEST",
               "homeTime": "13:00",
               "title": "ホテル周辺で軽く散歩",
-              "poiId": "poi-sydney-opera",
+              "poiId": "poi-hotel-breakfree-broadway",
               "memo": "眠気が強ければ無理しない。夜まで起きて現地時間に合わせる。"
             }
           ]
