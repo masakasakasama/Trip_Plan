@@ -3,6 +3,7 @@
 const BUILD_VERSION = "20260705-worker2";
 
 const DATA_URL = "trip-plan.json";
+const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
 const WORKER_URL_KEY = "trip-plan-worker-url-v1";
 const MAPS_KEY = "trip-plan-google-maps-key-v1";
 const CACHE_KEY = "trip-plan-cache-v3";
@@ -76,9 +77,7 @@ function clearLegacyToken() {
 
 // 共有リンクは素のURL。埋め込みトークンで同期するので #gh= は付けない。
 function buildShareUrl() {
-  const url = new URL(window.location.href);
-  url.hash = "";
-  return url.toString();
+  return CANONICAL_URL;
 }
 
 async function copyText(text) {
