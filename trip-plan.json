@@ -8,13 +8,15 @@
       "destination": "Sydney",
       "startDate": "2026-08-11",
       "endDate": "2026-08-16",
-      "travelers": ["夫", "Rebecca"],
+      "travelers": [
+        "夫",
+        "Rebecca"
+      ],
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-07-05T01:09:53.426Z",
+      "lastUpdated": "2026-07-05T19:26:35.571Z",
       "archived": false,
-      "source": "Flight booking screenshots",
       "timezones": {
         "home": "JST UTC+9",
         "tokyo": "JST UTC+9",
@@ -22,7 +24,6 @@
         "destination": "AEST UTC+10",
         "rule": "主表示は各空港の現地時刻。日本時間は補助表示。Sydneyは2026年8月はAEST UTC+10で、夏時間ではない。"
       },
-      "budgetItems": [],
       "todos": [
         {
           "id": "todo-passport",
@@ -334,7 +335,8 @@
             }
           ]
         }
-      ]
+      ],
+      "budgetItems": []
     }
   ]
 }
