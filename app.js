@@ -1,3 +1,7 @@
+// index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
+// 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
+const BUILD_VERSION = "20260705-cards1";
+
 const GITHUB = {
   owner: "masakasakasama",
   repo: "Trip_Plan",
@@ -44,6 +48,7 @@ const els = {
   token: document.querySelector("#github-token"),
   mapsKey: document.querySelector("#maps-api-key"),
   shareLink: document.querySelector("#share-link"),
+  buildVersion: document.querySelector("#build-version"),
   archiveToggle: document.querySelector("#archive-toggle"),
   routeMap: document.querySelector("#route-map"),
   mapDayTitle: document.querySelector("#map-day-title"),
@@ -725,6 +730,7 @@ function renderShareLink() {
   }
   if (els.token) els.token.value = getToken();
   if (els.mapsKey) els.mapsKey.value = getMapsKey();
+  if (els.buildVersion) els.buildVersion.textContent = `v${BUILD_VERSION}`;
 }
 
 function renderHeader() {
