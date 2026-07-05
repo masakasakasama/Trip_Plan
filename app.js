@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260706-controls1";
+const BUILD_VERSION = "20260706-budget1";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -9,6 +9,25 @@ const MAPS_KEY = "trip-plan-google-maps-key-v1";
 const CACHE_KEY = "trip-plan-cache-v3";
 const POLL_MS = 1000;
 const AUTO_SAVE_MS = 350;
+
+const BUDGET_CURRENCIES = [
+  { code: "JPY", label: "日本円", symbol: "¥", showTotal: true },
+  { code: "AUD", label: "豪ドル", symbol: "A$", showTotal: true },
+  { code: "PHP", label: "フィリピンペソ", symbol: "₱", showTotal: false },
+  { code: "EUR", label: "ユーロ", symbol: "€", showTotal: true }
+];
+
+const DEFAULT_BUDGET_CATEGORIES = [
+  "航空券",
+  "ホテル",
+  "食事",
+  "移動",
+  "観光",
+  "保険",
+  "ビザ",
+  "買い物",
+  "その他"
+];
 
 const els = {
   title: document.querySelector("#trip-title"),
@@ -140,6 +159,8 @@ function showEditor({ title, fields, saveLabel = "保存", onSave, onDelete }) {
     input.name = field.name;
     input.required = Boolean(field.required);
     if (field.placeholder) input.placeholder = field.placeholder;
+    if (field.step) input.step = field.step;
+    if (field.min !== undefined) input.min = field.min;
     if (field.type && field.type !== "textarea" && field.type !== "select") input.type = field.type;
     if (field.type === "textarea") input.rows = field.rows || 4;
     if (field.type === "select") {
@@ -256,6 +277,7 @@ function normalizeTrip(trip) {
     todos: Array.isArray(trip.todos) ? trip.todos : [],
     pois: Array.isArray(trip.pois) ? trip.pois : [],
     days: Array.isArray(trip.days) ? trip.days : [],
+    budgetCategories: Array.isArray(trip.budgetCategories) ? trip.budgetCategories : [],
     budgetItems: Array.isArray(trip.budgetItems) ? trip.budgetItems : []
   };
 }
@@ -284,6 +306,53 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[ch]));
+}
+
+function budgetCurrency(code) {
+  return BUDGET_CURRENCIES.find((currency) => currency.code === code) || BUDGET_CURRENCIES[0];
+}
+
+function budgetAmount(entry, key) {
+  return Number(entry?.[key]) || 0;
+}
+
+function formatMoney(amount, currencyCode = "JPY") {
+  const currency = budgetCurrency(currencyCode);
+  const value = Number(amount) || 0;
+  return `${currency.symbol}${value.toLocaleString()}`;
+}
+
+function budgetCategories(trip) {
+  const categories = new Set(DEFAULT_BUDGET_CATEGORIES);
+  (trip.budgetCategories || []).forEach((category) => {
+    if (category) categories.add(category);
+  });
+  (trip.budgetItems || []).forEach((entry) => {
+    if (entry.category) categories.add(entry.category);
+  });
+  return [...categories];
+}
+
+function addBudgetCategory(trip, category) {
+  const normalized = category.trim();
+  if (!normalized) return "";
+  if (!Array.isArray(trip.budgetCategories)) trip.budgetCategories = [];
+  if (!budgetCategories(trip).includes(normalized)) trip.budgetCategories.push(normalized);
+  return normalized;
+}
+
+function budgetIcon(entry) {
+  if (entry.icon) return entry.icon;
+  const text = `${entry.label || ""} ${entry.category || ""}`.toLowerCase();
+  if (/航空|飛行機|flight|air|pr\d+|ticket|チケット/.test(text)) return "✈️";
+  if (/hotel|ホテル|宿|チェックイン|チェックアウト/.test(text)) return "🏨";
+  if (/食|ごはん|レストラン|カフェ|coffee|meal|food/.test(text)) return "🍽️";
+  if (/移動|電車|バス|taxi|uber|grab|空港|transport/.test(text)) return "🚕";
+  if (/観光|入場|ツアー|spot|museum|opera|beach/.test(text)) return "🎟️";
+  if (/保険|insurance/.test(text)) return "🛡️";
+  if (/visa|ビザ|eta/.test(text)) return "🛂";
+  if (/買|土産|shopping|shop/.test(text)) return "🛍️";
+  return "💳";
 }
 
 function formatShortDate(value) {
@@ -892,11 +961,20 @@ function renderTimeline() {
 }
 
 function budgetStats(trip) {
-  const spent = trip.budgetItems.reduce((sum, entry) => sum + (Number(entry.actual) || 0), 0);
-  const planned = trip.budgetItems.reduce((sum, entry) => sum + (Number(entry.planned) || 0), 0);
+  const totalsByCurrency = {};
+  BUDGET_CURRENCIES.forEach((currency) => {
+    totalsByCurrency[currency.code] = { planned: 0, spent: 0 };
+  });
+  trip.budgetItems.forEach((entry) => {
+    const code = budgetCurrency(entry.currency).code;
+    totalsByCurrency[code].planned += budgetAmount(entry, "planned");
+    totalsByCurrency[code].spent += budgetAmount(entry, "actual");
+  });
+  const spent = totalsByCurrency.JPY?.spent || 0;
+  const planned = totalsByCurrency.JPY?.planned || 0;
   const total = trip.budget || 0;
   const percent = total ? Math.min(100, Math.round((spent / total) * 100)) : 0;
-  return { spent, planned, total, percent };
+  return { spent, planned, total, percent, totalsByCurrency };
 }
 
 function renderProgress() {
@@ -1029,26 +1107,39 @@ function renderBudget() {
   const trip = currentTrip();
   const stats = budgetStats(trip);
   if (els.budgetSummary) {
+    const totals = BUDGET_CURRENCIES
+      .filter((currency) => currency.showTotal)
+      .map((currency) => {
+        const total = stats.totalsByCurrency[currency.code] || { spent: 0, planned: 0 };
+        return `
+          <div>
+            <strong>${formatMoney(total.spent, currency.code)}</strong>
+            <span>${currency.label} / 予定 ${formatMoney(total.planned, currency.code)}</span>
+          </div>
+        `;
+      }).join("");
     els.budgetSummary.innerHTML = `
-      <div><strong>${stats.total.toLocaleString()}円</strong><span>予算</span></div>
-      <div><strong>${stats.spent.toLocaleString()}円</strong><span>使った</span></div>
-      <div><strong>${Math.max(0, stats.total - stats.spent).toLocaleString()}円</strong><span>残り</span></div>
+      ${totals}
+      <div class="budget-total-jpy"><strong>${formatMoney(Math.max(0, stats.total - stats.spent), "JPY")}</strong><span>日本円予算の残り</span></div>
       <meter min="0" max="100" value="${stats.percent}"></meter>
     `;
   }
   if (!els.budgetList) return;
   els.budgetList.replaceChildren();
   trip.budgetItems.forEach((entry) => {
+    const currency = budgetCurrency(entry.currency);
     const card = document.createElement("article");
     card.className = "list-card budget-card";
     card.innerHTML = `
-      <div>
+      <div class="budget-icon" aria-hidden="true">${budgetIcon(entry)}</div>
+      <div class="budget-body">
         <strong>${escapeHtml(entry.label)}</strong>
         <p>${escapeHtml(entry.category || "未分類")}${entry.memo ? `・${escapeHtml(entry.memo)}` : ""}</p>
+        <span class="budget-currency">${escapeHtml(currency.label)}</span>
       </div>
       <div class="amount">
-        ${(Number(entry.actual) || 0).toLocaleString()}円
-        <small>予定 ${(Number(entry.planned) || 0).toLocaleString()}円</small>
+        ${formatMoney(budgetAmount(entry, "actual"), currency.code)}
+        <small>予定 ${formatMoney(budgetAmount(entry, "planned"), currency.code)}</small>
       </div>
     `;
     card.addEventListener("click", () => editBudgetItem(entry.id));
@@ -1315,20 +1406,26 @@ function editTodo(id) {
 
 function addBudgetItem() {
   const trip = currentTrip();
+  const categoryOptions = budgetCategories(trip).map((category) => ({ value: category, label: category }));
+  const currencyOptions = BUDGET_CURRENCIES.map((currency) => ({ value: currency.code, label: currency.label }));
   showEditor({
     title: "予算項目を追加",
     fields: [
       { name: "label", label: "項目名", required: true, placeholder: "例: 航空券" },
-      { name: "category", label: "カテゴリ", value: "その他" },
-      { name: "planned", label: "予定金額", type: "number" },
-      { name: "actual", label: "使った金額", type: "number" },
+      { name: "category", label: "カテゴリ", type: "select", value: "その他", options: categoryOptions },
+      { name: "newCategory", label: "カテゴリ追加", placeholder: "候補にない時だけ入力" },
+      { name: "currency", label: "通貨", type: "select", value: "JPY", options: currencyOptions },
+      { name: "planned", label: "予定金額", type: "number", step: "0.01", min: "0" },
+      { name: "actual", label: "使った金額", type: "number", step: "0.01", min: "0" },
       { name: "memo", label: "メモ", type: "textarea", rows: 3 }
     ],
     onSave: () => {
+      const category = addBudgetCategory(trip, formValue("newCategory")) || formValue("category") || "その他";
       trip.budgetItems.push({
         id: uid("budget"),
         label: formValue("label"),
-        category: formValue("category"),
+        category,
+        currency: formValue("currency") || "JPY",
         planned: Number(formValue("planned")) || 0,
         actual: Number(formValue("actual")) || 0,
         memo: formValue("memo")
@@ -1343,18 +1440,24 @@ function editBudgetItem(id) {
   const trip = currentTrip();
   const entry = trip.budgetItems.find((item) => item.id === id);
   if (!entry) return;
+  const categoryOptions = budgetCategories(trip).map((category) => ({ value: category, label: category }));
+  const currencyOptions = BUDGET_CURRENCIES.map((currency) => ({ value: currency.code, label: currency.label }));
   showEditor({
     title: "予算項目を編集",
     fields: [
       { name: "label", label: "項目名", value: entry.label, required: true },
-      { name: "category", label: "カテゴリ", value: entry.category },
-      { name: "planned", label: "予定金額", type: "number", value: entry.planned },
-      { name: "actual", label: "使った金額", type: "number", value: entry.actual },
+      { name: "category", label: "カテゴリ", type: "select", value: entry.category || "その他", options: categoryOptions },
+      { name: "newCategory", label: "カテゴリ追加", placeholder: "候補にない時だけ入力" },
+      { name: "currency", label: "通貨", type: "select", value: budgetCurrency(entry.currency).code, options: currencyOptions },
+      { name: "planned", label: "予定金額", type: "number", value: budgetAmount(entry, "planned"), step: "0.01", min: "0" },
+      { name: "actual", label: "使った金額", type: "number", value: budgetAmount(entry, "actual"), step: "0.01", min: "0" },
       { name: "memo", label: "メモ", type: "textarea", value: entry.memo, rows: 3 }
     ],
     onSave: () => {
+      const category = addBudgetCategory(trip, formValue("newCategory")) || formValue("category") || "その他";
       entry.label = formValue("label");
-      entry.category = formValue("category");
+      entry.category = category;
+      entry.currency = formValue("currency") || "JPY";
       entry.planned = Number(formValue("planned")) || 0;
       entry.actual = Number(formValue("actual")) || 0;
       entry.memo = formValue("memo");
