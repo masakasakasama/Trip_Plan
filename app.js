@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260706-swipe3";
+const BUILD_VERSION = "20260706-stable1";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -51,6 +51,7 @@ const els = {
 
 let state = null;
 let remoteSha = "";
+let lastRenderedSha = "";
 let activeDayIndex = 0;
 let activeView = "home";
 let dirty = false;
@@ -176,6 +177,11 @@ function switchDay(index) {
   renderTimeline();
   renderMap();
   renderDayTabs();
+  scrollActiveDayTab();
+}
+
+function scrollActiveDayTab() {
+  els.dayTabs?.querySelector(".is-active")?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
 }
 
 function bindDaySwipe() {
@@ -668,6 +674,10 @@ async function loadRemote() {
   }
   try {
     if (!next) throw new Error("読み込めません");
+    if (remoteSha && remoteSha === lastRenderedSha) {
+      return;
+    }
+
     state = next;
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
     if (previousDayId) {
@@ -677,6 +687,7 @@ async function loadRemote() {
       activeDayIndex = Math.min(activeDayIndex, Math.max(0, currentTrip().days.length - 1));
     }
     render();
+    lastRenderedSha = remoteSha || lastRenderedSha;
     setStatus(workerUrl() ? "共有リンク同期中" : "Worker未設定・閲覧のみ", workerUrl() ? "" : "soft");
   } catch (error) {
     const cache = localStorage.getItem(CACHE_KEY);
@@ -715,6 +726,7 @@ async function saveRemote() {
     if (!response.ok) throw new Error(`保存失敗 (${response.status})`);
     const payload = await response.json();
     remoteSha = payload.sha || response.headers?.get?.("X-Trip-Sha") || "";
+    lastRenderedSha = remoteSha || lastRenderedSha;
     dirty = false;
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
     setStatus("保存済み");
@@ -808,7 +820,6 @@ function renderDayTabs() {
   addButton.setAttribute("aria-label", "Add day");
   addButton.addEventListener("click", addDay);
   els.dayTabs.append(addButton);
-  els.dayTabs.querySelector(".is-active")?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
 }
 
 function renderTimeline() {
@@ -988,7 +999,8 @@ function renderMap() {
   }
   els.openDayRoute.href = googleMapsDirectionsUrl(points);
   els.openDayRoute.textContent = points.length >= 2 ? "ルートを開く" : "Mapで開く";
-  els.routeMap.src = googleMapsEmbedUrl(points);
+  const nextMapSrc = googleMapsEmbedUrl(points);
+  if (els.routeMap.src !== nextMapSrc) els.routeMap.src = nextMapSrc;
   renderRouteSummary(points);
 }
 
