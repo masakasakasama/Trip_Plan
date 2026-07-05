@@ -261,6 +261,10 @@ h1 {
   display: block;
 }
 
+#view-home {
+  touch-action: pan-y;
+}
+
 .timeline {
   display: grid;
   gap: 18px;
