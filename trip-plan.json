@@ -106,6 +106,7 @@
           "category": "hotel",
           "priority": "high",
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=BreakFree%20on%20Broadway%20Sydney",
+          "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Four_Points_by_Sheraton_Sydney%2C_Central_Park_-_View_from_Broadway.jpg/330px-Four_Points_by_Sheraton_Sydney%2C_Central_Park_-_View_from_Broadway.jpg",
           "memo": "宿泊ホテル。3泊・大人2名・1室。チェックイン 8/12 14:00、チェックアウト 8/15 10:00。"
         },
         {
@@ -115,6 +116,7 @@
           "category": "spot",
           "priority": "high",
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Sydney%20Opera%20House",
+          "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/06_Sydney_Opera_House%2C_Australia.jpg/330px-06_Sydney_Opera_House%2C_Australia.jpg",
           "memo": "初回の象徴。夕方から夜景まで残すと写真が強い。"
         },
         {
@@ -124,6 +126,7 @@
           "category": "nature",
           "priority": "medium",
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Bondi%20Beach",
+          "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Sydney_%28AU%29%2C_Bondi_Beach_--_2019_--_2349.jpg/330px-Sydney_%28AU%29%2C_Bondi_Beach_--_2019_--_2349.jpg",
           "memo": "海沿い散歩。天気がいい日の午前か夕方。"
         },
         {
@@ -133,6 +136,7 @@
           "category": "nature",
           "priority": "medium",
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Blue%20Mountains%20Katoomba",
+          "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Three_Sisters_Sunset.jpg/330px-Three_Sisters_Sunset.jpg",
           "memo": "Sydneyから日帰り候補。移動負荷があるので休憩日とセットで判断。"
         }
       ],

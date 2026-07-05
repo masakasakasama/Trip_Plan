@@ -389,6 +389,19 @@ h1 {
   pointer-events: none;
 }
 
+.event-thumb.is-photo,
+.spot-thumb.is-photo {
+  background: var(--line);
+}
+
+.event-thumb img,
+.spot-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
 .event-body {
   display: block;
   flex: 1;
