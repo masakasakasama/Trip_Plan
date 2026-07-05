@@ -395,6 +395,88 @@ meter::-webkit-meter-bar {
   gap: 12px;
 }
 
+.todo-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  border-radius: 16px;
+  background: var(--blue-soft);
+  color: #5d9aaa;
+  font-weight: 900;
+  padding: 13px 15px;
+}
+
+.todo-summary span {
+  color: #8ca4ab;
+}
+
+.todo-card {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  padding: 15px;
+}
+
+.todo-check {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #f3b6ca;
+  border-radius: 50%;
+  background: #fff;
+  color: #fff;
+  font-weight: 950;
+}
+
+.todo-card.is-done {
+  opacity: 0.64;
+}
+
+.todo-card.is-done .todo-check {
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.todo-card strong {
+  display: block;
+  margin-top: 7px;
+}
+
+.todo-card p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.todo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.todo-meta span {
+  border-radius: 999px;
+  background: #faf4f7;
+  color: #9b929c;
+  font-size: 0.74rem;
+  font-weight: 900;
+  padding: 4px 8px;
+}
+
+.todo-meta .priority.high {
+  background: #fff3f7;
+  color: #c47494;
+}
+
+.todo-meta .priority.medium {
+  background: #eef9fb;
+  color: #5d9aaa;
+}
+
 .spot-card a {
   display: inline-flex;
   margin-top: 10px;

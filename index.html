@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Studio</title>
-    <link rel="stylesheet" href="styles.css?v=20260704-timeline6">
+    <link rel="stylesheet" href="styles.css?v=20260704-todos1">
   </head>
   <body>
     <main class="stage">
@@ -40,7 +40,7 @@
           <div class="timeline" id="timeline"></div>
           <div class="progress-grid">
             <article class="progress-card pink">
-              <div><strong>持ち物</strong><span id="packing-score">75%</span></div>
+              <div><strong>やること</strong><span id="packing-score">0%</span></div>
               <meter min="0" max="100" value="75"></meter>
             </article>
             <article class="progress-card blue">
@@ -48,6 +48,15 @@
               <meter min="0" max="100" value="52"></meter>
             </article>
           </div>
+        </section>
+
+        <section class="view" id="view-todos" aria-label="やること">
+          <div class="section-title">
+            <h2>やること</h2>
+            <button id="add-todo" type="button">追加</button>
+          </div>
+          <div class="todo-summary" id="todo-summary"></div>
+          <div class="stack-list" id="todo-list"></div>
         </section>
 
         <section class="view" id="view-itinerary" aria-label="旅程">
@@ -67,24 +76,11 @@
           <div class="stack-list" id="spot-list"></div>
         </section>
 
-        <section class="view" id="view-memory" aria-label="おもいで">
-          <div class="section-title">
-            <h2>メモ</h2>
-            <button id="add-note" type="button">追加</button>
-          </div>
-          <div class="stack-list" id="note-list"></div>
-          <div class="archive-box">
-            <strong>旅行後</strong>
-            <p>終わったTripは過去Tripへ移動して、このURLの中に残せます。</p>
-            <button id="archive-toggle" type="button">過去Tripへ移動</button>
-          </div>
-        </section>
-
         <nav class="bottom-nav" aria-label="メインナビ">
           <button class="is-active" data-view="home" type="button"><span>🏠</span>ホーム</button>
+          <button data-view="todos" type="button"><span>✅</span>やること</button>
           <button data-view="itinerary" type="button"><span>🗓️</span>旅程</button>
           <button data-view="spots" type="button"><span>📍</span>スポット</button>
-          <button data-view="memory" type="button"><span>📷</span>おもいで</button>
         </nav>
       </section>
     </main>
@@ -123,6 +119,6 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=20260704-timeline6" defer></script>
+    <script src="app.js?v=20260704-todos1" defer></script>
   </body>
 </html>

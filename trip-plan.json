@@ -148,6 +148,80 @@
           ]
         }
       ],
+      "todos": [
+        {
+          "id": "todo-passport",
+          "title": "パスポート有効期限を2人分確認",
+          "detail": "夫・Rebeccaそれぞれ。2026年8月旅行なので、残存期間と氏名表記を航空券と照合する。",
+          "due": "今週",
+          "priority": "high",
+          "owner": "2人",
+          "status": "open"
+        },
+        {
+          "id": "todo-australia-eta",
+          "title": "オーストラリアETAを2人分申請",
+          "detail": "国籍ごとに条件確認。日本パスポート前提ならETA subclass 601。パスポート更新後に申請。",
+          "due": "出発1か月前まで",
+          "priority": "high",
+          "owner": "2人",
+          "status": "open"
+        },
+        {
+          "id": "todo-insurance-rebecca",
+          "title": "Rebeccaの海外旅行保険を加入確認",
+          "detail": "医療費、キャッシュレス診療、携行品、航空機遅延、乗継ミス、既往症条件を確認。",
+          "due": "航空券確定後すぐ",
+          "priority": "high",
+          "owner": "Rebecca",
+          "status": "open"
+        },
+        {
+          "id": "todo-insurance-husband",
+          "title": "夫の海外旅行保険を加入確認",
+          "detail": "Rebeccaと同じ条件で比較。クレカ付帯なら利用条件と補償額を確認。",
+          "due": "航空券確定後すぐ",
+          "priority": "high",
+          "owner": "夫",
+          "status": "open"
+        },
+        {
+          "id": "todo-manila-transit",
+          "title": "Manila長時間乗継の方針を決める",
+          "detail": "往路MNL 15h55m。空港内待機か入国するかを決める。入国するならeTravelと残存期間を確認。",
+          "due": "7月中",
+          "priority": "high",
+          "owner": "2人",
+          "status": "open"
+        },
+        {
+          "id": "todo-sydney-hotel",
+          "title": "Sydney宿を確定",
+          "detail": "8/12朝着。荷物預け、早朝到着、空港からの移動、住所を確認。",
+          "due": "7月中",
+          "priority": "medium",
+          "owner": "2人",
+          "status": "open"
+        },
+        {
+          "id": "todo-airport-transport",
+          "title": "羽田深夜移動と帰国日の帰宅手段を決める",
+          "detail": "往路は8/11 02:05発なので前日深夜移動。復路は8/16 00:45羽田着。",
+          "due": "出発2週間前まで",
+          "priority": "medium",
+          "owner": "夫",
+          "status": "open"
+        },
+        {
+          "id": "todo-sydney-plan",
+          "title": "Sydneyで行きたい場所を絞る",
+          "detail": "Opera House / Harbour、Bondi、Blue Mountainsを体力と天気で調整。",
+          "due": "出発2週間前まで",
+          "priority": "medium",
+          "owner": "2人",
+          "status": "open"
+        }
+      ],
       "pois": [
         {
           "id": "poi-sydney-opera",
@@ -357,8 +431,7 @@
         "航空券の出発/到着時刻は、それぞれの空港の現地時刻で読む。予定表も同じく現地時刻を主表示にする。",
         "日本時間は体内時計・連絡・睡眠調整のために補助メモで表示する。",
         "日付またぎは +1 day だけでなく、実際の日付のDayを分けると混乱しにくい。",
-        "Sydneyは2026年8月はAEST UTC+10。ManilaはPHT UTC+8。TokyoはJST UTC+9。",
-        "やること: 海外旅行保険は夫・Rebeccaそれぞれで加入確認。医療費、携行品、航空機遅延、乗継ミス、キャッシュレス診療、既往症条件を確認する。"
+        "Sydneyは2026年8月はAEST UTC+10。ManilaはPHT UTC+8。TokyoはJST UTC+9。"
       ]
     }
   ]
