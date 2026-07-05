@@ -183,18 +183,36 @@ h1 {
 }
 
 .day-tabs button {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
   flex: 0 0 auto;
-  min-width: 74px;
+  min-width: 86px;
   border-radius: 999px;
   background: #faf4f7;
   color: #a89faa;
   font-weight: 900;
-  padding: 13px 18px;
+  padding: 11px 17px;
+}
+
+.day-tabs button strong {
+  font-size: 0.95rem;
+  line-height: 1.1;
+}
+
+.day-tabs button span {
+  color: #b8adb8;
+  font-size: 0.72rem;
+  line-height: 1.1;
 }
 
 .day-tabs button.is-active {
   background: var(--deep);
   color: #fff;
+}
+
+.day-tabs button.is-active span {
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .view {
