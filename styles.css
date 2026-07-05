@@ -943,6 +943,30 @@ textarea {
   padding: 20px;
 }
 
+.editor-head {
+  gap: 12px;
+}
+
+.editor-head-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.editor-head-actions button {
+  border-radius: 999px;
+  background: #f8f2f5;
+  color: var(--deep);
+  font-weight: 900;
+  padding: 9px 14px;
+}
+
+.editor-head-actions .wide-action {
+  background: var(--deep);
+  color: #fff;
+}
+
 .editor-fields {
   display: grid;
   gap: 13px;
@@ -967,7 +991,7 @@ textarea {
   position: sticky;
   bottom: 0;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   border-top: 1px solid var(--line);
   background: var(--paper);
