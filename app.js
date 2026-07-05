@@ -79,6 +79,8 @@ function normalizeTrip(trip) {
     status: valueOr(trip.status, "ラフ設計"),
     lastUpdated: valueOr(trip.lastUpdated, new Date().toISOString()),
     archived: Boolean(trip.archived),
+    timezones: trip.timezones || {},
+    flights: Array.isArray(trip.flights) ? trip.flights : [],
     pois: Array.isArray(trip.pois) ? trip.pois : [],
     days: Array.isArray(trip.days) ? trip.days : [],
     notes: Array.isArray(trip.notes) ? trip.notes : []
@@ -270,7 +272,9 @@ function renderHeader() {
   const trip = currentTrip();
   els.title.textContent = trip.title;
   els.dates.textContent = `${trip.startDate?.replaceAll("-", "・")} - ${formatShortDate(trip.endDate)}`;
-  els.place.textContent = `${trip.destination.split("/")[0].trim()}・晴れ 26°`;
+  els.place.textContent = trip.timezones?.destination
+    ? `${trip.destination.split("/")[0].trim()}・${trip.timezones.destination}`
+    : `${trip.destination.split("/")[0].trim()}・晴れ 26°`;
   els.countdown.textContent = `${daysUntil(trip.startDate)}日`;
   els.archiveToggle.textContent = trip.archived ? "現在Tripに戻す" : "過去Tripへ移動";
 }
@@ -301,14 +305,20 @@ function renderTimeline() {
   }
   day.items.forEach((item, index) => {
     const poi = poiById(item.poiId);
+    const zone = item.timezone ? `<span>${item.timezone}</span>` : "";
+    const homeTime = item.homeTime ? `<em>JST ${item.homeTime}</em>` : "";
     const row = document.createElement("article");
     row.className = "timeline-row";
     row.innerHTML = `
-      <time>${item.time || "--:--"}</time>
+      <div class="time-cell">
+        <time>${item.time || "--:--"}</time>
+        ${zone}
+      </div>
       <span class="dot ${index % 2 ? "blue" : "pink"}"></span>
       <button class="event-card" type="button">
         <strong>${item.title}</strong>
         <small>${poi ? poi.name : item.memo || "メモなし"}</small>
+        ${homeTime}
       </button>
     `;
     row.querySelector(".event-card").addEventListener("click", () => editItem(day.id, item.id));
