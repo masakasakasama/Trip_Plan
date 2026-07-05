@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260706-budget1";
+const BUILD_VERSION = "20260706-popup1";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -64,7 +64,6 @@ const els = {
   editorFields: document.querySelector("#editor-fields"),
   editorSave: document.querySelector("#editor-save"),
   editorDelete: document.querySelector("#editor-delete"),
-  editorCancel: document.querySelector("#editor-cancel"),
   editorClose: document.querySelector("#editor-close")
 };
 
@@ -77,6 +76,8 @@ let dirty = false;
 let saving = false;
 let autoSaveTimer = null;
 let activeEditor = null;
+let editorInitialSnapshot = "";
+let editorSubmitting = false;
 
 function workerUrl() {
   const configured = window.TRIP_SYNC_WORKER_URL || localStorage.getItem(WORKER_URL_KEY) || "";
@@ -135,9 +136,42 @@ function formValue(name) {
   return field ? field.value.trim() : "";
 }
 
+function formSnapshot() {
+  if (!els.editorForm) return "";
+  const data = new FormData(els.editorForm);
+  return JSON.stringify([...data.entries()]);
+}
+
+function editorHasChanges() {
+  return Boolean(activeEditor) && formSnapshot() !== editorInitialSnapshot;
+}
+
+function canCloseEditor() {
+  return !editorHasChanges() || window.confirm("入力内容が保存されていません。閉じますか？");
+}
+
 function closeEditor() {
   activeEditor = null;
+  editorInitialSnapshot = "";
   els.editorDialog?.close();
+}
+
+function requestCloseEditor() {
+  if (canCloseEditor()) closeEditor();
+}
+
+function closeDialogOnBackdrop(dialog, canClose = () => true) {
+  dialog?.addEventListener("click", (event) => {
+    if (event.target === dialog && canClose()) dialog.close();
+  });
+}
+
+function settingsHasChanges() {
+  return Boolean(els.settingsDialog?.open) && (els.mapsKey?.value?.trim() || "") !== getMapsKey();
+}
+
+function canCloseSettings() {
+  return !settingsHasChanges() || window.confirm("入力内容が保存されていません。閉じますか？");
 }
 
 function showEditor({ title, fields, saveLabel = "保存", onSave, onDelete }) {
@@ -177,6 +211,7 @@ function showEditor({ title, fields, saveLabel = "保存", onSave, onDelete }) {
   });
 
   els.editorDialog.showModal();
+  editorInitialSnapshot = formSnapshot();
   const firstInput = els.editorFields.querySelector("input, textarea, select");
   requestAnimationFrame(() => firstInput?.focus());
 }
@@ -1484,14 +1519,30 @@ function newTrip() {
 function bind() {
   els.editorForm?.addEventListener("submit", (event) => {
     event.preventDefault();
+    editorSubmitting = true;
     activeEditor?.onSave?.();
     closeEditor();
+    editorSubmitting = false;
   });
-  els.editorCancel?.addEventListener("click", closeEditor);
-  els.editorClose?.addEventListener("click", closeEditor);
+  els.editorClose?.addEventListener("click", requestCloseEditor);
   els.editorDelete?.addEventListener("click", () => {
+    editorSubmitting = true;
     activeEditor?.onDelete?.();
     closeEditor();
+    editorSubmitting = false;
+  });
+  closeDialogOnBackdrop(els.tripDialog);
+  els.settingsDialog?.querySelector("form")?.addEventListener("submit", (event) => {
+    if (!canCloseSettings()) event.preventDefault();
+  });
+  els.settingsDialog?.addEventListener("cancel", (event) => {
+    if (!canCloseSettings()) event.preventDefault();
+  });
+  closeDialogOnBackdrop(els.settingsDialog, canCloseSettings);
+  closeDialogOnBackdrop(els.editorDialog, canCloseEditor);
+  els.editorDialog?.addEventListener("cancel", (event) => {
+    if (editorSubmitting) return;
+    if (!canCloseEditor()) event.preventDefault();
   });
   document.querySelector("#trip-switcher").addEventListener("click", () => els.tripDialog.showModal());
   document.querySelector("#sync-settings").addEventListener("click", () => {
