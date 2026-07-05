@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-07-05T19:26:56.842Z",
+      "lastUpdated": "2026-07-05T23:07:09.380Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -93,6 +93,15 @@
           "title": "Sydneyで行きたい場所を絞る",
           "detail": "Opera House / Harbour、Bondi、Blue Mountainsを体力と天気で調整。",
           "due": "出発2週間前まで",
+          "priority": "medium",
+          "owner": "2人",
+          "status": "open"
+        },
+        {
+          "id": "todo-mr8ei99b-3kpdw",
+          "title": "マレーシアビザ",
+          "detail": "",
+          "due": "出発1か月前",
           "priority": "medium",
           "owner": "2人",
           "status": "open"
