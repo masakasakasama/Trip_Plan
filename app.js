@@ -9,6 +9,7 @@ const API_URL = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/con
 const DATA_URL = "trip-plan.json";
 const TOKEN_KEY = "trip-plan-github-token-v1";
 const CACHE_KEY = "trip-plan-cache-v3";
+const SHARE_TOKEN_PARAM = "gh";
 const POLL_MS = 5000;
 const AUTO_SAVE_MS = 1400;
 
@@ -29,6 +30,7 @@ const els = {
   tripList: document.querySelector("#trip-list"),
   settingsDialog: document.querySelector("#settings-dialog"),
   token: document.querySelector("#github-token"),
+  shareLink: document.querySelector("#share-link"),
   archiveToggle: document.querySelector("#archive-toggle")
 };
 
@@ -42,6 +44,48 @@ let autoSaveTimer = null;
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY) || "";
+}
+
+function getHashParams() {
+  return new URLSearchParams(window.location.hash.replace(/^#/, ""));
+}
+
+function importTokenFromLink() {
+  const params = getHashParams();
+  const token = params.get(SHARE_TOKEN_PARAM);
+  if (!token) return false;
+  localStorage.setItem(TOKEN_KEY, token);
+  params.delete(SHARE_TOKEN_PARAM);
+  const nextHash = params.toString();
+  const nextUrl = `${window.location.pathname}${window.location.search}${nextHash ? `#${nextHash}` : ""}`;
+  window.history.replaceState(null, "", nextUrl);
+  return true;
+}
+
+function buildShareUrl() {
+  const token = getToken();
+  const url = new URL(window.location.href);
+  url.hash = "";
+  if (token) {
+    url.hash = `${SHARE_TOKEN_PARAM}=${encodeURIComponent(token)}`;
+  }
+  return url.toString();
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.setAttribute("readonly", "");
+  input.style.position = "fixed";
+  input.style.opacity = "0";
+  document.body.append(input);
+  input.select();
+  document.execCommand("copy");
+  input.remove();
 }
 
 function setStatus(text, tone = "") {
@@ -192,7 +236,7 @@ async function loadRemote() {
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
     activeDayIndex = 0;
     render();
-    setStatus(token ? "自動同期中" : "同期設定待ち", token ? "" : "soft");
+    setStatus(token ? "共有リンク同期中" : "共有リンク待ち", token ? "" : "soft");
   } catch (error) {
     const cache = localStorage.getItem(CACHE_KEY);
     if (cache) {
@@ -207,7 +251,7 @@ async function loadRemote() {
 
 function markDirty() {
   dirty = true;
-  setStatus(getToken() ? "保存待ち" : "同期設定待ち", "soft");
+  setStatus(getToken() ? "保存待ち" : "共有リンク待ち", "soft");
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(saveRemote, AUTO_SAVE_MS);
 }
@@ -226,7 +270,7 @@ async function saveRemote() {
       });
       if (latest.ok) remoteSha = (await latest.json()).sha;
     }
-    const response = await request(API_URL, {
+    let response = await request(API_URL, {
       method: "PUT",
       headers: {
         Accept: "application/vnd.github+json",
@@ -241,6 +285,27 @@ async function saveRemote() {
         branch: GITHUB.branch
       })
     }, 15000);
+    if (response.status === 409) {
+      const latest = await request(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${getToken()}`, Accept: "application/vnd.github+json" }
+      });
+      if (latest.ok) remoteSha = (await latest.json()).sha;
+      response = await request(API_URL, {
+        method: "PUT",
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${getToken()}`,
+          "Content-Type": "application/json",
+          "X-GitHub-Api-Version": "2022-11-28"
+        },
+        body: JSON.stringify({
+          message: `Update trip plan ${new Date().toISOString()}`,
+          content: encodeBase64(body),
+          sha: remoteSha,
+          branch: GITHUB.branch
+        })
+      }, 15000);
+    }
     if (!response.ok) throw new Error(`保存失敗 (${response.status})`);
     const payload = await response.json();
     remoteSha = payload.content.sha;
@@ -265,7 +330,16 @@ function render() {
   renderNotes();
   renderTrips();
   renderView();
-  els.token.value = getToken();
+  renderShareLink();
+}
+
+function renderShareLink() {
+  const token = getToken();
+  const shareUrl = buildShareUrl();
+  if (els.shareLink) {
+    els.shareLink.value = token ? shareUrl : "同期キー未設定。同期できる端末でリンクをコピー。";
+  }
+  if (els.token) els.token.value = getToken();
 }
 
 function renderHeader() {
@@ -484,17 +558,30 @@ function newTrip() {
 
 function bind() {
   document.querySelector("#trip-switcher").addEventListener("click", () => els.tripDialog.showModal());
-  document.querySelector("#sync-settings").addEventListener("click", () => els.settingsDialog.showModal());
+  document.querySelector("#sync-settings").addEventListener("click", () => {
+    renderShareLink();
+    els.settingsDialog.showModal();
+  });
+  document.querySelector("#copy-share-link").addEventListener("click", async () => {
+    if (!getToken()) {
+      setStatus("同期キー未設定", "warn");
+      return;
+    }
+    await copyText(buildShareUrl());
+    setStatus("共有リンクをコピー済み");
+  });
   document.querySelector("#save-token").addEventListener("click", () => {
     localStorage.setItem(TOKEN_KEY, els.token.value.trim());
     els.settingsDialog.close();
-    setStatus("自動同期中");
+    renderShareLink();
+    setStatus("共有リンク同期中");
     markDirty();
   });
   document.querySelector("#clear-token").addEventListener("click", () => {
     localStorage.removeItem(TOKEN_KEY);
     els.token.value = "";
-    setStatus("同期設定待ち", "soft");
+    renderShareLink();
+    setStatus("共有リンク待ち", "soft");
   });
   document.querySelector("#save-now").addEventListener("click", () => {
     dirty = true;
@@ -521,6 +608,7 @@ function bind() {
   });
 }
 
+importTokenFromLink();
 bind();
 loadRemote();
 setInterval(() => {
