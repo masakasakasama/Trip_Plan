@@ -359,17 +359,7 @@
         }
       ],
       "budgetCategories": [],
-      "budgetItems": [
-        {
-          "id": "budget-mr8fnaiw-6fm85",
-          "label": "inspect only",
-          "category": "その他",
-          "currency": "JPY",
-          "planned": 1,
-          "actual": 1,
-          "memo": ""
-        }
-      ]
+      "budgetItems": []
     }
   ]
 }
