@@ -210,9 +210,21 @@ h1 {
   align-items: start;
 }
 
-.timeline-row time {
+.time-cell {
   padding-top: 16px;
+}
+
+.timeline-row time {
+  display: block;
   color: #c98ca4;
+  font-weight: 900;
+}
+
+.time-cell span {
+  display: block;
+  margin-top: 3px;
+  color: #93cfd8;
+  font-size: 0.72rem;
   font-weight: 900;
 }
 
@@ -270,6 +282,18 @@ h1 {
   margin-top: 5px;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.event-card em {
+  display: inline-block;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: #eef9fb;
+  color: #6eb6c1;
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 900;
+  padding: 4px 9px;
 }
 
 .progress-grid {

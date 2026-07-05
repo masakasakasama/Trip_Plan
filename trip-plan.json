@@ -5,16 +5,149 @@
     {
       "id": "australia-2026",
       "title": "Australia 2026",
-      "destination": "Sydney / Perth / Rottnest Island",
-      "startDate": "2026-08-01",
-      "endDate": "2026-08-10",
+      "destination": "Sydney",
+      "startDate": "2026-08-11",
+      "endDate": "2026-08-16",
       "travelers": ["夫", "Rebecca"],
-      "mood": "かわいい動物、海沿い散歩、写真、無理しない移動。Sydneyを軸に、quokka目的でPerth/Rottnestを入れるか判断する。",
+      "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
-      "status": "ラフ設計",
-      "lastUpdated": "2026-07-04T00:00:00.000Z",
+      "status": "航空券確定",
+      "lastUpdated": "2026-07-05T00:00:00.000Z",
       "archived": false,
-      "source": "Created in Trip Studio",
+      "source": "Flight booking screenshots",
+      "timezones": {
+        "home": "JST UTC+9",
+        "tokyo": "JST UTC+9",
+        "manila": "PHT UTC+8",
+        "destination": "AEST UTC+10",
+        "rule": "主表示は各空港の現地時刻。日本時間は補助表示。Sydneyは2026年8月はAEST UTC+10で、夏時間ではない。"
+      },
+      "flights": [
+        {
+          "id": "flight-outbound",
+          "route": "Tokyo - Sydney",
+          "status": "Confirmed",
+          "departureDate": "2026-08-11",
+          "arrivalDate": "2026-08-12",
+          "totalFlightTime": "28h 55m",
+          "segments": [
+            {
+              "flightNumber": "PR423",
+              "route": "Tokyo - Manila",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A321",
+              "depart": {
+                "airport": "Tokyo International Haneda",
+                "code": "HND",
+                "city": "Tokyo",
+                "date": "2026-08-11",
+                "time": "02:05",
+                "timezone": "JST"
+              },
+              "arrive": {
+                "airport": "Ninoy Aquino International",
+                "code": "MNL",
+                "city": "Manila",
+                "date": "2026-08-11",
+                "time": "05:40",
+                "timezone": "PHT"
+              },
+              "duration": "4h 35m"
+            },
+            {
+              "layover": true,
+              "airport": "Ninoy Aquino International",
+              "code": "MNL",
+              "duration": "15h 55m"
+            },
+            {
+              "flightNumber": "PR211",
+              "route": "Manila - Sydney",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A330-300",
+              "depart": {
+                "airport": "Ninoy Aquino International",
+                "code": "MNL",
+                "city": "Manila",
+                "date": "2026-08-11",
+                "time": "21:35",
+                "timezone": "PHT"
+              },
+              "arrive": {
+                "airport": "Kingsford Smith",
+                "code": "SYD",
+                "city": "Sydney",
+                "date": "2026-08-12",
+                "time": "08:00",
+                "timezone": "AEST"
+              },
+              "duration": "8h 25m"
+            }
+          ]
+        },
+        {
+          "id": "flight-return",
+          "route": "Sydney - Tokyo",
+          "status": "Confirmed",
+          "departureDate": "2026-08-15",
+          "arrivalDate": "2026-08-16",
+          "totalFlightTime": "15h 30m",
+          "segments": [
+            {
+              "flightNumber": "PR212",
+              "route": "Sydney - Manila",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A330-300",
+              "depart": {
+                "airport": "Kingsford Smith",
+                "code": "SYD",
+                "city": "Sydney",
+                "date": "2026-08-15",
+                "time": "10:15",
+                "timezone": "AEST"
+              },
+              "arrive": {
+                "airport": "Ninoy Aquino International",
+                "code": "MNL",
+                "city": "Manila",
+                "date": "2026-08-15",
+                "time": "16:40",
+                "timezone": "PHT"
+              },
+              "duration": "8h 25m"
+            },
+            {
+              "layover": true,
+              "airport": "Ninoy Aquino International",
+              "code": "MNL",
+              "duration": "2h 35m"
+            },
+            {
+              "flightNumber": "PR424",
+              "route": "Manila - Tokyo",
+              "airline": "Philippine Airlines",
+              "aircraft": "Airbus A321",
+              "depart": {
+                "airport": "Ninoy Aquino International",
+                "code": "MNL",
+                "city": "Manila",
+                "date": "2026-08-15",
+                "time": "19:15",
+                "timezone": "PHT"
+              },
+              "arrive": {
+                "airport": "Tokyo International Haneda",
+                "code": "HND",
+                "city": "Tokyo",
+                "date": "2026-08-16",
+                "time": "00:45",
+                "timezone": "JST"
+              },
+              "duration": "4h 30m"
+            }
+          ]
+        }
+      ],
       "pois": [
         {
           "id": "poi-sydney-opera",
@@ -42,49 +175,99 @@
           "priority": "medium",
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Blue%20Mountains%20Katoomba",
           "memo": "Sydneyから日帰り候補。移動負荷があるので休憩日とセットで判断。"
-        },
-        {
-          "id": "poi-rottnest",
-          "name": "Rottnest Island / Quokkas",
-          "area": "Western Australia",
-          "category": "nature",
-          "priority": "high",
-          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Rottnest%20Island%20quokka",
-          "memo": "quokka目的。Perth移動が必要なのでSydney単独旅に入れるか要判断。"
         }
       ],
       "days": [
         {
-          "id": "day-aus-1",
-          "date": "2026-08-01",
-          "title": "Day 1",
-          "theme": "到着と時差調整",
+          "id": "day-flight-out",
+          "date": "2026-08-11",
+          "title": "出発",
+          "theme": "Tokyo → Manila → Sydney。主表示は空港の現地時刻。",
           "items": [
             {
-              "id": "item-aus-1",
-              "time": "15:00",
-              "title": "ホテルチェックイン",
+              "id": "item-pr423-depart",
+              "time": "02:05",
+              "timezone": "JST",
+              "homeTime": "02:05",
+              "title": "PR423 Haneda発",
               "poiId": "",
-              "memo": "到着日は詰め込まず、近場でごはん。"
+              "memo": "Tokyo HND → Manila MNL。航空券どおり羽田の現地時刻。"
+            },
+            {
+              "id": "item-pr423-arrive",
+              "time": "05:40",
+              "timezone": "PHT",
+              "homeTime": "06:40",
+              "title": "Manila着",
+              "poiId": "",
+              "memo": "MNL到着。ここからManila現地時刻で読む。"
+            },
+            {
+              "id": "item-mnl-layover-out",
+              "time": "05:40",
+              "timezone": "PHT",
+              "homeTime": "06:40",
+              "title": "MNL乗継 15h55m",
+              "poiId": "",
+              "memo": "Manila現地時刻。長い乗継なので休憩・食事・再集合時間を別途メモ。"
+            },
+            {
+              "id": "item-pr211-depart",
+              "time": "21:35",
+              "timezone": "PHT",
+              "homeTime": "22:35",
+              "title": "PR211 Manila発",
+              "poiId": "",
+              "memo": "Manila MNL → Sydney SYD。出発はManila現地時刻。"
             }
           ]
         },
         {
-          "id": "day-aus-2",
-          "date": "2026-08-02",
-          "title": "Day 2",
+          "id": "day-arrive-sydney",
+          "date": "2026-08-12",
+          "title": "到着",
+          "theme": "Sydney到着。AEST UTC+10で行動開始。",
+          "items": [
+            {
+              "id": "item-pr211-arrive",
+              "time": "08:00",
+              "timezone": "AEST",
+              "homeTime": "07:00",
+              "title": "Sydney着",
+              "poiId": "",
+              "memo": "SYD到着。到着日は詰め込まず時差と疲労を吸収。"
+            },
+            {
+              "id": "item-sydney-light",
+              "time": "14:00",
+              "timezone": "AEST",
+              "homeTime": "13:00",
+              "title": "ホテル周辺で軽く散歩",
+              "poiId": "poi-sydney-opera",
+              "memo": "眠気が強ければ無理しない。夜まで起きて現地時間に合わせる。"
+            }
+          ]
+        },
+        {
+          "id": "day-sydney-main",
+          "date": "2026-08-13",
+          "title": "Day 3",
           "theme": "Sydneyの王道をかわいく撮る",
           "items": [
             {
-              "id": "item-aus-2",
+              "id": "item-harbour",
               "time": "10:00",
+              "timezone": "AEST",
+              "homeTime": "09:00",
               "title": "Harbour散歩",
               "poiId": "poi-sydney-opera",
               "memo": "Opera House、Harbour Bridge、カフェ休憩。"
             },
             {
-              "id": "item-aus-3",
+              "id": "item-bondi",
               "time": "16:00",
+              "timezone": "AEST",
+              "homeTime": "15:00",
               "title": "海沿い散歩",
               "poiId": "poi-bondi",
               "memo": "天気次第でBondiかManlyに変更。"
@@ -92,14 +275,16 @@
           ]
         },
         {
-          "id": "day-aus-3",
-          "date": "2026-08-03",
-          "title": "Day 3",
+          "id": "day-sydney-nature",
+          "date": "2026-08-14",
+          "title": "Day 4",
           "theme": "自然の日",
           "items": [
             {
-              "id": "item-aus-4",
+              "id": "item-blue-mountains",
               "time": "09:00",
+              "timezone": "AEST",
+              "homeTime": "08:00",
               "title": "Blue Mountains候補",
               "poiId": "poi-blue-mountains",
               "memo": "疲れそうなら市内ゆるめの日に変更。"
@@ -107,25 +292,72 @@
           ]
         },
         {
-          "id": "day-aus-4",
-          "date": "2026-08-04",
-          "title": "Decision",
-          "theme": "Perth/Rottnestを入れるか決める",
+          "id": "day-flight-return",
+          "date": "2026-08-15",
+          "title": "帰国",
+          "theme": "Sydney → Manila → Tokyo。到着は翌日。",
           "items": [
             {
-              "id": "item-aus-5",
-              "time": "12:00",
-              "title": "Quokka旅の可否判断",
-              "poiId": "poi-rottnest",
-              "memo": "国内線、宿、フェリー、体力を見て決める。"
+              "id": "item-pr212-depart",
+              "time": "10:15",
+              "timezone": "AEST",
+              "homeTime": "09:15",
+              "title": "PR212 Sydney発",
+              "poiId": "",
+              "memo": "Sydney SYD → Manila MNL。航空券どおりSydney現地時刻。"
+            },
+            {
+              "id": "item-pr212-arrive",
+              "time": "16:40",
+              "timezone": "PHT",
+              "homeTime": "17:40",
+              "title": "Manila着",
+              "poiId": "",
+              "memo": "MNL到着。ここからManila現地時刻。"
+            },
+            {
+              "id": "item-mnl-layover-return",
+              "time": "16:40",
+              "timezone": "PHT",
+              "homeTime": "17:40",
+              "title": "MNL乗継 2h35m",
+              "poiId": "",
+              "memo": "短めの乗継。ゲート確認を優先。"
+            },
+            {
+              "id": "item-pr424-depart",
+              "time": "19:15",
+              "timezone": "PHT",
+              "homeTime": "20:15",
+              "title": "PR424 Manila発",
+              "poiId": "",
+              "memo": "Manila MNL → Tokyo HND。出発はManila現地時刻。"
+            }
+          ]
+        },
+        {
+          "id": "day-arrive-tokyo",
+          "date": "2026-08-16",
+          "title": "帰着",
+          "theme": "Tokyo帰着。日本時間に戻す。",
+          "items": [
+            {
+              "id": "item-pr424-arrive",
+              "time": "00:45",
+              "timezone": "JST",
+              "homeTime": "00:45",
+              "title": "Haneda着",
+              "poiId": "",
+              "memo": "Tokyo HND到着 / JST。深夜帰着なので帰宅手段を確認。"
             }
           ]
         }
       ],
       "notes": [
-        "このアプリで作ったTripは、完了後に「過去Tripへ移動」で履歴として残す。",
-        "Rottnest IslandはPerthからフェリー移動。quokkaを旅の主目的にするならSydney + Perth構成にする。",
-        "Sydneyだけなら、Harbour / Bondi or Manly / Blue Mountains / カフェ巡りで余裕を作る。"
+        "航空券の出発/到着時刻は、それぞれの空港の現地時刻で読む。予定表も同じく現地時刻を主表示にする。",
+        "日本時間は体内時計・連絡・睡眠調整のために補助メモで表示する。",
+        "日付またぎは +1 day だけでなく、実際の日付のDayを分けると混乱しにくい。",
+        "Sydneyは2026年8月はAEST UTC+10。ManilaはPHT UTC+8。TokyoはJST UTC+9。"
       ]
     }
   ]
