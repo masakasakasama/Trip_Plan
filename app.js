@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260705-cards1";
+const BUILD_VERSION = "20260705-photo1";
 
 const GITHUB = {
   owner: "masakasakasama",
@@ -498,6 +498,98 @@ function defaultEmoji(item, poi) {
   return "📍";
 }
 
+// Google Places写真をパンフレット風サムネイルとして使う。
+// Places Web ServiceのJSON検索はブラウザからCORSで直接呼べないため、
+// Maps JavaScript APIのplacesライブラリ(PlacesService)経由で取得する。
+// 解決したURLはAPIキーを含むため、共有データ(trip-plan.json)には保存せず、
+// この端末のlocalStorageだけにキャッシュする。
+const PHOTO_CACHE_KEY = "trip-plan-photo-cache-v1";
+const PHOTO_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+let mapsScriptPromise = null;
+let placesServiceInstance = null;
+
+function readPhotoCache() {
+  try {
+    return JSON.parse(localStorage.getItem(PHOTO_CACHE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function photoCacheGet(query) {
+  const hit = readPhotoCache()[query];
+  return hit && Date.now() - hit.ts < PHOTO_CACHE_TTL_MS ? hit.url : null;
+}
+
+function photoCacheSet(query, url) {
+  const cache = readPhotoCache();
+  cache[query] = { url, ts: Date.now() };
+  localStorage.setItem(PHOTO_CACHE_KEY, JSON.stringify(cache));
+}
+
+function loadGoogleMapsPlaces() {
+  const key = getMapsKey();
+  if (!key) return Promise.reject(new Error("no key"));
+  if (window.google?.maps?.places) return Promise.resolve();
+  if (mapsScriptPromise) return mapsScriptPromise;
+  mapsScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places`;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      mapsScriptPromise = null;
+      reject(new Error("Google Maps読み込み失敗"));
+    };
+    document.head.append(script);
+  });
+  return mapsScriptPromise;
+}
+
+function getPlacesService() {
+  if (placesServiceInstance) return placesServiceInstance;
+  placesServiceInstance = new google.maps.places.PlacesService(document.createElement("div"));
+  return placesServiceInstance;
+}
+
+async function fetchPlacePhotoUrl(query) {
+  const cached = photoCacheGet(query);
+  if (cached) return cached;
+  await loadGoogleMapsPlaces();
+  const service = getPlacesService();
+  const url = await new Promise((resolve, reject) => {
+    service.findPlaceFromQuery({ query, fields: ["photos"] }, (results, status) => {
+      const photo = status === google.maps.places.PlacesServiceStatus.OK && results?.[0]?.photos?.[0];
+      if (photo) resolve(photo.getUrl({ maxWidth: 240, maxHeight: 240 }));
+      else reject(new Error("写真が見つかりません"));
+    });
+  });
+  photoCacheSet(query, url);
+  return url;
+}
+
+function setThumbPhoto(el, url) {
+  if (!el) return;
+  el.replaceChildren();
+  const img = document.createElement("img");
+  img.src = url;
+  img.alt = "";
+  img.loading = "lazy";
+  el.append(img);
+  el.classList.add("has-photo");
+}
+
+// サムネイル要素に絵文字を先に出しつつ、裏で実写を探して見つかれば差し替える。
+function hydratePhotoThumb(el, query) {
+  if (!el || !query || !getMapsKey()) return;
+  const cached = photoCacheGet(query);
+  if (cached) {
+    setThumbPhoto(el, cached);
+    return;
+  }
+  fetchPlacePhotoUrl(query).then((url) => setThumbPhoto(el, url)).catch(() => {});
+}
+
 function uniquePois(items) {
   const seen = new Set();
   return items
@@ -827,6 +919,7 @@ function renderTimeline() {
     `;
     row.querySelector(".event-edit").addEventListener("click", () => editItem(day.id, item.id));
     els.timeline.append(row);
+    hydratePhotoThumb(row.querySelector(".event-thumb"), poi ? mapQuery(poi) : `${item.title} ${trip.destination}`);
   });
 }
 
@@ -919,6 +1012,7 @@ function renderSpots() {
       if (event.target.tagName !== "A") editPoi(poi.id);
     });
     els.spotList.append(card);
+    hydratePhotoThumb(card.querySelector(".spot-thumb"), mapQuery(poi));
   });
 }
 
