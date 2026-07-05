@@ -21,6 +21,7 @@ const CACHE_KEY = "trip-plan-cache-v3";
 const SHARE_TOKEN_PARAM = "gh";
 const POLL_MS = 2000;
 const AUTO_SAVE_MS = 700;
+const SAVE_RETRY_MS = 3000;
 const SYNC_CHANNEL = "trip-plan-sync-v1";
 
 const els = {
@@ -667,6 +668,12 @@ function markDirty() {
   autoSaveTimer = setTimeout(saveRemote, AUTO_SAVE_MS);
 }
 
+function scheduleSaveRetry() {
+  if (!dirty || !getToken()) return;
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveRemote, SAVE_RETRY_MS);
+}
+
 async function saveRemote() {
   if (!dirty || saving || !getToken()) return;
   saving = true;
@@ -717,7 +724,11 @@ async function saveRemote() {
         })
       }, 15000);
     }
-    if (!response.ok) throw new Error(`保存失敗 (${response.status})`);
+    if (!response.ok) {
+      const error = new Error(`Save failed (${response.status})`);
+      error.status = response.status;
+      throw error;
+    }
     const payload = await response.json();
     remoteSha = payload.content.sha;
     dirty = false;
@@ -726,6 +737,8 @@ async function saveRemote() {
     notifySynced();
   } catch (error) {
     setStatus(error.message, "warn");
+    if (error.status === 401 || error.status === 403 || /\((401|403)\)/.test(error.message || "")) return;
+    scheduleSaveRetry();
   } finally {
     saving = false;
   }
@@ -1405,8 +1418,16 @@ bind();
 initRealtimeSync();
 loadRemote({ force: true });
 setInterval(() => {
-  if (document.visibilityState === "visible") loadRemote();
+  if (document.visibilityState !== "visible") return;
+  if (dirty) saveRemote();
+  else loadRemote();
 }, POLL_MS);
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") loadRemote();
+  if (document.visibilityState !== "visible") return;
+  if (dirty) saveRemote();
+  else loadRemote();
+});
+window.addEventListener("online", () => {
+  if (dirty) saveRemote();
+  else loadRemote({ force: true });
 });
