@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Studio</title>
-    <link rel="stylesheet" href="styles.css?v=20260704-tabs-date1">
+    <link rel="stylesheet" href="styles.css?v=20260704-maps1">
   </head>
   <body>
     <main class="stage">
@@ -72,7 +72,22 @@
             <h2>スポット</h2>
             <button id="add-spot" type="button">追加</button>
           </div>
-          <button class="map-search" id="open-map-search" type="button">Google Mapsで探す</button>
+          <section class="map-panel" aria-label="Google Maps">
+            <div class="map-panel-head">
+              <div>
+                <h3 id="map-day-title">Map</h3>
+                <p id="map-day-subtitle">この日の場所を表示</p>
+              </div>
+              <a id="open-day-route" href="https://www.google.com/maps" target="_blank" rel="noreferrer">Google Maps</a>
+            </div>
+            <iframe
+              id="route-map"
+              title="Trip route on Google Maps"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen></iframe>
+            <div id="map-route-summary" class="map-route-summary"></div>
+          </section>
           <div class="stack-list" id="spot-list"></div>
         </section>
 
@@ -116,10 +131,19 @@
             <button id="clear-token" type="button">削除</button>
           </div>
         </details>
+        <details class="advanced-sync">
+          <summary>Google Maps埋め込みを有効にする</summary>
+          <p class="hint">ルート地図をアプリ内で正式表示する場合だけ設定。未設定でもGoogle Mapsで開くリンクは使えます。</p>
+          <label>Maps Embed API key<input id="maps-api-key" type="password" autocomplete="off" placeholder="AIza..."></label>
+          <div class="dialog-actions">
+            <button id="save-maps-key" class="wide-action" type="button">保存</button>
+            <button id="clear-maps-key" type="button">削除</button>
+          </div>
+        </details>
       </form>
     </dialog>
 
     <p id="sync-status" class="sync-feedback" aria-live="polite"></p>
-    <script src="app.js?v=20260704-tabs-date1" defer></script>
+    <script src="app.js?v=20260704-maps1" defer></script>
   </body>
 </html>
