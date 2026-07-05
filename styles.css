@@ -101,7 +101,7 @@ a {
 
 .jump-nav {
   position: sticky;
-  top: 82px;
+  top: 110px;
   z-index: 9;
   display: flex;
   gap: 10px;
@@ -111,6 +111,23 @@ a {
   backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(238, 231, 235, 0.7);
   scrollbar-width: none;
+}
+
+.sync-status {
+  position: sticky;
+  top: 74px;
+  z-index: 9;
+  margin: 0;
+  padding: 6px 18px;
+  border-bottom: 1px solid rgba(238, 231, 235, 0.7);
+  background: rgba(255, 247, 251, 0.92);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.sync-status[data-tone="warn"] {
+  color: var(--danger);
 }
 
 .jump-nav::-webkit-scrollbar {
@@ -555,7 +572,11 @@ a {
   }
 
   .jump-nav {
-    top: calc(73px + env(safe-area-inset-top));
+    top: calc(100px + env(safe-area-inset-top));
+  }
+
+  .sync-status {
+    top: calc(70px + env(safe-area-inset-top));
   }
 
   .shell {
