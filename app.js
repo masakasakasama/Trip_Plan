@@ -7,6 +7,7 @@ const GITHUB = {
 
 const API_URL = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/${GITHUB.path}`;
 const DATA_URL = "trip-plan.json";
+const RAW_DATA_URL = `https://raw.githubusercontent.com/${GITHUB.owner}/${GITHUB.repo}/${GITHUB.branch}/${GITHUB.path}`;
 
 // このリポジトリ専用のFine-grained PAT(Contents: Read and write)。
 // GitHub Pagesは静的ホスティングでサーバーを持たないため、
@@ -18,8 +19,9 @@ const TOKEN_KEY = "trip-plan-github-token-v1";
 const MAPS_KEY = "trip-plan-google-maps-key-v1";
 const CACHE_KEY = "trip-plan-cache-v3";
 const SHARE_TOKEN_PARAM = "gh";
-const POLL_MS = 5000;
-const AUTO_SAVE_MS = 1400;
+const POLL_MS = 2000;
+const AUTO_SAVE_MS = 700;
+const SYNC_CHANNEL = "trip-plan-sync-v1";
 
 const els = {
   title: document.querySelector("#trip-title"),
@@ -67,8 +69,10 @@ let activeDayIndex = 0;
 let activeView = "home";
 let dirty = false;
 let saving = false;
+let loading = false;
 let autoSaveTimer = null;
 let activeEditor = null;
+let syncChannel = null;
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY) || EMBEDDED_TOKEN;
@@ -181,6 +185,27 @@ function showEditor({ title, fields, saveLabel = "保存", onSave, onDelete }) {
   els.editorDialog.showModal();
   const firstInput = els.editorFields.querySelector("input, textarea, select");
   requestAnimationFrame(() => firstInput?.focus());
+}
+
+function notifySynced() {
+  try {
+    syncChannel?.postMessage({ type: "remote-saved", at: Date.now(), sha: remoteSha });
+  } catch {
+    // BroadcastChannel is optional.
+  }
+}
+
+function initRealtimeSync() {
+  if ("BroadcastChannel" in window) {
+    syncChannel = new BroadcastChannel(SYNC_CHANNEL);
+    syncChannel.addEventListener("message", (event) => {
+      if (event.data?.type === "remote-saved") loadRemote();
+    });
+  }
+
+  window.addEventListener("storage", (event) => {
+    if (event.key === CACHE_KEY && !dirty && !saving && !activeEditor) loadRemote();
+  });
 }
 
 function currentTrip() {
@@ -569,6 +594,9 @@ function decodeBase64(text) {
 }
 
 async function loadPublicData() {
+  const raw = await request(`${RAW_DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
+  if (raw.ok) return normalize(JSON.parse(await raw.text()));
+
   const response = await request(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`公開データを読めません (${response.status})`);
   return normalize(JSON.parse(await response.text()));
@@ -589,7 +617,10 @@ async function loadGitHubData(token) {
   return normalize(JSON.parse(decodeBase64(payload.content)));
 }
 
-async function loadRemote() {
+async function loadRemote({ force = false } = {}) {
+  if (loading) return;
+  if (!force && (dirty || saving || activeEditor)) return;
+  loading = true;
   const previousDayId = state?.trips?.length ? currentDay()?.id : "";
   try {
     const token = getToken();
@@ -623,12 +654,15 @@ async function loadRemote() {
       return;
     }
     setStatus(error.message, "warn");
+  } finally {
+    loading = false;
   }
 }
 
 function markDirty() {
   dirty = true;
   setStatus(getToken() ? "保存待ち" : "共有リンク待ち", "soft");
+  if (state) localStorage.setItem(CACHE_KEY, JSON.stringify(state));
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(saveRemote, AUTO_SAVE_MS);
 }
@@ -689,6 +723,7 @@ async function saveRemote() {
     dirty = false;
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
     setStatus("保存済み");
+    notifySynced();
   } catch (error) {
     setStatus(error.message, "warn");
   } finally {
@@ -1367,10 +1402,11 @@ function bind() {
 
 importTokenFromLink();
 bind();
-loadRemote();
+initRealtimeSync();
+loadRemote({ force: true });
 setInterval(() => {
-  if (!dirty && !saving && document.visibilityState === "visible") loadRemote();
+  if (document.visibilityState === "visible") loadRemote();
 }, POLL_MS);
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && !dirty && !saving) loadRemote();
+  if (document.visibilityState === "visible") loadRemote();
 });
