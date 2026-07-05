@@ -1,4 +1,16 @@
 const STORAGE_KEY = "sydney-trip-plan-v1";
+const TOKEN_KEY = "trip-plan-github-token-v1";
+const SHARE_TOKEN_PARAM = "gh";
+const GITHUB = {
+  owner: "masakasakasama",
+  repo: "Trip_Plan",
+  branch: "main",
+  path: "sydney-trip-state.json"
+};
+const API_URL = `https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/${GITHUB.path}`;
+const RAW_STATE_URL = `https://raw.githubusercontent.com/${GITHUB.owner}/${GITHUB.repo}/${GITHUB.branch}/${GITHUB.path}`;
+const POLL_MS = 2500;
+const SAVE_DEBOUNCE_MS = 700;
 
 const els = {
   title: document.querySelector("#trip-title"),
@@ -7,6 +19,7 @@ const els = {
   dateJump: document.querySelector("#date-jump"),
   editMode: document.querySelector("#edit-mode"),
   reset: document.querySelector("#reset-data"),
+  syncStatus: document.querySelector("#sync-status"),
   alerts: document.querySelector("#alerts"),
   alertCount: document.querySelector("#alert-count"),
   flights: document.querySelector("#flight-summary"),
@@ -21,6 +34,11 @@ let data = loadData();
 let editMode = false;
 let draggingId = "";
 let resetArmed = false;
+let dirty = false;
+let saving = false;
+let loading = false;
+let remoteSha = "";
+let saveTimer = null;
 normalizeData();
 
 function clone(value) {
@@ -41,9 +59,57 @@ function loadData() {
   return initial;
 }
 
-function saveData() {
+function setSyncStatus(text, tone = "") {
+  if (!els.syncStatus) return;
+  els.syncStatus.textContent = text;
+  els.syncStatus.dataset.tone = tone;
+}
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY) || "";
+}
+
+function importTokenFromHash() {
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const token = params.get(SHARE_TOKEN_PARAM);
+  if (!token) return;
+  localStorage.setItem(TOKEN_KEY, token);
+  params.delete(SHARE_TOKEN_PARAM);
+  const nextHash = params.toString();
+  window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${nextHash ? `#${nextHash}` : ""}`);
+}
+
+function encodeBase64(text) {
+  return btoa(unescape(encodeURIComponent(text)));
+}
+
+function decodeBase64(text) {
+  return decodeURIComponent(escape(atob(text.replace(/\s/g, ""))));
+}
+
+async function requestJson(url, options = {}, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      cache: "no-store",
+      signal: controller.signal
+    });
+    return response;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+function saveData({ remote = true } = {}) {
   normalizeData();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  if (!remote) return;
+  dirty = true;
+  setSyncStatus("保存待ち");
+  window.clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(saveRemote, SAVE_DEBOUNCE_MS);
 }
 
 function normalizeData() {
@@ -56,6 +122,137 @@ function normalizeData() {
     counters[event.date] = Math.max(counters[event.date] || 0, event.order + 1);
   });
   data.checklistState = data.checklistState || {};
+}
+
+function isValidTripData(value) {
+  return Boolean(value?.meta && value?.places && Array.isArray(value.events) && Array.isArray(value.flights) && Array.isArray(value.checklist));
+}
+
+function applyRemoteData(next) {
+  if (!isValidTripData(next)) return false;
+  data = next;
+  normalizeData();
+  saveData({ remote: false });
+  render();
+  return true;
+}
+
+async function loadRemote({ force = false } = {}) {
+  if (loading || saving) return;
+  if (!force && (dirty || editMode)) return;
+  loading = true;
+  try {
+    const token = getToken();
+    if (token) {
+      try {
+        const response = await requestJson(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
+          headers: {
+            Accept: "application/vnd.github+json",
+            Authorization: `Bearer ${token}`,
+            "X-GitHub-Api-Version": "2022-11-28"
+          }
+        });
+        if (!response.ok) throw new Error(`同期読込失敗 (${response.status})`);
+        const payload = await response.json();
+        remoteSha = payload.sha;
+        if (applyRemoteData(JSON.parse(decodeBase64(payload.content)))) {
+          setSyncStatus("同期済み");
+        }
+        return;
+      } catch (error) {
+        setSyncStatus(`${error.message}・公開データ確認中`, "warn");
+      }
+    }
+
+    const response = await requestJson(`${RAW_STATE_URL}?t=${Date.now()}`);
+    if (!response.ok) throw new Error(`公開データ読込失敗 (${response.status})`);
+    if (applyRemoteData(await response.json())) setSyncStatus("同期キーなし・閲覧のみ", "warn");
+  } catch (error) {
+    setSyncStatus(error.message || "同期読込失敗", "warn");
+  } finally {
+    loading = false;
+  }
+}
+
+async function saveRemote() {
+  if (!dirty || saving) return;
+  const token = getToken();
+  if (!token) {
+    setSyncStatus("同期キーなし・この端末だけ保存", "warn");
+    return;
+  }
+  saving = true;
+  setSyncStatus("同期保存中");
+  try {
+    normalizeData();
+    const body = `${JSON.stringify(data, null, 2)}\n`;
+    if (!remoteSha) {
+      const latest = await requestJson(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": "2022-11-28"
+        }
+      });
+      if (latest.ok) remoteSha = (await latest.json()).sha;
+    }
+
+    let response = await requestJson(API_URL, {
+      method: "PUT",
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      },
+      body: JSON.stringify({
+        message: `Update Sydney trip plan ${new Date().toISOString()}`,
+        content: encodeBase64(body),
+        sha: remoteSha,
+        branch: GITHUB.branch
+      })
+    }, 15000);
+
+    if (response.status === 409) {
+      const latest = await requestJson(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": "2022-11-28"
+        }
+      });
+      if (latest.ok) remoteSha = (await latest.json()).sha;
+      response = await requestJson(API_URL, {
+        method: "PUT",
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "X-GitHub-Api-Version": "2022-11-28"
+        },
+        body: JSON.stringify({
+          message: `Update Sydney trip plan ${new Date().toISOString()}`,
+          content: encodeBase64(body),
+          sha: remoteSha,
+          branch: GITHUB.branch
+        })
+      }, 15000);
+    }
+
+    if (!response.ok) throw new Error(`同期保存失敗 (${response.status})`);
+    const payload = await response.json();
+    remoteSha = payload.content.sha;
+    dirty = false;
+    setSyncStatus("同期済み");
+  } catch (error) {
+    setSyncStatus(error.message || "同期保存失敗", "warn");
+    if (!/\((401|403)\)/.test(error.message || "")) {
+      window.clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(saveRemote, 3000);
+    }
+  } finally {
+    saving = false;
+  }
 }
 
 function escapeHtml(value) {
@@ -463,7 +660,17 @@ els.reset.addEventListener("click", () => {
   data = loadData();
   resetArmed = false;
   els.reset.textContent = "初期状態に戻す";
+  saveData();
   render();
 });
 
+importTokenFromHash();
 render();
+loadRemote({ force: true });
+window.setInterval(() => {
+  loadRemote();
+}, POLL_MS);
+window.addEventListener("online", () => {
+  if (dirty) saveRemote();
+  else loadRemote({ force: true });
+});
