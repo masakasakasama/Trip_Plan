@@ -30,6 +30,17 @@ function json(body, init = {}, request, env) {
   });
 }
 
+function text(body, init = {}, request, env) {
+  return new Response(body, {
+    ...init,
+    headers: {
+      "Cache-Control": "no-store",
+      ...corsHeaders(request, env),
+      ...(init.headers || {})
+    }
+  });
+}
+
 function config(env) {
   return {
     owner: env.GITHUB_OWNER || DEFAULTS.owner,
@@ -42,6 +53,11 @@ function config(env) {
 function contentUrl(env) {
   const cfg = config(env);
   return `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+}
+
+function repoContentUrl(env, path) {
+  const cfg = config(env);
+  return `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
 }
 
 function decodeBase64(value) {
@@ -71,6 +87,35 @@ async function githubFetch(env, url, init = {}) {
       ...(init.headers || {})
     }
   });
+}
+
+const STATIC_FILES = new Map([
+  ["index.html", "text/html; charset=utf-8"],
+  ["app.js", "application/javascript; charset=utf-8"],
+  ["styles.css", "text/css; charset=utf-8"],
+  ["trip-plan.json", "application/json; charset=utf-8"]
+]);
+
+async function serveStatic(request, env, pathname) {
+  if (pathname === "/" || pathname === "") pathname = "/index.html";
+  const file = pathname.replace(/^\/+/, "");
+  if (file === "sync-config.js") {
+    return text(`window.TRIP_SYNC_WORKER_URL = "${new URL(request.url).origin}";\n`, {
+      headers: { "Content-Type": "application/javascript; charset=utf-8" }
+    }, request, env);
+  }
+  const contentType = STATIC_FILES.get(file);
+  if (!contentType) return json({ error: "not_found" }, { status: 404 }, request, env);
+
+  const cfg = config(env);
+  const response = await githubFetch(env, `${repoContentUrl(env, file)}?ref=${cfg.branch}&t=${Date.now()}`);
+  if (!response.ok) {
+    return json({ error: "static_read_failed", status: response.status }, { status: response.status }, request, env);
+  }
+  const payload = await response.json();
+  return text(decodeBase64(payload.content), {
+    headers: { "Content-Type": contentType }
+  }, request, env);
 }
 
 function validatePublicTripData(value) {
@@ -149,7 +194,7 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders(request, env) });
     const url = new URL(request.url);
     if (url.pathname === "/health") return json({ ok: true }, {}, request, env);
-    if (url.pathname !== "/state") return json({ error: "not_found" }, { status: 404 }, request, env);
+    if (url.pathname !== "/state") return serveStatic(request, env, url.pathname);
     if (request.method === "GET") return readState(request, env);
     if (request.method === "PUT") return writeState(request, env);
     return json({ error: "method_not_allowed" }, { status: 405 }, request, env);
