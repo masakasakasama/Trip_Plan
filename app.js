@@ -595,27 +595,14 @@ function decodeBase64(text) {
 }
 
 async function loadRemote() {
+  // 読み込みは常に公開の静的JSONから(トークン不要)。書き込みのみトークンを使う。
+  // こうしないと、トークンの状態(失効・レート制限など)が原因で
+  // 単なる閲覧まで失敗し、古いローカルキャッシュに固定されてしまう。
   const previousDayId = state?.trips?.length ? currentDay()?.id : "";
   try {
-    const token = getToken();
-    if (token) {
-      const response = await request(`${API_URL}?ref=${GITHUB.branch}&t=${Date.now()}`, {
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${token}`,
-          "X-GitHub-Api-Version": "2022-11-28"
-        },
-        cache: "no-store"
-      });
-      if (!response.ok) throw new Error(`同期できません (${response.status})`);
-      const payload = await response.json();
-      remoteSha = payload.sha;
-      state = normalize(JSON.parse(decodeBase64(payload.content)));
-    } else {
-      const response = await request(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
-      if (!response.ok) throw new Error(`読み込めません (${response.status})`);
-      state = normalize(JSON.parse(await response.text()));
-    }
+    const response = await request(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`読み込めません (${response.status})`);
+    state = normalize(JSON.parse(await response.text()));
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
     if (previousDayId) {
       const nextDayIndex = currentTrip().days.findIndex((day) => day.id === previousDayId);
@@ -624,7 +611,7 @@ async function loadRemote() {
       activeDayIndex = Math.min(activeDayIndex, Math.max(0, currentTrip().days.length - 1));
     }
     render();
-    setStatus(token ? "共有リンク同期中" : "共有リンク待ち", token ? "" : "soft");
+    setStatus(getToken() ? "共有リンク同期中" : "共有リンク待ち", getToken() ? "" : "soft");
   } catch (error) {
     const cache = localStorage.getItem(CACHE_KEY);
     if (cache) {
