@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-07-05T23:38:37.732Z",
+      "lastUpdated": "2026-07-05T23:39:03.923Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -359,7 +359,17 @@
         }
       ],
       "budgetCategories": [],
-      "budgetItems": []
+      "budgetItems": [
+        {
+          "id": "budget-mr8fnaiw-6fm85",
+          "label": "inspect only",
+          "category": "その他",
+          "currency": "JPY",
+          "planned": 1,
+          "actual": 1,
+          "memo": ""
+        }
+      ]
     }
   ]
 }
