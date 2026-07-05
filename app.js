@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260705-worker1";
+const BUILD_VERSION = "20260705-worker2";
 
 const DATA_URL = "trip-plan.json";
 const WORKER_URL_KEY = "trip-plan-worker-url-v1";
@@ -68,6 +68,10 @@ function getMapsKey() {
 
 function importTokenFromLink() {
   return false;
+}
+
+function clearLegacyToken() {
+  localStorage.removeItem("trip-plan-github-token-v1");
 }
 
 // 共有リンクは素のURL。埋め込みトークンで同期するので #gh= は付けない。
