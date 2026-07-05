@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260706-photo1";
+const BUILD_VERSION = "20260706-swipe1";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -166,6 +166,42 @@ function currentTrip() {
 function currentDay() {
   const trip = currentTrip();
   return trip.days[activeDayIndex] || trip.days[0];
+}
+
+function switchDay(index) {
+  const trip = currentTrip();
+  const nextIndex = Math.max(0, Math.min(index, Math.max(0, trip.days.length - 1)));
+  if (nextIndex === activeDayIndex) return;
+  activeDayIndex = nextIndex;
+  renderTimeline();
+  renderMap();
+  renderDayTabs();
+}
+
+function bindDaySwipe() {
+  const homeView = document.querySelector("#view-home");
+  if (!homeView) return;
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+
+  homeView.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1) return;
+    if (event.target.closest("button, a, input, textarea, select, dialog")) return;
+    startX = event.touches[0].clientX;
+    startY = event.touches[0].clientY;
+    tracking = true;
+  }, { passive: true });
+
+  homeView.addEventListener("touchend", (event) => {
+    if (!tracking) return;
+    tracking = false;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    switchDay(activeDayIndex + (dx < 0 ? 1 : -1));
+  }, { passive: true });
 }
 
 function normalizeTrip(trip) {
@@ -724,21 +760,14 @@ function renderDayTabs() {
   const trip = currentTrip();
   els.dayTabs.replaceChildren();
   trip.days.forEach((day, index) => {
-    const isActive = index === activeDayIndex;
     const button = document.createElement("button");
     button.type = "button";
-    button.className = isActive ? "is-active" : "";
+    button.className = index === activeDayIndex ? "is-active" : "";
+    button.dataset.dayIndex = String(index);
     button.innerHTML = `<strong>${escapeHtml(day.title || `Day ${index + 1}`)}</strong><span>${escapeHtml(formatTabDate(day.date))}</span>`;
-    button.addEventListener("click", () => {
-      // アクティブなタブをもう一度押すと、その日を編集する(旅程タブの代替)。
-      if (isActive) {
-        editDay(day.id);
-        return;
-      }
-      activeDayIndex = index;
-      renderTimeline();
-      renderMap();
-      renderDayTabs();
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      switchDay(Number(button.dataset.dayIndex));
     });
     els.dayTabs.append(button);
   });
@@ -747,9 +776,10 @@ function renderDayTabs() {
   addButton.type = "button";
   addButton.className = "day-tab-add";
   addButton.textContent = "+";
-  addButton.setAttribute("aria-label", "日を追加");
+  addButton.setAttribute("aria-label", "Add day");
   addButton.addEventListener("click", addDay);
   els.dayTabs.append(addButton);
+  els.dayTabs.querySelector(".is-active")?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
 }
 
 function renderTimeline() {
@@ -1361,6 +1391,7 @@ function bind() {
 clearLegacyToken();
 importTokenFromLink();
 bind();
+bindDaySwipe();
 loadRemote();
 setInterval(() => {
   if (!dirty && !saving && document.visibilityState === "visible") loadRemote();
