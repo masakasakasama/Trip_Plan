@@ -152,13 +152,33 @@ h1 {
   color: #c1874d;
 }
 
+/* 通常時は隠す(意図的な既存仕様)。ただし保存/読込エラー(warn)は
+   サイレントに失敗し続けないよう、はっきり見えるトーストとして出す。 */
 .sync-feedback {
   position: fixed;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  left: 50%;
+  bottom: 96px;
+  z-index: 40;
+  max-width: min(340px, calc(100% - 32px));
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: transparent;
+  color: transparent;
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-align: center;
+  padding: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.sync-feedback[data-tone="warn"] {
+  padding: 10px 18px;
+  background: #c1476a;
+  color: #fff;
+  box-shadow: var(--shadow);
+  opacity: 1;
 }
 
 .countdown {
