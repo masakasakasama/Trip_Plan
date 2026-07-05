@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Studio</title>
-    <link rel="stylesheet" href="styles.css?v=20260704-timeline5">
+    <link rel="stylesheet" href="styles.css?v=20260704-timeline6">
   </head>
   <body>
     <main class="stage">
@@ -19,7 +19,7 @@
             <p id="trip-dates">2026・8.1 - 8.10</p>
             <h1 id="trip-title">Australia 2026</h1>
           </div>
-          <button class="ghost-button" id="sync-settings" type="button" aria-label="同期設定">⋯</button>
+          <button class="ghost-button" id="sync-settings" type="button" aria-label="共有リンク">🔗</button>
         </header>
 
         <section class="soft-card status-card">
@@ -106,16 +106,23 @@
           <h2>同期設定</h2>
           <button type="submit">閉じる</button>
         </div>
-        <p class="hint">自動保存する端末だけGitHub tokenを設定します。普段はこの画面を触らなくてOK。</p>
-        <label>GitHub token<input id="github-token" type="password" autocomplete="off" placeholder="github_pat_..."></label>
+        <p class="hint">このリンクを開いた端末は同じTripに自動同期します。別PC・別ブラウザ・スマホはこのリンクを共有。</p>
+        <label>共有リンク<input id="share-link" type="text" readonly></label>
         <div class="dialog-actions">
-          <button id="save-token" class="wide-action" type="button">保存する</button>
-          <button id="clear-token" type="button">削除</button>
+          <button id="copy-share-link" class="wide-action" type="button">リンクをコピー</button>
           <button id="save-now" type="button">今すぐ同期</button>
         </div>
+        <details class="advanced-sync">
+          <summary>同期キーを差し替える</summary>
+          <label>GitHub token<input id="github-token" type="password" autocomplete="off" placeholder="github_pat_..."></label>
+          <div class="dialog-actions">
+            <button id="save-token" class="wide-action" type="button">保存する</button>
+            <button id="clear-token" type="button">削除</button>
+          </div>
+        </details>
       </form>
     </dialog>
 
-    <script src="app.js?v=20260704-timeline5" defer></script>
+    <script src="app.js?v=20260704-timeline6" defer></script>
   </body>
 </html>
