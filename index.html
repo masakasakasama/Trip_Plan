@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Studio</title>
-    <link rel="stylesheet" href="styles.css?v=20260704-editor1">
+    <link rel="stylesheet" href="styles.css?v=20260705-budget1">
   </head>
   <body>
     <main class="stage">
@@ -23,7 +23,7 @@
         </header>
 
         <section class="soft-card status-card">
-          <div class="weather-icon">☀️</div>
+          <div class="weather-icon" id="weather-icon">☀️</div>
           <div>
             <strong id="trip-place">Sydney・晴れ 26°</strong>
             <p id="trip-status">航空券確定</p>
@@ -91,11 +91,21 @@
           <div class="stack-list" id="spot-list"></div>
         </section>
 
+        <section class="view" id="view-budget" aria-label="予算">
+          <div class="section-title">
+            <h2>予算</h2>
+            <button id="add-budget-item" type="button">追加</button>
+          </div>
+          <div class="budget-summary" id="budget-summary"></div>
+          <div class="stack-list" id="budget-list"></div>
+        </section>
+
         <nav class="bottom-nav" aria-label="メインナビ">
           <button class="is-active" data-view="home" type="button"><span>🏠</span>ホーム</button>
           <button data-view="todos" type="button"><span>✅</span>やること</button>
           <button data-view="itinerary" type="button"><span>🗓️</span>旅程</button>
           <button data-view="spots" type="button"><span>📍</span>スポット</button>
+          <button data-view="budget" type="button"><span>💰</span>予算</button>
         </nav>
       </section>
     </main>
@@ -161,6 +171,6 @@
     </dialog>
 
     <p id="sync-status" class="sync-feedback" aria-live="polite"></p>
-    <script src="app.js?v=20260704-editor1" defer></script>
+    <script src="app.js?v=20260705-budget1" defer></script>
   </body>
 </html>
