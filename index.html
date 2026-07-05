@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Plan</title>
-    <link rel="stylesheet" href="styles.css?v=20260706-stable1">
+    <link rel="stylesheet" href="styles.css?v=20260706-controls1">
   </head>
   <body>
     <main class="stage">
@@ -139,23 +139,22 @@
 
     <dialog id="editor-dialog" class="editor-dialog">
       <form method="dialog" id="editor-form">
-        <div class="dialog-head">
-          <h2 id="editor-title">編集</h2>
-          <button id="editor-close" type="button">閉じる</button>
+        <div class="dialog-head editor-head">
+          <h2 id="editor-title">&#32232;&#38598;</h2>
+          <div class="editor-head-actions">
+            <button id="editor-close" type="button">&#38281;&#12376;&#12427;</button>
+            <button id="editor-save" class="wide-action" type="submit">&#20445;&#23384;</button>
+          </div>
         </div>
         <div id="editor-fields" class="editor-fields"></div>
         <div class="editor-actions">
-          <button id="editor-delete" class="danger-action" type="button">削除</button>
-          <div>
-            <button id="editor-cancel" type="button">キャンセル</button>
-            <button id="editor-save" class="wide-action" type="submit">保存</button>
-          </div>
+          <button id="editor-delete" class="danger-action" type="button">&#21066;&#38500;</button>
         </div>
       </form>
     </dialog>
 
     <p id="sync-status" class="sync-feedback" aria-live="polite"></p>
-    <script src="sync-config.js?v=20260706-stable1"></script>
-    <script src="app.js?v=20260706-stable1" defer></script>
+    <script src="sync-config.js?v=20260706-controls1"></script>
+    <script src="app.js?v=20260706-controls1" defer></script>
   </body>
 </html>
