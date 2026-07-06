@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-07-06T11:06:23.901Z",
+      "lastUpdated": "2026-07-06T11:06:36.026Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -110,7 +110,7 @@
           "id": "todo-mr8flfd3-e4do6",
           "title": "MDCA(マレーシアの入国シート)",
           "detail": "オンラインで到着から3日以内",
-          "due": "出発1か月前",
+          "due": "到着後3日以内",
           "priority": "high",
           "owner": "2人",
           "status": "open"
