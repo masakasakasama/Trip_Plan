@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Plan</title>
-    <link rel="stylesheet" href="styles.css?v=20260706-budgetshare1">
+    <link rel="stylesheet" href="styles.css?v=20260710-refactor1">
   </head>
   <body>
     <main class="stage">
@@ -37,6 +37,16 @@
         <nav class="day-tabs" id="day-tabs" aria-label="日付"></nav>
 
         <section class="view is-active" id="view-home" aria-label="ホーム">
+          <div class="day-toolbar" id="day-toolbar">
+            <div class="day-toolbar-copy">
+              <div><strong id="current-day-title"></strong><span id="current-day-date"></span></div>
+              <p id="current-day-theme"></p>
+            </div>
+            <div class="day-toolbar-actions">
+              <button id="edit-day" class="icon-action" type="button" aria-label="この日を編集" title="この日を編集">✏️</button>
+              <button id="add-schedule-item" class="primary-action" type="button">予定を追加</button>
+            </div>
+          </div>
           <div class="timeline" id="timeline"></div>
           <div class="progress-grid">
             <article class="progress-card pink">
@@ -154,7 +164,7 @@
     </dialog>
 
     <p id="sync-status" class="sync-feedback" aria-live="polite"></p>
-    <script src="sync-config.js?v=20260706-budgetshare1"></script>
-    <script src="app.js?v=20260706-budgetshare1" defer></script>
+    <script src="sync-config.js?v=20260710-refactor1"></script>
+    <script src="app.js?v=20260710-refactor1" defer></script>
   </body>
 </html>
