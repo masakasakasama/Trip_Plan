@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260706-budgetshare1";
+const BUILD_VERSION = "20260710-refactor1";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -38,6 +38,10 @@ const els = {
   status: document.querySelector("#sync-status"),
   countdown: document.querySelector("#countdown-days"),
   dayTabs: document.querySelector("#day-tabs"),
+  dayToolbar: document.querySelector("#day-toolbar"),
+  currentDayTitle: document.querySelector("#current-day-title"),
+  currentDayDate: document.querySelector("#current-day-date"),
+  currentDayTheme: document.querySelector("#current-day-theme"),
   timeline: document.querySelector("#timeline"),
   packingScore: document.querySelector("#packing-score"),
   budgetScore: document.querySelector("#budget-score"),
@@ -74,6 +78,8 @@ let activeDayIndex = 0;
 let activeView = "home";
 let dirty = false;
 let saving = false;
+let loading = false;
+let changeVersion = 0;
 let autoSaveTimer = null;
 let activeEditor = null;
 let editorInitialSnapshot = "";
@@ -230,6 +236,7 @@ function switchDay(index) {
   const nextIndex = Math.max(0, Math.min(index, Math.max(0, trip.days.length - 1)));
   if (nextIndex === activeDayIndex) return;
   activeDayIndex = nextIndex;
+  renderDayToolbar();
   renderTimeline();
   renderMap();
   renderDayTabs();
@@ -296,6 +303,9 @@ function bindDaySwipe() {
 }
 
 function normalizeTrip(trip) {
+  const days = Array.isArray(trip.days)
+    ? trip.days.map((day) => ({ ...day, items: Array.isArray(day.items) ? day.items : [] }))
+    : [];
   return {
     id: trip.id || uid("trip"),
     title: valueOr(trip.title, "新しい旅"),
@@ -311,7 +321,7 @@ function normalizeTrip(trip) {
     timezones: trip.timezones || {},
     todos: Array.isArray(trip.todos) ? trip.todos : [],
     pois: Array.isArray(trip.pois) ? trip.pois : [],
-    days: Array.isArray(trip.days) ? trip.days : [],
+    days,
     budgetCategories: Array.isArray(trip.budgetCategories) ? trip.budgetCategories : [],
     budgetItems: Array.isArray(trip.budgetItems) ? trip.budgetItems : []
   };
@@ -772,16 +782,17 @@ async function fetchStateViaStatic() {
 }
 
 async function loadRemote() {
-  if (activeEditor || els.editorDialog?.open) return;
+  if (activeEditor || els.editorDialog?.open || dirty || saving || loading) return;
+  loading = true;
   // まずAPI(最新)を試し、ダメなら静的JSON、それもダメならキャッシュ。
   // API優先なので、保存直後のポーリングで古いPagesを読んで
   // チェックが元に戻る(=同期していないように見える)問題が起きない。
-  const previousDayId = state?.trips?.length ? currentDay()?.id : "";
   let next = null;
   try {
     next = await fetchStateViaWorker();
   } catch {
     // APIが失敗(トークン失効・レート制限など)。静的JSONへフォールバック。
+    remoteSha = "";
   }
   if (!next) {
     try {
@@ -791,16 +802,18 @@ async function loadRemote() {
     }
   }
   try {
-    if (activeEditor || els.editorDialog?.open) return;
+    if (activeEditor || els.editorDialog?.open || dirty || saving) return;
     if (!next) throw new Error("読み込めません");
     if (remoteSha && remoteSha === lastRenderedSha) {
       return;
     }
 
+    // 通信中に日付タブを切り替えても、読み込み開始時の古い日へ戻さない。
+    const selectedDayId = state?.trips?.length ? currentDay()?.id : "";
     state = next;
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
-    if (previousDayId) {
-      const nextDayIndex = currentTrip().days.findIndex((day) => day.id === previousDayId);
+    if (selectedDayId) {
+      const nextDayIndex = currentTrip().days.findIndex((day) => day.id === selectedDayId);
       activeDayIndex = nextDayIndex >= 0 ? nextDayIndex : 0;
     } else {
       activeDayIndex = Math.min(activeDayIndex, Math.max(0, currentTrip().days.length - 1));
@@ -817,11 +830,15 @@ async function loadRemote() {
       return;
     }
     setStatus(error.message, "warn");
+  } finally {
+    loading = false;
   }
 }
 
 function markDirty() {
   dirty = true;
+  changeVersion += 1;
+  localStorage.setItem(CACHE_KEY, JSON.stringify(state));
   setStatus(workerUrl() ? "保存待ち" : "Worker未設定・この端末だけ保存", "soft");
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(saveRemote, AUTO_SAVE_MS);
@@ -829,39 +846,60 @@ function markDirty() {
 
 async function saveRemote() {
   const endpoint = workerUrl();
-  if (!dirty || saving || !endpoint) return;
+  if (!dirty || !endpoint) return;
+  if (saving) return;
   saving = true;
-  setStatus("自動保存中");
   const trip = currentTrip();
   trip.lastUpdated = new Date().toISOString();
+  const savingVersion = changeVersion;
+  const payloadToSave = JSON.stringify(state);
+  let retryDelay = AUTO_SAVE_MS;
+  setStatus("自動保存中");
   try {
     const response = await request(`${endpoint}/state`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(state)
+      body: payloadToSave
     }, 15000);
     if (!response.ok) throw new Error(`保存失敗 (${response.status})`);
     const payload = await response.json();
     remoteSha = payload.sha || response.headers?.get?.("X-Trip-Sha") || "";
     lastRenderedSha = remoteSha || lastRenderedSha;
-    dirty = false;
+    dirty = changeVersion !== savingVersion;
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
-    setStatus("保存済み");
+    setStatus(dirty ? "続けて保存中" : "保存済み");
   } catch (error) {
     setStatus(error.message, "warn");
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = setTimeout(saveRemote, 3000);
+    retryDelay = 3000;
   } finally {
     saving = false;
+    if (dirty) {
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(saveRemote, retryDelay);
+    }
   }
+}
+
+function commitChange(mutator) {
+  mutator();
+  render();
+  markDirty();
+}
+
+function appendEmptyState(container, text) {
+  const empty = document.createElement("p");
+  empty.className = "empty";
+  empty.textContent = text;
+  container.append(empty);
 }
 
 function render() {
   if (!state?.trips?.length) return;
   renderHeader();
   renderDayTabs();
+  renderDayToolbar();
   renderTimeline();
   renderProgress();
   renderTodos();
@@ -924,6 +962,7 @@ function renderDayTabs() {
     button.type = "button";
     button.className = index === activeDayIndex ? "is-active" : "";
     button.dataset.dayIndex = String(index);
+    if (index === activeDayIndex) button.setAttribute("aria-current", "date");
     button.innerHTML = `<strong>${escapeHtml(day.title || `Day ${index + 1}`)}</strong><span>${escapeHtml(formatTabDate(day.date))}</span>`;
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -941,12 +980,26 @@ function renderDayTabs() {
   els.dayTabs.append(addButton);
 }
 
+function renderDayToolbar() {
+  const day = currentDay();
+  if (!els.dayToolbar) return;
+  els.dayToolbar.hidden = !day;
+  if (!day) return;
+  els.currentDayTitle.textContent = day.title || `Day ${activeDayIndex + 1}`;
+  els.currentDayDate.textContent = formatTabDate(day.date);
+  els.currentDayTheme.textContent = day.theme || "予定を追加して旅程を組み立てる";
+}
+
 function renderTimeline() {
   const trip = currentTrip();
   const day = currentDay();
   els.timeline.replaceChildren();
   if (!day) {
     els.timeline.innerHTML = `<p class="empty">日程を追加すると、ここにタイムラインが出ます。</p>`;
+    return;
+  }
+  if (!day.items.length) {
+    appendEmptyState(els.timeline, "まだ予定はありません。「予定を追加」から入れられます。");
     return;
   }
   const flat = flatTimelineItems(trip);
@@ -1067,7 +1120,30 @@ function renderTodos() {
   }
   if (!els.todoList) return;
   els.todoList.replaceChildren();
-  trip.todos.forEach((todo) => {
+  if (!trip.todos.length) {
+    appendEmptyState(els.todoList, "やることはまだありません。");
+    return;
+  }
+  const priorityOrder = { high: 0, medium: 1, low: 2 };
+  const todos = [...trip.todos].sort((left, right) => {
+    const statusDifference = Number(left.status === "done") - Number(right.status === "done");
+    if (statusDifference) return statusDifference;
+    return (priorityOrder[left.priority] ?? 1) - (priorityOrder[right.priority] ?? 1);
+  });
+  let renderedDoneHeading = false;
+  todos.forEach((todo, index) => {
+    if (todo.status === "done" && !renderedDoneHeading) {
+      const heading = document.createElement("p");
+      heading.className = "list-group-title is-done";
+      heading.textContent = "完了";
+      els.todoList.append(heading);
+      renderedDoneHeading = true;
+    } else if (index === 0 && todo.status !== "done") {
+      const heading = document.createElement("p");
+      heading.className = "list-group-title";
+      heading.textContent = "未完了・重要順";
+      els.todoList.append(heading);
+    }
     const card = document.createElement("article");
     card.className = `todo-card ${todo.status === "done" ? "is-done" : ""}`;
     card.innerHTML = `
@@ -1083,9 +1159,9 @@ function renderTodos() {
       </div>
     `;
     card.querySelector(".todo-check").addEventListener("click", () => {
-      todo.status = todo.status === "done" ? "open" : "done";
-      render();
-      markDirty();
+      commitChange(() => {
+        todo.status = todo.status === "done" ? "open" : "done";
+      });
     });
     card.addEventListener("click", (event) => {
       if (event.target.classList.contains("todo-check")) return;
@@ -1098,6 +1174,10 @@ function renderTodos() {
 function renderSpots() {
   const trip = currentTrip();
   els.spotList.replaceChildren();
+  if (!trip.pois.length) {
+    appendEmptyState(els.spotList, "行きたい場所はまだありません。");
+    return;
+  }
   trip.pois.forEach((poi) => {
     const card = document.createElement("article");
     card.className = "list-card spot-card";
@@ -1133,7 +1213,10 @@ function renderMap() {
   els.openDayRoute.href = googleMapsDirectionsUrl(points);
   els.openDayRoute.textContent = points.length >= 2 ? "ルートを開く" : "Mapで開く";
   const nextMapSrc = googleMapsEmbedUrl(points);
-  if (els.routeMap.src !== nextMapSrc) els.routeMap.src = nextMapSrc;
+  if (els.routeMap.dataset.mapSrc !== nextMapSrc) {
+    els.routeMap.dataset.mapSrc = nextMapSrc;
+    els.routeMap.src = nextMapSrc;
+  }
   renderRouteSummary(points);
 }
 
@@ -1163,26 +1246,34 @@ function renderBudget() {
   const stats = budgetStats(trip);
   if (els.budgetSummary) {
     const totals = BUDGET_CURRENCIES
-      .filter((currency) => currency.showTotal)
+      .filter((currency) => currency.showTotal && currency.code !== "JPY")
       .map((currency) => {
         const total = stats.totalsByCurrency[currency.code] || { spent: 0, planned: 0, spentPerPerson: 0, plannedPerPerson: 0 };
         return `
-          <div>
+          <div class="currency-total">
             <strong>${formatMoney(total.spent, currency.code)}</strong>
-            <span>${currency.label}合計 / 予定 ${formatMoney(total.planned, currency.code)}</span>
+            <span>${currency.label} / 予定 ${formatMoney(total.planned, currency.code)}</span>
             <small>1人あたり ${formatMoney(total.spentPerPerson, currency.code)}</small>
           </div>
         `;
       }).join("");
     els.budgetSummary.innerHTML = `
-      <div class="budget-total-jpy"><strong>${formatMoney(stats.total, "JPY")}</strong><span>総予算</span><small>2人合計</small></div>
+      <div class="budget-overview">
+        <section><span>総予算</span><strong>${formatMoney(stats.total, "JPY")}</strong></section>
+        <section><span>支出</span><strong>${formatMoney(stats.spent, "JPY")}</strong></section>
+        <section><span>残り</span><strong>${formatMoney(stats.total - stats.spent, "JPY")}</strong></section>
+      </div>
+      <div class="currency-total"><strong>${formatMoney(stats.totalsByCurrency.JPY.spentPerPerson, "JPY")}</strong><span>日本円・1人あたり</span><small>予定 ${formatMoney(stats.totalsByCurrency.JPY.plannedPerPerson, "JPY")}</small></div>
       ${totals}
-      <div class="budget-total-jpy"><strong>${formatMoney(Math.max(0, stats.total - stats.spent), "JPY")}</strong><span>日本円予算の残り</span></div>
       <meter min="0" max="100" value="${stats.percent}"></meter>
     `;
   }
   if (!els.budgetList) return;
   els.budgetList.replaceChildren();
+  if (!trip.budgetItems.length) {
+    appendEmptyState(els.budgetList, "予算項目はまだありません。");
+    return;
+  }
   trip.budgetItems.forEach((entry) => {
     const currency = budgetCurrency(entry.currency);
     const card = document.createElement("article");
@@ -1232,9 +1323,94 @@ function renderView() {
   document.querySelectorAll(".view").forEach((view) => view.classList.remove("is-active"));
   document.querySelector(`#view-${activeView}`).classList.add("is-active");
   document.querySelectorAll(".bottom-nav button").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.view === activeView);
+    const isActive = button.dataset.view === activeView;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-current", isActive ? "page" : "false");
   });
   if (els.dayTabs) els.dayTabs.hidden = !DAY_TAB_VIEWS.has(activeView);
+}
+
+function dayOptions(trip = currentTrip()) {
+  return trip.days.map((day, index) => ({
+    value: day.id,
+    label: `${formatTabDate(day.date)}・${day.title || `Day ${index + 1}`}`
+  }));
+}
+
+function poiOptions(trip = currentTrip()) {
+  return [
+    { value: "", label: "場所なし" },
+    ...trip.pois.map((poi) => ({ value: poi.id, label: poi.name }))
+  ];
+}
+
+function timezoneOptions(value, trip = currentTrip()) {
+  const options = tzOptionsForTrip(trip);
+  return options.some((option) => option.value === value)
+    ? options
+    : [...options, { value: value || "", label: value || "未設定" }];
+}
+
+function scheduleFields(item, dayId) {
+  return [
+    { name: "dayId", label: "日付", type: "select", value: dayId, options: dayOptions() },
+    { name: "time", label: "現地時間", type: "time", value: item.time, required: true, step: "900" },
+    { name: "timezone", label: "タイムゾーン", type: "select", value: item.timezone, options: timezoneOptions(item.timezone) },
+    { name: "homeTime", label: "JST補助メモ（空なら自動換算）", type: "time", value: item.homeTime, step: "900" },
+    { name: "title", label: "予定名", value: item.title, required: true, placeholder: "例: ホテルにチェックイン" },
+    { name: "poiId", label: "場所", type: "select", value: item.poiId, options: poiOptions() },
+    { name: "flightNumber", label: "便名（任意）", value: item.flightNumber, placeholder: "例: PR423" },
+    { name: "airline", label: "航空会社（任意）", value: item.airline },
+    { name: "aircraft", label: "機材（任意）", value: item.aircraft },
+    { name: "emoji", label: "画像（絵文字）", value: item.emoji, placeholder: "例: ✈️（空欄なら自動）" },
+    { name: "memo", label: "メモ", type: "textarea", value: item.memo, rows: 4 }
+  ];
+}
+
+function updateScheduleFromForm(item) {
+  item.time = formValue("time");
+  item.timezone = formValue("timezone");
+  item.homeTime = formValue("homeTime");
+  item.title = formValue("title");
+  item.poiId = formValue("poiId");
+  item.flightNumber = formValue("flightNumber");
+  item.airline = formValue("airline");
+  item.aircraft = formValue("aircraft");
+  item.emoji = formValue("emoji");
+  item.memo = formValue("memo");
+}
+
+function sortDayItems(day) {
+  day.items.sort((left, right) => String(left.time || "99:99").localeCompare(String(right.time || "99:99")));
+}
+
+function addScheduleItem() {
+  const trip = currentTrip();
+  const day = currentDay();
+  if (!day) return;
+  const lastItem = day.items.at(-1);
+  const destinationZone = (parseZoneString(trip.timezones?.destination) || {}).abbr || "AEST";
+  const item = {
+    id: uid("item"),
+    time: lastItem?.time || "09:00",
+    timezone: lastItem?.timezone || destinationZone,
+    title: "",
+    poiId: "",
+    memo: ""
+  };
+  showEditor({
+    title: `${day.title || "この日"}に予定を追加`,
+    fields: scheduleFields(item, day.id),
+    onSave: () => {
+      const targetDay = trip.days.find((entry) => entry.id === formValue("dayId")) || day;
+      updateScheduleFromForm(item);
+      commitChange(() => {
+        targetDay.items.push(item);
+        sortDayItems(targetDay);
+        activeDayIndex = trip.days.indexOf(targetDay);
+      });
+    }
+  });
 }
 
 function addSpot() {
@@ -1325,49 +1501,29 @@ function editDay(id) {
 }
 
 function editItem(dayId, itemId) {
-  const day = currentTrip().days.find((item) => item.id === dayId);
+  const trip = currentTrip();
+  const day = trip.days.find((item) => item.id === dayId);
   const item = day?.items.find((entry) => entry.id === itemId);
   if (!item) return;
-  const poiOptions = [
-    { value: "", label: "場所なし" },
-    ...currentTrip().pois.map((poi) => ({ value: poi.id, label: poi.name }))
-  ];
-  const tzOptions = tzOptionsForTrip(currentTrip());
-  const timezoneOptions = tzOptions.some((option) => option.value === item.timezone)
-    ? tzOptions
-    : [...tzOptions, { value: item.timezone || "", label: item.timezone || "未設定" }];
   showEditor({
     title: "予定を編集",
-    fields: [
-      { name: "time", label: "現地時間", type: "time", value: item.time, required: true },
-      { name: "timezone", label: "タイムゾーン", type: "select", value: item.timezone, options: timezoneOptions },
-      { name: "homeTime", label: "JST補助メモ（空なら自動換算）", type: "time", value: item.homeTime },
-      { name: "title", label: "予定名", value: item.title, required: true },
-      { name: "poiId", label: "場所", type: "select", value: item.poiId, options: poiOptions },
-      { name: "flightNumber", label: "便名（任意）", value: item.flightNumber, placeholder: "例: PR423" },
-      { name: "airline", label: "航空会社（任意）", value: item.airline },
-      { name: "aircraft", label: "機材（任意）", value: item.aircraft },
-      { name: "emoji", label: "画像(絵文字)", value: item.emoji, placeholder: "例: ✈️（空欄なら自動）" },
-      { name: "memo", label: "メモ", type: "textarea", value: item.memo, rows: 4 }
-    ],
+    fields: scheduleFields(item, day.id),
     onSave: () => {
-      item.time = formValue("time");
-      item.timezone = formValue("timezone");
-      item.homeTime = formValue("homeTime");
-      item.title = formValue("title");
-      item.poiId = formValue("poiId");
-      item.flightNumber = formValue("flightNumber");
-      item.airline = formValue("airline");
-      item.aircraft = formValue("aircraft");
-      item.emoji = formValue("emoji");
-      item.memo = formValue("memo");
-      render();
-      markDirty();
+      const targetDay = trip.days.find((entry) => entry.id === formValue("dayId")) || day;
+      updateScheduleFromForm(item);
+      commitChange(() => {
+        if (targetDay.id !== day.id) {
+          day.items = day.items.filter((entry) => entry.id !== itemId);
+          targetDay.items.push(item);
+          activeDayIndex = trip.days.indexOf(targetDay);
+        }
+        sortDayItems(targetDay);
+      });
     },
     onDelete: () => {
-      day.items = day.items.filter((entry) => entry.id !== itemId);
-      render();
-      markDirty();
+      commitChange(() => {
+        day.items = day.items.filter((entry) => entry.id !== itemId);
+      });
     }
   });
 }
@@ -1387,37 +1543,54 @@ function addDay() {
 }
 
 function addTodo() {
+  openTodoEditor();
+}
+
+function todoFields(todo = {}) {
+  return [
+    { name: "title", label: "やること", value: todo.title, required: true },
+    { name: "detail", label: "メモ", type: "textarea", value: todo.detail, rows: 3 },
+    { name: "due", label: "期限", value: todo.due || "出発1か月前" },
+    { name: "owner", label: "担当", value: todo.owner || "2人" },
+    {
+      name: "priority",
+      label: "重要度",
+      type: "select",
+      value: todo.priority || "medium",
+      options: [
+        { value: "high", label: "重要" },
+        { value: "medium", label: "確認" },
+        { value: "low", label: "あとで" }
+      ]
+    }
+  ];
+}
+
+function updateTodoFromForm(todo) {
+  todo.title = formValue("title");
+  todo.detail = formValue("detail");
+  todo.due = formValue("due");
+  todo.owner = formValue("owner");
+  todo.priority = formValue("priority") || "medium";
+}
+
+function openTodoEditor(todo = null) {
+  const trip = currentTrip();
+  const isNew = !todo;
+  const draft = todo || { id: uid("todo"), status: "open" };
   showEditor({
-    title: "やることを追加",
-    fields: [
-      { name: "title", label: "やること", required: true },
-      { name: "detail", label: "メモ", type: "textarea", rows: 3 },
-      { name: "due", label: "期限", value: "出発1か月前" },
-      { name: "owner", label: "担当", value: "2人" },
-      {
-        name: "priority",
-        label: "重要度",
-        type: "select",
-        value: "medium",
-        options: [
-          { value: "high", label: "重要" },
-          { value: "medium", label: "確認" },
-          { value: "low", label: "あとで" }
-        ]
-      }
-    ],
+    title: isNew ? "やることを追加" : "やることを編集",
+    fields: todoFields(draft),
     onSave: () => {
-      currentTrip().todos.push({
-        id: uid("todo"),
-        title: formValue("title"),
-        detail: formValue("detail"),
-        due: formValue("due"),
-        priority: formValue("priority") || "medium",
-        owner: formValue("owner"),
-        status: "open"
+      updateTodoFromForm(draft);
+      commitChange(() => {
+        if (isNew) trip.todos.push(draft);
       });
-      render();
-      markDirty();
+    },
+    onDelete: isNew ? null : () => {
+      commitChange(() => {
+        trip.todos = trip.todos.filter((item) => item.id !== draft.id);
+      });
     }
   });
 }
@@ -1425,77 +1598,49 @@ function addTodo() {
 function editTodo(id) {
   const todo = currentTrip().todos.find((item) => item.id === id);
   if (!todo) return;
-  const trip = currentTrip();
-  showEditor({
-    title: "やることを編集",
-    fields: [
-      { name: "title", label: "やること", value: todo.title, required: true },
-      { name: "detail", label: "メモ", type: "textarea", value: todo.detail, rows: 3 },
-      { name: "due", label: "期限", value: todo.due },
-      { name: "owner", label: "担当", value: todo.owner },
-      {
-        name: "priority",
-        label: "重要度",
-        type: "select",
-        value: todo.priority || "medium",
-        options: [
-          { value: "high", label: "重要" },
-          { value: "medium", label: "確認" },
-          { value: "low", label: "あとで" }
-        ]
-      }
-    ],
-    onSave: () => {
-      todo.title = formValue("title");
-      todo.detail = formValue("detail");
-      todo.due = formValue("due");
-      todo.owner = formValue("owner");
-      todo.priority = formValue("priority") || "medium";
-      render();
-      markDirty();
-    },
-    onDelete: () => {
-      trip.todos = trip.todos.filter((item) => item.id !== id);
-      render();
-      markDirty();
-    }
-  });
+  openTodoEditor(todo);
 }
 
-function addBudgetItem() {
-  const trip = currentTrip();
+function budgetEditorFields(entry = {}, trip = currentTrip()) {
   const categoryOptions = budgetCategories(trip).map((category) => ({ value: category, label: category }));
   const currencyOptions = BUDGET_CURRENCIES.map((currency) => ({ value: currency.code, label: currency.label }));
   const peopleOptions = [
     { value: "2", label: "2人分" },
     { value: "1", label: "1人分" }
   ];
+  return [
+    { name: "label", label: "項目名", value: entry.label, required: true, placeholder: "例: 航空券" },
+    { name: "category", label: "カテゴリ", type: "select", value: entry.category || "その他", options: categoryOptions },
+    { name: "newCategory", label: "カテゴリ追加", placeholder: "候補にない時だけ入力" },
+    { name: "currency", label: "通貨", type: "select", value: budgetCurrency(entry.currency).code, options: currencyOptions },
+    { name: "peopleCount", label: "対象人数", type: "select", value: String(budgetPeopleCount(entry, trip)), options: peopleOptions },
+    { name: "planned", label: "予定金額", type: "number", value: budgetAmount(entry, "planned"), step: "0.01", min: "0" },
+    { name: "actual", label: "使った金額", type: "number", value: budgetAmount(entry, "actual"), step: "0.01", min: "0" },
+    { name: "memo", label: "メモ", type: "textarea", value: entry.memo, rows: 3 }
+  ];
+}
+
+function updateBudgetFromForm(entry, trip = currentTrip()) {
+  entry.label = formValue("label");
+  entry.category = addBudgetCategory(trip, formValue("newCategory")) || formValue("category") || "その他";
+  entry.currency = formValue("currency") || "JPY";
+  entry.peopleCount = Number(formValue("peopleCount")) === 1 ? 1 : 2;
+  entry.planned = Number(formValue("planned")) || 0;
+  entry.actual = Number(formValue("actual")) || 0;
+  entry.memo = formValue("memo");
+}
+
+function addBudgetItem() {
+  const trip = currentTrip();
+  const entry = { id: uid("budget"), currency: "JPY", peopleCount: 2, category: "その他" };
   showEditor({
     title: "予算項目を追加",
-    fields: [
-      { name: "label", label: "項目名", required: true, placeholder: "例: 航空券" },
-      { name: "category", label: "カテゴリ", type: "select", value: "その他", options: categoryOptions },
-      { name: "newCategory", label: "カテゴリ追加", placeholder: "候補にない時だけ入力" },
-      { name: "currency", label: "通貨", type: "select", value: "JPY", options: currencyOptions },
-      { name: "peopleCount", label: "対象人数", type: "select", value: "2", options: peopleOptions },
-      { name: "planned", label: "予定金額", type: "number", step: "0.01", min: "0" },
-      { name: "actual", label: "使った金額", type: "number", step: "0.01", min: "0" },
-      { name: "memo", label: "メモ", type: "textarea", rows: 3 }
-    ],
+    fields: budgetEditorFields(entry, trip),
     onSave: () => {
-      const category = addBudgetCategory(trip, formValue("newCategory")) || formValue("category") || "その他";
-      trip.budgetItems.push({
-        id: uid("budget"),
-        label: formValue("label"),
-        category,
-        currency: formValue("currency") || "JPY",
-        peopleCount: Number(formValue("peopleCount")) === 1 ? 1 : 2,
-        planned: Number(formValue("planned")) || 0,
-        actual: Number(formValue("actual")) || 0,
-        memo: formValue("memo")
+      updateBudgetFromForm(entry, trip);
+      commitChange(() => {
+        trip.budgetItems.push(entry);
       });
-      render();
-      markDirty();
     }
   });
 }
@@ -1504,40 +1649,17 @@ function editBudgetItem(id) {
   const trip = currentTrip();
   const entry = trip.budgetItems.find((item) => item.id === id);
   if (!entry) return;
-  const categoryOptions = budgetCategories(trip).map((category) => ({ value: category, label: category }));
-  const currencyOptions = BUDGET_CURRENCIES.map((currency) => ({ value: currency.code, label: currency.label }));
-  const peopleOptions = [
-    { value: "2", label: "2人分" },
-    { value: "1", label: "1人分" }
-  ];
   showEditor({
     title: "予算項目を編集",
-    fields: [
-      { name: "label", label: "項目名", value: entry.label, required: true },
-      { name: "category", label: "カテゴリ", type: "select", value: entry.category || "その他", options: categoryOptions },
-      { name: "newCategory", label: "カテゴリ追加", placeholder: "候補にない時だけ入力" },
-      { name: "currency", label: "通貨", type: "select", value: budgetCurrency(entry.currency).code, options: currencyOptions },
-      { name: "peopleCount", label: "対象人数", type: "select", value: String(budgetPeopleCount(entry, trip)), options: peopleOptions },
-      { name: "planned", label: "予定金額", type: "number", value: budgetAmount(entry, "planned"), step: "0.01", min: "0" },
-      { name: "actual", label: "使った金額", type: "number", value: budgetAmount(entry, "actual"), step: "0.01", min: "0" },
-      { name: "memo", label: "メモ", type: "textarea", value: entry.memo, rows: 3 }
-    ],
+    fields: budgetEditorFields(entry, trip),
     onSave: () => {
-      const category = addBudgetCategory(trip, formValue("newCategory")) || formValue("category") || "その他";
-      entry.label = formValue("label");
-      entry.category = category;
-      entry.currency = formValue("currency") || "JPY";
-      entry.peopleCount = Number(formValue("peopleCount")) === 1 ? 1 : 2;
-      entry.planned = Number(formValue("planned")) || 0;
-      entry.actual = Number(formValue("actual")) || 0;
-      entry.memo = formValue("memo");
-      render();
-      markDirty();
+      updateBudgetFromForm(entry, trip);
+      commitChange(() => {});
     },
     onDelete: () => {
-      trip.budgetItems = trip.budgetItems.filter((item) => item.id !== id);
-      render();
-      markDirty();
+      commitChange(() => {
+        trip.budgetItems = trip.budgetItems.filter((item) => item.id !== id);
+      });
     }
   });
 }
@@ -1561,6 +1683,7 @@ function bind() {
   });
   els.editorClose?.addEventListener("click", requestCloseEditor);
   els.editorDelete?.addEventListener("click", () => {
+    if (!window.confirm("この項目を削除しますか？")) return;
     editorSubmitting = true;
     activeEditor?.onDelete?.();
     closeEditor();
@@ -1602,6 +1725,11 @@ function bind() {
     saveRemote();
   });
   document.querySelector("#new-trip").addEventListener("click", newTrip);
+  document.querySelector("#add-schedule-item")?.addEventListener("click", addScheduleItem);
+  document.querySelector("#edit-day")?.addEventListener("click", () => {
+    const day = currentDay();
+    if (day) editDay(day.id);
+  });
   document.querySelector("#add-todo").addEventListener("click", addTodo);
   document.querySelector("#add-spot").addEventListener("click", addSpot);
   document.querySelector("#add-budget-item")?.addEventListener("click", addBudgetItem);
