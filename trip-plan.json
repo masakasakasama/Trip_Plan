@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-07-06T11:06:37.629Z",
+      "lastUpdated": "2026-07-11T10:53:22.302Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -114,6 +114,15 @@
           "priority": "high",
           "owner": "2人",
           "status": "open"
+        },
+        {
+          "id": "todo-mrg8xbpa-c7weq",
+          "status": "open",
+          "title": "髪染めるやつ買う",
+          "detail": "",
+          "due": "滞在中",
+          "owner": "2人",
+          "priority": "medium"
         }
       ],
       "pois": [
