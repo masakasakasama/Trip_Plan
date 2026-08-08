@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-08T04:38:38.723Z",
+      "lastUpdated": "2026-08-08T04:46:47.001Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -128,6 +128,15 @@
           "id": "todo-msj3dzh0-v8he3",
           "status": "open",
           "title": "コアラスリッパ買う",
+          "detail": "",
+          "due": "出発1か月前",
+          "owner": "2人",
+          "priority": "medium"
+        },
+        {
+          "id": "todo-msjw5xgy-m6ilv",
+          "status": "open",
+          "title": "ESIM",
           "detail": "",
           "due": "出発1か月前",
           "owner": "2人",
