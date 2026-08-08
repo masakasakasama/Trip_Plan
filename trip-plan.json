@@ -21,6 +21,7 @@
         {"id":"todo-insurance-rebecca","title":"Rebeccaの海外旅行保険を加入確認","detail":"医療費、キャッシュレス診療、携行品、航空機遅延、乗継ミス、既往症条件を確認。","due":"航空券確定後すぐ","priority":"high","owner":"Rebecca","status":"done"},
         {"id":"todo-insurance-husband","title":"夫の海外旅行保険を加入確認","detail":"Rebeccaと同じ条件で比較。クレカ付帯なら利用条件と補償額を確認。","due":"航空券確定後すぐ","priority":"high","owner":"夫","status":"done"},
         {"id":"todo-manila-transit","title":"Manila長時間乗継の方針を決める","detail":"往路MNL 15h55m。空港内待機か入国するかを決める。入国するならeTravelと残存期間を確認。","due":"7月中","priority":"high","owner":"2人","status":"open"},
+        {"id":"todo-ph-etravel","title":"フィリピン入国用eTravelを2人分登録、QRをスクショ","detail":"往路のManila入国用。2人分それぞれ登録し、発行されたQRコードをスマホにスクリーンショット保存する。","due":"今すぐ（到着前72時間以内）","priority":"high","owner":"2人","status":"open"},
         {"id":"todo-sydney-hotel","title":"Sydney宿を確定","detail":"8/12朝着。荷物預け、早朝到着、空港からの移動、ホテル周辺情報を確認。","due":"7月中","priority":"medium","owner":"2人","status":"done"},
         {"id":"todo-airport-transport","title":"羽田深夜移動と帰国日の帰宅手段を決める","detail":"復路は8/16 00:45羽田T3着。相乗り送迎を仮予約済み。2:40〜3:20に羽田空港第3ターミナル（Haneda Airport Garden）で乗車、3:13〜4:16に元浅草の自宅到着予定。予約確定メール待ち。","due":"出発2週間前まで","priority":"medium","owner":"夫","status":"open"},
         {"id":"todo-sydney-plan","title":"Sydneyで行きたい場所を絞る","detail":"Opera House / Harbour、Bondi、Blue Mountainsを体力と天気で調整。","due":"出発2週間前まで","priority":"medium","owner":"2人","status":"open"},
