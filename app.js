@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260710-refactor1";
+const BUILD_VERSION = "20260810-dailyfocus1";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -75,6 +75,7 @@ let state = null;
 let remoteSha = "";
 let lastRenderedSha = "";
 let activeDayIndex = 0;
+let lastDefaultFocusDate = "";
 let activeView = "home";
 let dirty = false;
 let saving = false;
@@ -229,6 +230,44 @@ function currentTrip() {
 function currentDay() {
   const trip = currentTrip();
   return trip.days[activeDayIndex] || trip.days[0];
+}
+
+function localDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function preferredDayIndex(trip, today = localDateKey()) {
+  if (!trip?.days?.length) return 0;
+  const datedDays = trip.days
+    .map((day, index) => ({ date: day.date, index }))
+    .filter((day) => /^\d{4}-\d{2}-\d{2}$/.test(day.date || ""));
+  if (!datedDays.length) return 0;
+
+  const exact = datedDays.find((day) => day.date === today);
+  if (exact) return exact.index;
+
+  const upcoming = datedDays
+    .filter((day) => day.date > today)
+    .sort((left, right) => left.date.localeCompare(right.date))[0];
+  if (upcoming) return upcoming.index;
+
+  return datedDays.sort((left, right) => right.date.localeCompare(left.date))[0].index;
+}
+
+function focusDefaultDayForToday({ renderAfter = false } = {}) {
+  if (!state?.trips?.length) return false;
+  const today = localDateKey();
+  if (today === lastDefaultFocusDate) return false;
+  lastDefaultFocusDate = today;
+  activeDayIndex = preferredDayIndex(currentTrip(), today);
+  if (renderAfter) {
+    render();
+    requestAnimationFrame(scrollActiveDayTab);
+  }
+  return true;
 }
 
 function switchDay(index) {
@@ -812,13 +851,15 @@ async function loadRemote() {
     const selectedDayId = state?.trips?.length ? currentDay()?.id : "";
     state = next;
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
-    if (selectedDayId) {
+    const focusedToday = focusDefaultDayForToday();
+    if (!focusedToday && selectedDayId) {
       const nextDayIndex = currentTrip().days.findIndex((day) => day.id === selectedDayId);
       activeDayIndex = nextDayIndex >= 0 ? nextDayIndex : 0;
-    } else {
+    } else if (!focusedToday) {
       activeDayIndex = Math.min(activeDayIndex, Math.max(0, currentTrip().days.length - 1));
     }
     render();
+    requestAnimationFrame(scrollActiveDayTab);
     lastRenderedSha = remoteSha || lastRenderedSha;
     setStatus(workerUrl() ? "共有リンク同期中" : "Worker未設定・閲覧のみ", workerUrl() ? "" : "soft");
   } catch (error) {
@@ -1752,15 +1793,21 @@ bind();
 bindDaySwipe();
 loadRemote();
 setInterval(() => {
+  focusDefaultDayForToday({ renderAfter: true });
   if (!dirty && !saving && !activeEditor && document.visibilityState === "visible") loadRemote();
 }, POLL_MS);
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && !dirty && !saving && !activeEditor) loadRemote();
+  if (document.visibilityState === "visible") {
+    focusDefaultDayForToday({ renderAfter: true });
+    if (!dirty && !saving && !activeEditor) loadRemote();
+  }
 });
 window.addEventListener("focus", () => {
+  focusDefaultDayForToday({ renderAfter: true });
   if (!dirty && !saving && !activeEditor) loadRemote();
 });
 window.addEventListener("pageshow", () => {
+  focusDefaultDayForToday({ renderAfter: true });
   if (!dirty && !saving && !activeEditor) loadRemote();
 });
 window.addEventListener("online", () => {
