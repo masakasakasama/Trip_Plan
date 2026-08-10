@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-09T15:01:30.754Z",
+      "lastUpdated": "2026-08-10T16:18:18.376Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -63,12 +63,12 @@
         },
         {
           "id": "todo-manila-transit",
-          "title": "Manila長時間乗継の方針を決める",
-          "detail": "往路MNL 15h55m。空港内待機か入国するかを決める。入国するならeTravelと残存期間を確認。",
-          "due": "7月中",
+          "title": "Manila長時間乗継の休憩先を確定",
+          "detail": "Hotel Sogo EDSA near Taftを予約済み。8/11 14:00チェックイン、返金不可。15:30にホテルを出発し、17:00までにNAIA Terminal 1へ戻る予定。",
+          "due": "完了",
           "priority": "high",
           "owner": "2人",
-          "status": "open"
+          "status": "done"
         },
         {
           "id": "todo-ph-etravel",
@@ -171,6 +171,17 @@
         }
       ],
       "pois": [
+        {
+          "id": "poi-hotel-sogo-edsa-taft",
+          "name": "Hotel Sogo EDSA near Taft",
+          "area": "Pasay City, Metro Manila",
+          "category": "hotel",
+          "priority": "high",
+          "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Hotel%20Sogo%20EDSA%20near%20Taft",
+          "imageUrl": "",
+          "emoji": "🏨",
+          "memo": "Manila長時間乗継の休憩先。8/11 14:00チェックイン、返金不可。"
+        },
         {
           "id": "poi-msjvvlvf-uqrts",
           "name": "Fort Santiago",
@@ -305,7 +316,37 @@
               "homeTime": "06:40",
               "title": "MNL乗継 15h55m",
               "poiId": "",
-              "memo": "Manila現地時刻。長い乗継なので休憩・食事・再集合時間を別途メモ。"
+              "memo": "Manila現地時刻。Hotel Sogo EDSA near Taftを予約済み。14:00チェックイン後、15:30に空港へ戻る。"
+            },
+            {
+              "id": "item-sogo-checkin",
+              "time": "14:00",
+              "timezone": "PHT",
+              "homeTime": "15:00",
+              "title": "Hotel Sogoチェックイン",
+              "poiId": "poi-hotel-sogo-edsa-taft",
+              "emoji": "🏨",
+              "memo": "Hotel Sogo EDSA near Taft。予約済み、返金不可。短時間休憩して空港へ戻る。"
+            },
+            {
+              "id": "item-sogo-depart",
+              "time": "15:30",
+              "timezone": "PHT",
+              "homeTime": "16:30",
+              "title": "ホテル出発・空港へ",
+              "poiId": "poi-hotel-sogo-edsa-taft",
+              "emoji": "🚕",
+              "memo": "渋滞を見込み、15:30に出発。NAIA Terminal 1へ移動する。"
+            },
+            {
+              "id": "item-naia-t1-return",
+              "time": "17:00",
+              "timezone": "PHT",
+              "homeTime": "18:00",
+              "title": "NAIA Terminal 1到着目標",
+              "poiId": "",
+              "emoji": "🛫",
+              "memo": "PR211搭乗のため17:00までの空港到着を目標にする。"
             },
             {
               "id": "item-pr211-depart",
