@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-11T04:26:15.983Z",
+      "lastUpdated": "2026-08-11T04:37:22.221Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -317,6 +317,19 @@
               "title": "MNL乗継 15h55m",
               "poiId": "",
               "memo": "Manila現地時刻。Hotel Sogo EDSA near Taftを予約済み。14:00チェックイン後、16:30に空港へ戻る。"
+            },
+            {
+              "id": "item-mso64ldm-n0c7h",
+              "time": "10:00",
+              "timezone": "PHT",
+              "title": "Fort Santiago",
+              "poiId": "poi-msjvvlvf-uqrts",
+              "memo": "",
+              "homeTime": "",
+              "flightNumber": "",
+              "airline": "",
+              "aircraft": "",
+              "emoji": ""
             },
             {
               "id": "item-sogo-checkin",
