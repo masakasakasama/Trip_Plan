@@ -27,11 +27,11 @@
 - 旅行データそのものは保存時にGitHubへcommitされる。
 
 ## 制限
-- GitHub Pagesだけでは匿名書き込みができないため、保存する端末にはGitHub tokenが必要。
-- 同時編集で衝突した場合は、最新を読み込んでから再保存する。
+- GitHub Pages本体には書き込み権限を置かず、Cloudflare WorkerがGitHub secretを保持する。
+- 同じ項目の同じフィールドを同時変更した場合は完全な自動統合ができないため、ローカル側を採用しつつ両方の状態を復旧スナップショットとGit履歴へ残す。
 - Google MapsはAPIキーなしの検索URL連携。Places APIの詳細情報取得は未実装。
 - 過去Tripは、このアプリで今後作ったTripを完了後にアーカイブして残す。
-- 天気は実測予報ではなく、都市＋出発月の平年値による季節目安（`CLIMATE_BY_CITY`に無い都市は表示なし）。
+- 天気はOpen-MeteoのSydney現地日付の予報を表示し、取得失敗時だけ`CLIMATE_BY_CITY`の平年値へフォールバックする。
 
 ## タイムゾーン跨ぎの経過時間
 - 各予定は `date`(day) + `time` + `timezone`(略称) を持ち、`eventInstant()` でUTC絶対時刻に変換して前の予定との差分を計算する。

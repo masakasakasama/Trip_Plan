@@ -13,6 +13,7 @@ function corsHeaders(request, env) {
     "Access-Control-Allow-Origin": origin === allowed ? origin : allowed,
     "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, If-Match",
+    "Access-Control-Expose-Headers": "ETag, X-Trip-Sha",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"
   };
@@ -92,6 +93,9 @@ async function githubFetch(env, url, init = {}) {
 const STATIC_FILES = new Map([
   ["index.html", "text/html; charset=utf-8"],
   ["app.js", "application/javascript; charset=utf-8"],
+  ["sync-merge.js", "application/javascript; charset=utf-8"],
+  ["budget-jpy.js", "application/javascript; charset=utf-8"],
+  ["weather-live.js", "application/javascript; charset=utf-8"],
   ["styles.css", "text/css; charset=utf-8"],
   ["trip-plan.json", "application/json; charset=utf-8"]
 ]);
@@ -169,6 +173,20 @@ async function writeState(request, env) {
     return json({ error: "sha_read_failed", status: latest.status }, { status: latest.status }, request, env);
   }
   const current = await latest.json();
+  const expectedSha = (request.headers.get("If-Match") || "").replace(/^W\//, "").replace(/^"|"$/g, "");
+  const currentState = JSON.parse(decodeBase64(current.content));
+  if (!expectedSha) {
+    return json({ error: "precondition_required", sha: current.sha, state: currentState }, {
+      status: 428,
+      headers: { "ETag": current.sha, "X-Trip-Sha": current.sha }
+    }, request, env);
+  }
+  if (expectedSha !== current.sha) {
+    return json({ error: "conflict", sha: current.sha, state: currentState }, {
+      status: 409,
+      headers: { "ETag": current.sha, "X-Trip-Sha": current.sha }
+    }, request, env);
+  }
   const content = `${JSON.stringify(body, null, 2)}\n`;
   const response = await githubFetch(env, contentUrl(env), {
     method: "PUT",
@@ -181,6 +199,16 @@ async function writeState(request, env) {
     })
   });
   if (!response.ok) {
+    if (response.status === 409 || response.status === 422) {
+      const newestResponse = await githubFetch(env, `${contentUrl(env)}?ref=${cfg.branch}&t=${Date.now()}`);
+      if (newestResponse.ok) {
+        const newest = await newestResponse.json();
+        return json({ error: "conflict", sha: newest.sha, state: JSON.parse(decodeBase64(newest.content)) }, {
+          status: 409,
+          headers: { "ETag": newest.sha, "X-Trip-Sha": newest.sha }
+        }, request, env);
+      }
+    }
     return json({ error: "write_failed", status: response.status }, { status: response.status }, request, env);
   }
   const payload = await response.json();

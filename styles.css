@@ -853,6 +853,10 @@ meter::-webkit-meter-bar {
   font-size: 0.9rem;
 }
 
+.status-card[hidden] {
+  display: none !important;
+}
+
 .budget-summary .jpy-total,
 .budget-summary .exchange-rate-note {
   grid-column: 1 / -1;
