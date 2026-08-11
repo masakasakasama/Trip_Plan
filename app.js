@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260811-usd1";
+const BUILD_VERSION = "20260811-jpyfx2";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -13,7 +13,7 @@ const AUTO_SAVE_MS = 350;
 const BUDGET_CURRENCIES = [
   { code: "JPY", label: "日本円", symbol: "¥", showTotal: true },
   { code: "AUD", label: "豪ドル", symbol: "A$", showTotal: true },
-  { code: "USD", label: "米ドル", symbol: "$", showTotal: true },
+  { code: "USD", label: "米ドル", symbol: "US$", showTotal: true },
   { code: "PHP", label: "フィリピンペソ", symbol: "₱", showTotal: false },
   { code: "EUR", label: "ユーロ", symbol: "€", showTotal: true }
 ];
@@ -1460,7 +1460,7 @@ function renderSettlement(trip) {
           <strong>未精算</strong>
         </div>
         ${transfers}
-        <button type="button" data-settle-currency="${escapeHtml(group.code)}">この通貨を精算済みにする</button>
+        <button type="button" data-settle-currency="${escapeHtml(group.code)}">まとめて精算済みにする</button>
       </article>
     `;
   }).join("");
