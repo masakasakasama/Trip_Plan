@@ -2,8 +2,14 @@
   const FX_CACHE_KEY = "trip-plan-fx-jpy-v1";
   const FX_API_BASE = "https://api.frankfurter.dev/v2/rate";
   const FX_CODES = ["AUD", "USD", "PHP", "EUR"];
+  const FX_FALLBACK = {
+    AUD: { rate: 111.69, date: "2026-08-11" },
+    USD: { rate: 158.41, date: "2026-08-11" },
+    PHP: { rate: 2.6054, date: "2026-08-11" },
+    EUR: { rate: 183.07, date: "2026-08-11" }
+  };
 
-  let fxCache = loadFxCache();
+  let fxCache = { ...FX_FALLBACK, ...loadFxCache() };
 
   function loadFxCache() {
     try {
@@ -70,6 +76,27 @@
 
   function toJPY(entry, kind = "actual") {
     return budgetAmount(entry, kind) * rateForEntry(entry, kind);
+  }
+
+  function rateSymbol(code) {
+    if (code === "AUD") return "A$";
+    if (code === "USD") return "US$";
+    if (code === "PHP") return "₱";
+    return "€";
+  }
+
+  function rateSummary() {
+    return FX_CODES.map((code) => {
+      const info = latestRate(code);
+      if (!info) return "";
+      const rate = Number(info.rate).toLocaleString("ja-JP", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return `1 ${rateSymbol(code)} = ¥${rate}`;
+    }).filter(Boolean).join(" / ");
+  }
+
+  function rateSummaryDate() {
+    const dates = FX_CODES.map((code) => latestRate(code)?.date).filter(Boolean).sort();
+    return dates.at(-1) || localDateKey();
   }
 
   function stampRate(entry, kind) {
@@ -262,10 +289,15 @@
           <section><span>支出</span><strong>${formatMoney(stats.spent, "JPY")}</strong></section>
           <section><span>残り</span><strong>${formatMoney(stats.total - stats.spent, "JPY")}</strong></section>
         </div>
-        <div class="currency-total">
+        <div class="currency-total jpy-total">
           <strong>${formatMoney(stats.spentPerPerson, "JPY")}</strong>
           <span>日本円換算・1人あたり</span>
           <small>予定 ${formatMoney(stats.plannedPerPerson, "JPY")}・${escapeHtml(rateNote)}</small>
+        </div>
+        <div class="exchange-rate-note">
+          <strong>換算レート ${escapeHtml(rateSummaryDate().replaceAll("-", "/"))}</strong>
+          <span>${escapeHtml(rateSummary())}</span>
+          <small>Frankfurter（中央銀行参照レート）</small>
         </div>
         <meter min="0" max="100" value="${stats.percent}"></meter>
       `;

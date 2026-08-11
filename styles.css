@@ -853,6 +853,35 @@ meter::-webkit-meter-bar {
   font-size: 0.9rem;
 }
 
+.budget-summary .jpy-total,
+.budget-summary .exchange-rate-note {
+  grid-column: 1 / -1;
+}
+
+.budget-summary .exchange-rate-note {
+  padding: 11px 12px;
+  text-align: left;
+}
+
+.budget-summary .exchange-rate-note strong {
+  margin-bottom: 5px;
+  color: #527f8a;
+  font-size: 0.78rem;
+}
+
+.budget-summary .exchange-rate-note span {
+  display: block;
+  color: #667f86;
+  font-size: 0.7rem;
+  line-height: 1.6;
+}
+
+.budget-summary .exchange-rate-note small {
+  margin-top: 5px;
+  color: #a49ba3;
+  font-size: 0.64rem;
+}
+
 .budget-summary div {
   text-align: center;
   min-width: 0;
