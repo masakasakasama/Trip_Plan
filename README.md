@@ -41,6 +41,18 @@ window.TRIP_SYNC_WORKER_URL = "https://trip-plan-sync.<your-subdomain>.workers.d
 
 これで同じリンクを開くPC・スマホ・別ブラウザが自動で同じ `trip-plan.json` を読み書きします。
 
+### 同期時のデータ保護
+
+- Workerは`If-Match`で読み込み時のSHAを検証し、古いデータによる上書きを拒否します。
+- 競合時は予定・やること・スポット・予算をID単位で3方向マージして再保存します。
+- 未送信の変更は保存完了まで端末の`trip-plan-pending-v1`へ退避し、再起動後に復元します。
+- 同じ項目の同じ欄が同時変更された場合は、端末の`trip-plan-recovery-v1`へ直近3件の競合スナップショットを残します。
+- GitHubのコミット履歴には各保存前後の共有データが残ります。
+
+## 天気
+
+Sydneyの当日予報はOpen-Meteoから取得します。Sydney現地日付の変更、画面復帰、オンライン復帰で更新し、取得できない場合だけ季節の平年目安へフォールバックします。予算画面では天気カードを表示しません。
+
 ## GitHub Pages
 
 `.github/workflows/pages.yml` でGitHub ActionsからPagesへデプロイします。

@@ -1,12 +1,14 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260811-payers1";
+const BUILD_VERSION = "20260811-syncsafe2";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
 const WORKER_URL_KEY = "trip-plan-worker-url-v1";
 const MAPS_KEY = "trip-plan-google-maps-key-v1";
 const CACHE_KEY = "trip-plan-cache-v3";
+const PENDING_KEY = "trip-plan-pending-v1";
+const RECOVERY_KEY = "trip-plan-recovery-v1";
 const POLL_MS = 1000;
 const AUTO_SAVE_MS = 350;
 
@@ -35,6 +37,7 @@ const els = {
   dates: document.querySelector("#trip-dates"),
   place: document.querySelector("#trip-place"),
   weatherIcon: document.querySelector("#weather-icon"),
+  statusCard: document.querySelector("#trip-status-card"),
   tripStatus: document.querySelector("#trip-status"),
   status: document.querySelector("#sync-status"),
   countdown: document.querySelector("#countdown-days"),
@@ -74,6 +77,7 @@ const els = {
 };
 
 let state = null;
+let baseState = null;
 let remoteSha = "";
 let lastRenderedSha = "";
 let activeDayIndex = 0;
@@ -890,6 +894,82 @@ function request(url, options = {}, timeoutMs = 10000) {
   });
 }
 
+function cloneState(value) {
+  return window.TripSyncMerge?.clone(value) || JSON.parse(JSON.stringify(value));
+}
+
+function archiveRecovery(reason, localValue, remoteValue, conflicts = []) {
+  try {
+    const previous = JSON.parse(localStorage.getItem(RECOVERY_KEY) || "[]");
+    previous.unshift({
+      at: new Date().toISOString(),
+      reason,
+      conflicts,
+      local: cloneState(localValue),
+      remote: cloneState(remoteValue)
+    });
+    localStorage.setItem(RECOVERY_KEY, JSON.stringify(previous.slice(0, 3)));
+  } catch {
+    // Git history remains the server-side backup if local recovery storage is unavailable.
+  }
+}
+
+function persistPending() {
+  if (!state || !dirty) return;
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify({
+      state,
+      baseState,
+      baseSha: remoteSha,
+      changeVersion,
+      updatedAt: new Date().toISOString()
+    }));
+  } catch {
+    setStatus("端末の未送信バックアップに失敗", "warn");
+  }
+}
+
+function clearPending() {
+  localStorage.removeItem(PENDING_KEY);
+}
+
+function mergeRemoteState(remoteValue, localValue, reason) {
+  const remoteNormalized = normalize(remoteValue);
+  const base = baseState || remoteNormalized;
+  const result = window.TripSyncMerge.mergeStates(base, localValue, remoteNormalized);
+  if (result.conflicts.length) archiveRecovery(reason, localValue, remoteNormalized, result.conflicts);
+  state = normalize(result.state);
+  baseState = cloneState(remoteNormalized);
+  dirty = true;
+  changeVersion += 1;
+  localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+  persistPending();
+  render();
+  return result.conflicts;
+}
+
+function restorePendingChanges() {
+  try {
+    const pending = JSON.parse(localStorage.getItem(PENDING_KEY) || "null");
+    if (!pending?.state?.trips?.length) return false;
+    state = normalize(pending.state);
+    baseState = pending.baseState ? normalize(pending.baseState) : null;
+    remoteSha = pending.baseSha || "";
+    lastRenderedSha = remoteSha;
+    changeVersion = Math.max(Number(pending.changeVersion) || 0, 1);
+    dirty = true;
+    localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+    render();
+    setStatus("未送信の変更を復元・保存中", "warn");
+    autoSaveTimer = setTimeout(saveRemote, 0);
+    return true;
+  } catch {
+    archiveRecovery("invalid-pending-data", {}, {});
+    clearPending();
+    return false;
+  }
+}
+
 async function fetchStateViaWorker() {
   const endpoint = workerUrl();
   if (!endpoint) return null;
@@ -936,6 +1016,7 @@ async function loadRemote() {
     // 通信中に日付タブを切り替えても、読み込み開始時の古い日へ戻さない。
     const selectedDayId = state?.trips?.length ? currentDay()?.id : "";
     state = next;
+    baseState = cloneState(next);
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
     const focusedToday = focusDefaultDayForToday();
     if (!focusedToday && selectedDayId) {
@@ -966,6 +1047,7 @@ function markDirty() {
   dirty = true;
   changeVersion += 1;
   localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+  persistPending();
   setStatus(workerUrl() ? "保存待ち" : "Worker未設定・この端末だけ保存", "soft");
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(saveRemote, AUTO_SAVE_MS);
@@ -978,26 +1060,47 @@ async function saveRemote() {
   saving = true;
   const trip = currentTrip();
   trip.lastUpdated = new Date().toISOString();
-  const savingVersion = changeVersion;
-  const payloadToSave = JSON.stringify(state);
+  let savingVersion = changeVersion;
+  let snapshotToSave = cloneState(state);
   let retryDelay = AUTO_SAVE_MS;
   setStatus("自動保存中");
   try {
+    if (!remoteSha) {
+      const localBeforeRead = cloneState(snapshotToSave);
+      const latest = await fetchStateViaWorker();
+      mergeRemoteState(latest, localBeforeRead, "save-without-base-sha");
+      snapshotToSave = cloneState(state);
+      savingVersion = changeVersion;
+    }
     const response = await request(`${endpoint}/state`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "If-Match": remoteSha
       },
-      body: payloadToSave
+      body: JSON.stringify(snapshotToSave)
     }, 15000);
+    if ([409, 412, 428].includes(response.status)) {
+      const conflict = await response.json();
+      if (!conflict.state || !conflict.sha) throw new Error(`競合取得失敗 (${response.status})`);
+      remoteSha = conflict.sha;
+      mergeRemoteState(conflict.state, snapshotToSave, "optimistic-lock-conflict");
+      retryDelay = 50;
+      setStatus("同時編集を統合・再保存中", "warn");
+      return;
+    }
     if (!response.ok) throw new Error(`保存失敗 (${response.status})`);
     const payload = await response.json();
     remoteSha = payload.sha || response.headers?.get?.("X-Trip-Sha") || "";
     lastRenderedSha = remoteSha || lastRenderedSha;
     dirty = changeVersion !== savingVersion;
+    baseState = cloneState(snapshotToSave);
     localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+    if (dirty) persistPending();
+    else clearPending();
     setStatus(dirty ? "続けて保存中" : "保存済み");
   } catch (error) {
+    persistPending();
     setStatus(error.message, "warn");
     retryDelay = 3000;
   } finally {
@@ -1528,6 +1631,7 @@ function renderView() {
     button.setAttribute("aria-current", isActive ? "page" : "false");
   });
   if (els.dayTabs) els.dayTabs.hidden = !DAY_TAB_VIEWS.has(activeView);
+  if (els.statusCard) els.statusCard.hidden = activeView === "budget";
 }
 
 function dayOptions(trip = currentTrip()) {
@@ -1976,7 +2080,7 @@ clearLegacyToken();
 importTokenFromLink();
 bind();
 bindDaySwipe();
-loadRemote();
+if (!restorePendingChanges()) loadRemote();
 setInterval(() => {
   focusDefaultDayForToday({ renderAfter: true });
   if (!dirty && !saving && !activeEditor && document.visibilityState === "visible") loadRemote();
@@ -1998,3 +2102,4 @@ window.addEventListener("pageshow", () => {
 window.addEventListener("online", () => {
   if (!dirty && !saving && !activeEditor) loadRemote();
 });
+window.addEventListener("beforeunload", persistPending);

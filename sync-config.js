@@ -1,7 +1,6 @@
 window.TRIP_SYNC_WORKER_URL = "https://trip-plan-sync.masakasakasama-man.workers.dev";
 
 (() => {
-  const WORKER_URL = window.TRIP_SYNC_WORKER_URL;
   const originalFetch = window.fetch?.bind(window);
 
   function applyManilaTiming(data) {
@@ -52,7 +51,6 @@ window.TRIP_SYNC_WORKER_URL = "https://trip-plan-sync.masakasakasama-man.workers
   }
 
   if (originalFetch) {
-    let persistingOverride = false;
     window.fetch = async function patchedFetch(input, init = {}) {
       const url = typeof input === "string" ? input : input?.url || "";
       const method = String(init.method || input?.method || "GET").toUpperCase();
@@ -76,17 +74,6 @@ window.TRIP_SYNC_WORKER_URL = "https://trip-plan-sync.masakasakasama-man.workers
         const payload = JSON.parse(await response.clone().text());
         const changed = applyManilaTiming(payload);
         if (!changed) return response;
-
-        if (/\/state(?:\?|$)/.test(url) && !persistingOverride) {
-          persistingOverride = true;
-          originalFetch(`${WORKER_URL}/state`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          }).catch(() => {}).finally(() => {
-            persistingOverride = false;
-          });
-        }
 
         return new Response(JSON.stringify(payload), {
           status: response.status,
