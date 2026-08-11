@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260810-nopagescroll1";
+const BUILD_VERSION = "20260811-settlement1";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -49,6 +49,7 @@ const els = {
   todoList: document.querySelector("#todo-list"),
   spotList: document.querySelector("#spot-list"),
   budgetSummary: document.querySelector("#budget-summary"),
+  settlementSummary: document.querySelector("#settlement-summary"),
   budgetList: document.querySelector("#budget-list"),
   tripDialog: document.querySelector("#trip-dialog"),
   tripList: document.querySelector("#trip-list"),
@@ -348,13 +349,25 @@ function normalizeTrip(trip) {
   const days = Array.isArray(trip.days)
     ? trip.days.map((day) => ({ ...day, items: Array.isArray(day.items) ? day.items : [] }))
     : [];
+  const travelers = Array.isArray(trip.travelers) && trip.travelers.length ? trip.travelers : ["夫", "Rebecca"];
+  const budgetItems = Array.isArray(trip.budgetItems)
+    ? trip.budgetItems.map((entry) => ({
+      ...entry,
+      peopleCount: Number(entry.peopleCount) === 1 ? 1 : Math.min(2, travelers.length),
+      paidBy: travelers.includes(entry.paidBy) ? entry.paidBy : travelers[0],
+      beneficiary: Number(entry.peopleCount) === 1 && travelers.includes(entry.beneficiary)
+        ? entry.beneficiary
+        : "",
+      settled: Boolean(entry.settled)
+    }))
+    : [];
   return {
     id: trip.id || uid("trip"),
     title: valueOr(trip.title, "新しい旅"),
     destination: valueOr(trip.destination, "行き先未定"),
     startDate: valueOr(trip.startDate),
     endDate: valueOr(trip.endDate),
-    travelers: Array.isArray(trip.travelers) ? trip.travelers : ["夫", "Rebecca"],
+    travelers,
     mood: valueOr(trip.mood),
     budget: Number(trip.budget) || 0,
     status: valueOr(trip.status, "ラフ設計"),
@@ -365,7 +378,7 @@ function normalizeTrip(trip) {
     pois: Array.isArray(trip.pois) ? trip.pois : [],
     days,
     budgetCategories: Array.isArray(trip.budgetCategories) ? trip.budgetCategories : [],
-    budgetItems: Array.isArray(trip.budgetItems) ? trip.budgetItems : []
+    budgetItems
   };
 }
 
@@ -413,7 +426,76 @@ function budgetPeopleCount(entry, trip) {
 }
 
 function budgetPeopleLabel(entry, trip) {
-  return budgetPeopleCount(entry, trip) === 1 ? "1人分" : "2人分";
+  if (budgetPeopleCount(entry, trip) !== 1) return `${travelerCount(trip)}人で割る`;
+  return `${entry.beneficiary || trip.travelers?.[0] || "1人"}の分`;
+}
+
+function budgetPayer(entry, trip) {
+  const travelers = trip.travelers || [];
+  return travelers.includes(entry.paidBy) ? entry.paidBy : travelers[0] || "夫";
+}
+
+function budgetBeneficiaries(entry, trip) {
+  const travelers = trip.travelers?.length ? trip.travelers : ["夫", "Rebecca"];
+  if (budgetPeopleCount(entry, trip) === 1) {
+    return [travelers.includes(entry.beneficiary) ? entry.beneficiary : travelers[0]];
+  }
+  return travelers;
+}
+
+function roundMoney(value) {
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+function settlementStats(trip) {
+  const travelers = trip.travelers?.length ? trip.travelers : ["夫", "Rebecca"];
+  const byCurrency = {};
+  BUDGET_CURRENCIES.forEach((currency) => {
+    byCurrency[currency.code] = {
+      code: currency.code,
+      balances: Object.fromEntries(travelers.map((name) => [name, 0])),
+      count: 0,
+      transfers: []
+    };
+  });
+
+  trip.budgetItems.forEach((entry) => {
+    const amount = budgetAmount(entry, "actual");
+    if (!amount || entry.settled) return;
+    const code = budgetCurrency(entry.currency).code;
+    const group = byCurrency[code];
+    const payer = budgetPayer(entry, trip);
+    const beneficiaries = budgetBeneficiaries(entry, trip);
+    group.count += 1;
+    group.balances[payer] = roundMoney((group.balances[payer] || 0) + amount);
+    const share = amount / beneficiaries.length;
+    beneficiaries.forEach((name) => {
+      group.balances[name] = roundMoney((group.balances[name] || 0) - share);
+    });
+  });
+
+  Object.values(byCurrency).forEach((group) => {
+    const debtors = Object.entries(group.balances)
+      .filter(([, balance]) => balance < -0.005)
+      .map(([name, balance]) => ({ name, amount: -balance }));
+    const creditors = Object.entries(group.balances)
+      .filter(([, balance]) => balance > 0.005)
+      .map(([name, balance]) => ({ name, amount: balance }));
+    let debtorIndex = 0;
+    let creditorIndex = 0;
+    while (debtors[debtorIndex] && creditors[creditorIndex]) {
+      const debtor = debtors[debtorIndex];
+      const creditor = creditors[creditorIndex];
+      const amount = roundMoney(Math.min(debtor.amount, creditor.amount));
+      group.transfers.push({ from: debtor.name, to: creditor.name, amount });
+      debtor.amount = roundMoney(debtor.amount - amount);
+      creditor.amount = roundMoney(creditor.amount - amount);
+      if (debtor.amount <= 0.005) debtorIndex += 1;
+      if (creditor.amount <= 0.005) creditorIndex += 1;
+    }
+  });
+
+  return byCurrency;
 }
 
 function formatMoney(amount, currencyCode = "JPY") {
@@ -1313,6 +1395,7 @@ function renderBudget() {
     `;
   }
   if (!els.budgetList) return;
+  renderSettlement(trip);
   els.budgetList.replaceChildren();
   if (!trip.budgetItems.length) {
     appendEmptyState(els.budgetList, "予算項目はまだありません。");
@@ -1329,6 +1412,8 @@ function renderBudget() {
         <p>${escapeHtml(entry.category || "未分類")}${entry.memo ? `・${escapeHtml(entry.memo)}` : ""}</p>
         <span class="budget-currency">${escapeHtml(currency.label)}</span>
         <span class="budget-currency">${escapeHtml(budgetPeopleLabel(entry, trip))}</span>
+        <span class="budget-currency">支払: ${escapeHtml(budgetPayer(entry, trip))}</span>
+        <span class="budget-currency settlement-state ${entry.settled ? "is-settled" : "is-open"}">${entry.settled ? "精算済み" : "未精算"}</span>
       </div>
       <div class="amount">
         ${formatMoney(budgetAmount(entry, "actual"), currency.code)}
@@ -1337,6 +1422,76 @@ function renderBudget() {
     `;
     card.addEventListener("click", () => editBudgetItem(entry.id));
     els.budgetList.append(card);
+  });
+}
+
+function renderSettlement(trip) {
+  if (!els.settlementSummary) return;
+  const stats = settlementStats(trip);
+  const groups = Object.values(stats).filter((group) => group.count && group.transfers.length);
+  const unsettledCount = groups.reduce((sum, group) => sum + group.count, 0);
+
+  if (!groups.length) {
+    els.settlementSummary.className = "settlement-panel is-complete";
+    els.settlementSummary.innerHTML = `
+      <div class="settlement-heading">
+        <div><span>2人の精算</span><strong>いまのところ精算済み</strong></div>
+        <span class="settlement-count">✓ 完了</span>
+      </div>
+    `;
+    return;
+  }
+
+  const rows = groups.map((group) => {
+    const currency = budgetCurrency(group.code);
+    const transfers = group.transfers.map((transfer) => `
+      <div class="settlement-transfer">
+        <span class="settlement-person">${escapeHtml(transfer.from)}</span>
+        <span class="settlement-arrow">→</span>
+        <span class="settlement-person">${escapeHtml(transfer.to)}</span>
+        <strong>${formatMoney(transfer.amount, group.code)}</strong>
+      </div>
+    `).join("");
+    return `
+      <article class="settlement-row">
+        <div class="settlement-row-head">
+          <span>${escapeHtml(currency.label)}・${group.count}件</span>
+          <strong>未精算</strong>
+        </div>
+        ${transfers}
+        <button type="button" data-settle-currency="${escapeHtml(group.code)}">この通貨を精算済みにする</button>
+      </article>
+    `;
+  }).join("");
+
+  els.settlementSummary.className = "settlement-panel";
+  els.settlementSummary.innerHTML = `
+    <div class="settlement-heading">
+      <div><span>2人の精算</span><strong>立替分をまとめて確認</strong></div>
+      <span class="settlement-count">未精算 ${unsettledCount}件</span>
+    </div>
+    <div class="settlement-rows">${rows}</div>
+  `;
+  els.settlementSummary.querySelectorAll("[data-settle-currency]").forEach((button) => {
+    button.addEventListener("click", () => settleCurrency(button.dataset.settleCurrency));
+  });
+}
+
+function settleCurrency(currencyCode) {
+  const trip = currentTrip();
+  const group = settlementStats(trip)[currencyCode];
+  if (!group?.transfers?.length) return;
+  const transferText = group.transfers
+    .map((transfer) => `${transfer.from} → ${transfer.to} ${formatMoney(transfer.amount, currencyCode)}`)
+    .join("、");
+  if (!window.confirm(`${transferText}\n精算済みにしますか？`)) return;
+  commitChange(() => {
+    trip.budgetItems.forEach((entry) => {
+      if (budgetCurrency(entry.currency).code === currencyCode && !entry.settled && budgetAmount(entry, "actual")) {
+        entry.settled = true;
+        entry.settledAt = new Date().toISOString();
+      }
+    });
   });
 }
 
@@ -1648,18 +1803,33 @@ function editTodo(id) {
 function budgetEditorFields(entry = {}, trip = currentTrip()) {
   const categoryOptions = budgetCategories(trip).map((category) => ({ value: category, label: category }));
   const currencyOptions = BUDGET_CURRENCIES.map((currency) => ({ value: currency.code, label: currency.label }));
-  const peopleOptions = [
-    { value: "2", label: "2人分" },
-    { value: "1", label: "1人分" }
+  const travelerOptions = trip.travelers.map((name) => ({ value: name, label: name }));
+  const splitOptions = [
+    { value: "all", label: `${travelerCount(trip)}人で割る` },
+    ...trip.travelers.map((name) => ({ value: name, label: `${name}だけの分` }))
   ];
+  const splitValue = budgetPeopleCount(entry, trip) === 1
+    ? entry.beneficiary || trip.travelers[0]
+    : "all";
   return [
     { name: "label", label: "項目名", value: entry.label, required: true, placeholder: "例: 航空券" },
     { name: "category", label: "カテゴリ", type: "select", value: entry.category || "その他", options: categoryOptions },
     { name: "newCategory", label: "カテゴリ追加", placeholder: "候補にない時だけ入力" },
     { name: "currency", label: "通貨", type: "select", value: budgetCurrency(entry.currency).code, options: currencyOptions },
-    { name: "peopleCount", label: "対象人数", type: "select", value: String(budgetPeopleCount(entry, trip)), options: peopleOptions },
+    { name: "paidBy", label: "支払った人", type: "select", value: budgetPayer(entry, trip), options: travelerOptions },
+    { name: "split", label: "負担する人", type: "select", value: splitValue, options: splitOptions },
     { name: "planned", label: "予定金額", type: "number", value: budgetAmount(entry, "planned"), step: "0.01", min: "0" },
     { name: "actual", label: "使った金額", type: "number", value: budgetAmount(entry, "actual"), step: "0.01", min: "0" },
+    {
+      name: "settled",
+      label: "精算状態",
+      type: "select",
+      value: entry.settled ? "settled" : "open",
+      options: [
+        { value: "open", label: "未精算" },
+        { value: "settled", label: "精算済み" }
+      ]
+    },
     { name: "memo", label: "メモ", type: "textarea", value: entry.memo, rows: 3 }
   ];
 }
@@ -1668,15 +1838,27 @@ function updateBudgetFromForm(entry, trip = currentTrip()) {
   entry.label = formValue("label");
   entry.category = addBudgetCategory(trip, formValue("newCategory")) || formValue("category") || "その他";
   entry.currency = formValue("currency") || "JPY";
-  entry.peopleCount = Number(formValue("peopleCount")) === 1 ? 1 : 2;
+  entry.paidBy = formValue("paidBy") || trip.travelers[0];
+  entry.peopleCount = formValue("split") === "all" ? travelerCount(trip) : 1;
+  entry.beneficiary = entry.peopleCount === 1 ? formValue("split") : "";
   entry.planned = Number(formValue("planned")) || 0;
   entry.actual = Number(formValue("actual")) || 0;
+  entry.settled = formValue("settled") === "settled";
+  entry.settledAt = entry.settled ? entry.settledAt || new Date().toISOString() : "";
   entry.memo = formValue("memo");
 }
 
 function addBudgetItem() {
   const trip = currentTrip();
-  const entry = { id: uid("budget"), currency: "JPY", peopleCount: 2, category: "その他" };
+  const entry = {
+    id: uid("budget"),
+    currency: "JPY",
+    peopleCount: travelerCount(trip),
+    category: "その他",
+    paidBy: trip.travelers[0],
+    beneficiary: "",
+    settled: false
+  };
   showEditor({
     title: "予算項目を追加",
     fields: budgetEditorFields(entry, trip),
