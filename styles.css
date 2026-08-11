@@ -1043,6 +1043,31 @@ meter::-webkit-meter-bar {
   grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
+  border-left: 5px solid transparent;
+}
+
+.budget-card.payer-husband {
+  border-left-color: #79c7d8;
+}
+
+.budget-card.payer-wife {
+  border-left-color: #e68bad;
+}
+
+.budget-card.payer-husband .budget-icon {
+  background: #eaf8fb;
+}
+
+.budget-card.payer-wife .budget-icon {
+  background: #fff0f6;
+}
+
+.budget-card.payer-husband .amount {
+  color: #4f909e;
+}
+
+.budget-card.payer-wife .amount {
+  color: #bc6789;
 }
 
 .budget-icon {
@@ -1083,6 +1108,25 @@ meter::-webkit-meter-bar {
 .budget-currency.settlement-state.is-settled {
   background: #f1faf5;
   color: #6ba286;
+}
+
+.budget-card.payer-husband .payer-badge {
+  background: #e9f8fb;
+  color: #4f909e;
+}
+
+.budget-card.payer-wife .payer-badge {
+  background: #fff0f6;
+  color: #bc6789;
+}
+
+.fx-detail {
+  display: block;
+  margin-top: 7px;
+  color: #9b929c;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.45;
 }
 
 .budget-card .amount {

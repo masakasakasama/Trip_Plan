@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260811-jpyfx2";
+const BUILD_VERSION = "20260811-payers1";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -1819,8 +1819,7 @@ function budgetEditorFields(entry = {}, trip = currentTrip()) {
     { name: "currency", label: "通貨", type: "select", value: budgetCurrency(entry.currency).code, options: currencyOptions },
     { name: "paidBy", label: "支払った人", type: "select", value: budgetPayer(entry, trip), options: travelerOptions },
     { name: "split", label: "負担する人", type: "select", value: splitValue, options: splitOptions },
-    { name: "planned", label: "予定金額", type: "number", value: budgetAmount(entry, "planned"), step: "0.01", min: "0" },
-    { name: "actual", label: "使った金額", type: "number", value: budgetAmount(entry, "actual"), step: "0.01", min: "0" },
+    { name: "actual", label: "支払金額", type: "number", value: budgetAmount(entry, "actual"), step: "0.01", min: "0" },
     {
       name: "settled",
       label: "精算状態",
@@ -1842,7 +1841,7 @@ function updateBudgetFromForm(entry, trip = currentTrip()) {
   entry.paidBy = formValue("paidBy") || trip.travelers[0];
   entry.peopleCount = formValue("split") === "all" ? travelerCount(trip) : 1;
   entry.beneficiary = entry.peopleCount === 1 ? formValue("split") : "";
-  entry.planned = Number(formValue("planned")) || 0;
+  entry.planned = 0;
   entry.actual = Number(formValue("actual")) || 0;
   entry.settled = formValue("settled") === "settled";
   entry.settledAt = entry.settled ? entry.settledAt || new Date().toISOString() : "";
