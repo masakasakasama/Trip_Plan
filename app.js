@@ -381,7 +381,13 @@ function normalizeTrip(trip) {
     archived: Boolean(trip.archived),
     timezones: trip.timezones || {},
     todos: Array.isArray(trip.todos) ? trip.todos : [],
-    pois: Array.isArray(trip.pois) ? trip.pois : [],
+    pois: Array.isArray(trip.pois)
+      ? trip.pois.map((poi) => ({
+        ...poi,
+        visited: Boolean(poi.visited),
+        visitedAt: valueOr(poi.visitedAt)
+      }))
+      : [],
     days,
     budgetCategories: Array.isArray(trip.budgetCategories) ? trip.budgetCategories : [],
     budgetItems
@@ -1418,19 +1424,40 @@ function renderSpots() {
     appendEmptyState(els.spotList, "行きたい場所はまだありません。");
     return;
   }
-  trip.pois.forEach((poi) => {
+  const pois = [...trip.pois].sort((left, right) => Number(left.visited) - Number(right.visited));
+  let renderedVisitedHeading = false;
+  pois.forEach((poi) => {
+    if (poi.visited && !renderedVisitedHeading) {
+      const heading = document.createElement("p");
+      heading.className = "list-group-title is-done";
+      heading.textContent = "行った場所";
+      els.spotList.append(heading);
+      renderedVisitedHeading = true;
+    }
     const card = document.createElement("article");
-    card.className = "list-card spot-card";
+    card.className = `list-card spot-card ${poi.visited ? "is-visited" : ""}`;
     card.innerHTML = `
       ${thumbMarkup(poi.imageUrl || "", defaultEmoji(null, poi), "spot-thumb", poi.name)}
       <div class="spot-body">
         <strong>${escapeHtml(poi.name)}</strong>
         <p>${escapeHtml(poi.area)}・${escapeHtml(poi.memo || "メモなし")}</p>
-        <a href="${escapeHtml(mapsUrl(poi))}" target="_blank" rel="noreferrer">Mapで開く</a>
+        <div class="spot-actions">
+          <a href="${escapeHtml(mapsUrl(poi))}" target="_blank" rel="noreferrer">Mapで開く</a>
+          <button class="spot-visit" type="button" aria-pressed="${poi.visited}">
+            ${poi.visited ? "✓ 完了" : "行った"}
+          </button>
+        </div>
       </div>
     `;
+    card.querySelector(".spot-visit").addEventListener("click", (event) => {
+      event.stopPropagation();
+      commitChange(() => {
+        poi.visited = !poi.visited;
+        poi.visitedAt = poi.visited ? new Date().toISOString() : "";
+      });
+    });
     card.addEventListener("click", (event) => {
-      if (event.target.tagName !== "A") editPoi(poi.id);
+      if (!event.target.closest("a, button")) editPoi(poi.id);
     });
     els.spotList.append(card);
   });
@@ -1749,7 +1776,9 @@ function addSpot() {
         mapsUrl: formValue("mapsUrl"),
         imageUrl: formValue("imageUrl"),
         emoji: formValue("emoji"),
-        memo: formValue("memo")
+        memo: formValue("memo"),
+        visited: false,
+        visitedAt: ""
       });
       render();
       markDirty();

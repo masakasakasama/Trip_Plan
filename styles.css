@@ -1166,10 +1166,44 @@ meter::-webkit-meter-bar {
 
 .spot-card a {
   display: inline-flex;
-  margin-top: 10px;
   color: #5d9aaa;
   font-weight: 900;
   text-decoration: none;
+}
+
+.spot-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.spot-visit {
+  flex: 0 0 auto;
+  border: 1px solid #d6edf1;
+  border-radius: 999px;
+  background: #eef9fb;
+  color: #5d9aaa;
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 7px 12px;
+}
+
+.spot-card.is-visited {
+  opacity: 0.58;
+  background: #f5f3f4;
+  box-shadow: 0 7px 18px rgba(75, 62, 82, 0.07);
+}
+
+.spot-card.is-visited .spot-thumb {
+  filter: grayscale(1);
+}
+
+.spot-card.is-visited .spot-visit {
+  border-color: #d8d3d7;
+  background: #e6e2e5;
+  color: #817981;
 }
 
 .archive-box {

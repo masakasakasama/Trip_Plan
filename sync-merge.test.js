@@ -7,11 +7,26 @@ function state(overrides = {}) {
       id: "trip-1",
       title: "Australia 2026",
       todos: [{ id: "todo-1", title: "ETA", done: false }],
+      pois: [{ id: "poi-1", name: "Opera House", visited: false }],
       budgetItems: [{ id: "budget-1", title: "Hotel", amount: 100 }],
       days: [{ id: "day-1", items: [{ id: "item-1", title: "Airport", start: "08:00" }] }],
       ...overrides
     }]
   };
+}
+
+{
+  const base = state();
+  const local = state({
+    todos: [
+      { id: "todo-1", title: "ETA", done: false },
+      { id: "todo-2", title: "Insurance", done: false }
+    ]
+  });
+  const remote = state({ pois: [{ id: "poi-1", name: "Opera House", visited: true }] });
+  const merged = mergeStates(base, local, remote).state.trips[0];
+  assert.equal(merged.todos.length, 2);
+  assert.equal(merged.pois[0].visited, true);
 }
 
 {
