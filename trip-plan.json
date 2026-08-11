@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-11T09:41:31.432Z",
+      "lastUpdated": "2026-08-11T09:46:18.131Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -718,6 +718,26 @@
           "actualFxRateToJPY": 2.6073,
           "actualFxRateDate": "2026-08-11",
           "actualFxCapturedAt": "2026-08-11T08:22:23.936Z"
+        },
+        {
+          "id": "budget-msoh6fay-mp60u",
+          "currency": "PHP",
+          "peopleCount": 2,
+          "category": "移動",
+          "paidBy": "Rebecca",
+          "beneficiary": "",
+          "settled": false,
+          "label": "マニラタクシー",
+          "planned": 0,
+          "actual": 500,
+          "settledAt": "",
+          "memo": "",
+          "plannedFxRateToJPY": 2.6073,
+          "plannedFxRateDate": "2026-08-11",
+          "plannedFxCapturedAt": "2026-08-11T09:46:17.766Z",
+          "actualFxRateToJPY": 2.6073,
+          "actualFxRateDate": "2026-08-11",
+          "actualFxCapturedAt": "2026-08-11T09:46:17.766Z"
         }
       ]
     }
