@@ -896,6 +896,119 @@ meter::-webkit-meter-bar {
   background: #83c9d8;
 }
 
+.settlement-panel {
+  margin-bottom: 18px;
+  border: 1px solid rgba(131, 201, 216, 0.42);
+  border-radius: 18px;
+  background: #f5fbfc;
+  overflow: hidden;
+}
+
+.settlement-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 16px;
+}
+
+.settlement-heading div {
+  min-width: 0;
+}
+
+.settlement-heading span,
+.settlement-row-head span {
+  display: block;
+  color: #7597a0;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.settlement-heading strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+
+.settlement-count {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #fff;
+  color: #5d9aaa !important;
+  padding: 6px 9px;
+}
+
+.settlement-rows {
+  border-top: 1px solid rgba(131, 201, 216, 0.3);
+  background: #fff;
+}
+
+.settlement-row {
+  padding: 14px 16px 16px;
+}
+
+.settlement-row + .settlement-row {
+  border-top: 1px solid var(--line);
+}
+
+.settlement-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.settlement-row-head strong {
+  color: #c47494;
+  font-size: 0.74rem;
+}
+
+.settlement-transfer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.settlement-person {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settlement-arrow {
+  color: #83c9d8;
+  font-weight: 900;
+}
+
+.settlement-transfer strong {
+  color: var(--deep);
+  font-size: 0.98rem;
+  white-space: nowrap;
+}
+
+.settlement-row button {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 13px;
+  border: 1px solid rgba(131, 201, 216, 0.48);
+  border-radius: 12px;
+  background: #eef9fb;
+  color: #527f8a;
+  font-weight: 900;
+}
+
+.settlement-panel.is-complete {
+  border-color: rgba(161, 210, 186, 0.5);
+  background: #f5fbf8;
+}
+
 .budget-card {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) auto;
@@ -931,6 +1044,16 @@ meter::-webkit-meter-bar {
   font-size: 0.72rem;
   font-weight: 900;
   padding: 4px 8px;
+}
+
+.budget-currency.settlement-state.is-open {
+  background: #fff3f7;
+  color: #c47494;
+}
+
+.budget-currency.settlement-state.is-settled {
+  background: #f1faf5;
+  color: #6ba286;
 }
 
 .budget-card .amount {
