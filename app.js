@@ -8,6 +8,7 @@ const WORKER_URL_KEY = "trip-plan-worker-url-v1";
 const MAPS_KEY = "trip-plan-google-maps-key-v1";
 const CACHE_KEY = "trip-plan-cache-v3";
 const PENDING_KEY = "trip-plan-pending-v1";
+const PENDING_BACKUP_KEY = "trip-plan-pending-backup-v1";
 const RECOVERY_KEY = "trip-plan-recovery-v1";
 const POLL_MS = 1000;
 const AUTO_SAVE_MS = 350;
@@ -917,13 +918,16 @@ function archiveRecovery(reason, localValue, remoteValue, conflicts = []) {
 function persistPending() {
   if (!state || !dirty) return;
   try {
-    localStorage.setItem(PENDING_KEY, JSON.stringify({
+    const previous = localStorage.getItem(PENDING_KEY);
+    const pending = JSON.stringify({
       state,
       baseState,
       baseSha: remoteSha,
       changeVersion,
       updatedAt: new Date().toISOString()
-    }));
+    });
+    if (previous && previous !== pending) localStorage.setItem(PENDING_BACKUP_KEY, previous);
+    localStorage.setItem(PENDING_KEY, pending);
   } catch {
     setStatus("端末の未送信バックアップに失敗", "warn");
   }
@@ -931,6 +935,7 @@ function persistPending() {
 
 function clearPending() {
   localStorage.removeItem(PENDING_KEY);
+  localStorage.removeItem(PENDING_BACKUP_KEY);
 }
 
 function mergeRemoteState(remoteValue, localValue, reason) {
@@ -949,25 +954,29 @@ function mergeRemoteState(remoteValue, localValue, reason) {
 }
 
 function restorePendingChanges() {
-  try {
-    const pending = JSON.parse(localStorage.getItem(PENDING_KEY) || "null");
-    if (!pending?.state?.trips?.length) return false;
-    state = normalize(pending.state);
-    baseState = pending.baseState ? normalize(pending.baseState) : null;
-    remoteSha = pending.baseSha || "";
-    lastRenderedSha = remoteSha;
-    changeVersion = Math.max(Number(pending.changeVersion) || 0, 1);
-    dirty = true;
-    localStorage.setItem(CACHE_KEY, JSON.stringify(state));
-    render();
-    setStatus("未送信の変更を復元・保存中", "warn");
-    autoSaveTimer = setTimeout(saveRemote, 0);
-    return true;
-  } catch {
-    archiveRecovery("invalid-pending-data", {}, {});
-    clearPending();
-    return false;
+  const candidates = [PENDING_KEY, PENDING_BACKUP_KEY];
+  for (const key of candidates) {
+    const raw = localStorage.getItem(key);
+    if (!raw) continue;
+    try {
+      const pending = JSON.parse(raw);
+      if (!pending?.state?.trips?.length) continue;
+      state = normalize(pending.state);
+      baseState = pending.baseState ? normalize(pending.baseState) : null;
+      remoteSha = pending.baseSha || "";
+      lastRenderedSha = remoteSha;
+      changeVersion = Math.max(Number(pending.changeVersion) || 0, 1);
+      dirty = true;
+      localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+      render();
+      setStatus(key === PENDING_KEY ? "未送信の変更を復元・保存中" : "予備データを復元・保存中", "warn");
+      autoSaveTimer = setTimeout(saveRemote, 0);
+      return true;
+    } catch {
+      // Try the previous pending generation before falling back to the server/cache.
+    }
   }
+  return false;
 }
 
 async function fetchStateViaWorker() {
@@ -1066,9 +1075,9 @@ async function saveRemote() {
   setStatus("自動保存中");
   try {
     if (!remoteSha) {
-      const localBeforeRead = cloneState(snapshotToSave);
       const latest = await fetchStateViaWorker();
-      mergeRemoteState(latest, localBeforeRead, "save-without-base-sha");
+      // The user may keep editing while the read is in flight. Merge the newest state.
+      mergeRemoteState(latest, cloneState(state), "save-without-base-sha");
       snapshotToSave = cloneState(state);
       savingVersion = changeVersion;
     }
@@ -1084,7 +1093,8 @@ async function saveRemote() {
       const conflict = await response.json();
       if (!conflict.state || !conflict.sha) throw new Error(`競合取得失敗 (${response.status})`);
       remoteSha = conflict.sha;
-      mergeRemoteState(conflict.state, snapshotToSave, "optimistic-lock-conflict");
+      // Preserve edits made after this request started, not only its old snapshot.
+      mergeRemoteState(conflict.state, cloneState(state), "optimistic-lock-conflict");
       retryDelay = 50;
       setStatus("同時編集を統合・再保存中", "warn");
       return;
