@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-11T09:46:18.131Z",
+      "lastUpdated": "2026-08-11T23:29:46.357Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -271,8 +271,8 @@
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=BreakFree%20on%20Broadway%20Sydney",
           "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Four_Points_by_Sheraton_Sydney%2C_Central_Park_-_View_from_Broadway.jpg/330px-Four_Points_by_Sheraton_Sydney%2C_Central_Park_-_View_from_Broadway.jpg",
           "memo": "宿泊ホテル。3泊・大人2名・1室。チェックイン 8/12 14:00、チェックアウト 8/15 10:00。",
-          "visited": false,
-          "visitedAt": ""
+          "visited": true,
+          "visitedAt": "2026-08-11T23:29:45.993Z"
         },
         {
           "id": "poi-sydney-opera",
