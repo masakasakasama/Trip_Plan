@@ -1,6 +1,11 @@
 name: Hourly trip data backup
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - trip-plan.json
   schedule:
     - cron: "7 * * * *"
   workflow_dispatch:
