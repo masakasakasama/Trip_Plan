@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-11T09:31:47.935Z",
+      "lastUpdated": "2026-08-11T09:41:13.842Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -180,7 +180,9 @@
           "mapsUrl": "",
           "imageUrl": "",
           "emoji": "",
-          "memo": ""
+          "memo": "",
+          "visited": false,
+          "visitedAt": ""
         },
         {
           "id": "poi-hotel-sogo-edsa-taft",
@@ -191,7 +193,9 @@
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Hotel%20Sogo%20EDSA%20near%20Taft",
           "imageUrl": "",
           "emoji": "🏨",
-          "memo": "Manila長時間乗継の休憩先。8/11 14:00チェックイン、返金不可。"
+          "memo": "Manila長時間乗継の休憩先。8/11 14:00チェックイン、返金不可。",
+          "visited": true,
+          "visitedAt": "2026-08-11T09:41:13.477Z"
         },
         {
           "id": "poi-msjvvlvf-uqrts",
@@ -202,7 +206,9 @@
           "mapsUrl": "",
           "imageUrl": "",
           "emoji": "",
-          "memo": ""
+          "memo": "",
+          "visited": false,
+          "visitedAt": ""
         },
         {
           "id": "poi-msj3jah1-u3d06",
@@ -213,7 +219,9 @@
           "mapsUrl": "",
           "imageUrl": "",
           "emoji": "",
-          "memo": ""
+          "memo": "",
+          "visited": false,
+          "visitedAt": ""
         },
         {
           "id": "poi-msfkp1as-ccuuc",
@@ -224,7 +232,9 @@
           "mapsUrl": "",
           "imageUrl": "",
           "emoji": "",
-          "memo": ""
+          "memo": "",
+          "visited": false,
+          "visitedAt": ""
         },
         {
           "id": "poi-msfkoa0x-bdbij",
@@ -235,7 +245,9 @@
           "mapsUrl": "",
           "imageUrl": "",
           "emoji": "",
-          "memo": ""
+          "memo": "",
+          "visited": false,
+          "visitedAt": ""
         },
         {
           "id": "poi-mscfaeqa-w699a",
@@ -246,7 +258,9 @@
           "mapsUrl": "",
           "imageUrl": "",
           "emoji": "",
-          "memo": ""
+          "memo": "",
+          "visited": false,
+          "visitedAt": ""
         },
         {
           "id": "poi-hotel-breakfree-broadway",
@@ -256,7 +270,9 @@
           "priority": "high",
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=BreakFree%20on%20Broadway%20Sydney",
           "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Four_Points_by_Sheraton_Sydney%2C_Central_Park_-_View_from_Broadway.jpg/330px-Four_Points_by_Sheraton_Sydney%2C_Central_Park_-_View_from_Broadway.jpg",
-          "memo": "宿泊ホテル。3泊・大人2名・1室。チェックイン 8/12 14:00、チェックアウト 8/15 10:00。"
+          "memo": "宿泊ホテル。3泊・大人2名・1室。チェックイン 8/12 14:00、チェックアウト 8/15 10:00。",
+          "visited": false,
+          "visitedAt": ""
         },
         {
           "id": "poi-sydney-opera",
@@ -266,7 +282,9 @@
           "priority": "high",
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Sydney%20Opera%20House",
           "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/06_Sydney_Opera_House%2C_Australia.jpg/330px-06_Sydney_Opera_House%2C_Australia.jpg",
-          "memo": "初回の象徴。夕方から夜景まで残すと写真が強い。"
+          "memo": "初回の象徴。夕方から夜景まで残すと写真が強い。",
+          "visited": false,
+          "visitedAt": ""
         },
         {
           "id": "poi-bondi",
@@ -276,7 +294,9 @@
           "priority": "medium",
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Bondi%20Beach",
           "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Sydney_%28AU%29%2C_Bondi_Beach_--_2019_--_2349.jpg/330px-Sydney_%28AU%29%2C_Bondi_Beach_--_2019_--_2349.jpg",
-          "memo": "海沿い散歩。天気がいい日の午前か夕方。"
+          "memo": "海沿い散歩。天気がいい日の午前か夕方。",
+          "visited": false,
+          "visitedAt": ""
         },
         {
           "id": "poi-blue-mountains",
@@ -286,7 +306,9 @@
           "priority": "medium",
           "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Blue%20Mountains%20Katoomba",
           "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Three_Sisters_Sunset.jpg/330px-Three_Sisters_Sunset.jpg",
-          "memo": "Sydneyから日帰り候補。移動負荷があるので休憩日とセットで判断。"
+          "memo": "Sydneyから日帰り候補。移動負荷があるので休憩日とセットで判断。",
+          "visited": false,
+          "visitedAt": ""
         }
       ],
       "days": [
