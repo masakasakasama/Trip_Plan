@@ -292,7 +292,7 @@
         <div class="currency-total jpy-total">
           <strong>${formatMoney(stats.spentPerPerson, "JPY")}</strong>
           <span>日本円換算・1人あたり</span>
-          <small>予定 ${formatMoney(stats.plannedPerPerson, "JPY")}・${escapeHtml(rateNote)}</small>
+          <small>${escapeHtml(rateNote)}</small>
         </div>
         <div class="exchange-rate-note">
           <strong>換算レート ${escapeHtml(rateSummaryDate().replaceAll("-", "/"))}</strong>
@@ -314,35 +314,31 @@
     trip.budgetItems.forEach((entry) => {
       const currency = budgetCurrency(entry.currency);
       const actualJpy = Math.round(toJPY(entry, "actual"));
-      const plannedJpy = Math.round(toJPY(entry, "planned"));
       const foreign = currency.code !== "JPY";
       const actualRate = rateForEntry(entry, "actual");
-      const plannedRate = rateForEntry(entry, "planned");
-      const rate = actualRate || plannedRate;
-      const rateDate = rateDateForEntry(entry, actualRate ? "actual" : "planned");
-      const rateChip = foreign && rate
-        ? `<span class="budget-currency">1 ${escapeHtml(currency.code)} = ¥${Number(rate).toLocaleString(undefined, { maximumFractionDigits: 4 })}${rateDate ? `・${escapeHtml(rateDate)}` : ""}</span>`
+      const rateDate = rateDateForEntry(entry, "actual");
+      const payer = budgetPayer(entry, trip);
+      const husbandPaid = payer === trip.travelers[0];
+      const payerClass = husbandPaid ? "payer-husband" : "payer-wife";
+      const payerLabel = husbandPaid ? "夫が支払い" : `${payer}が支払い`;
+      const rateLine = foreign && actualRate
+        ? `<small class="fx-detail">${formatMoney(budgetAmount(entry, "actual"), currency.code)} × ¥${Number(actualRate).toLocaleString("ja-JP", { maximumFractionDigits: 4 })}${rateDate ? `（${escapeHtml(rateDate.replaceAll("-", "/"))}）` : ""}</small>`
         : "";
-      const originalLine = foreign
-        ? `<small>${formatMoney(budgetAmount(entry, "actual"), currency.code)}・予定 ${formatMoney(budgetAmount(entry, "planned"), currency.code)}</small>`
-        : `<small>予定 ${formatMoney(plannedJpy, "JPY")}</small>`;
 
       const card = document.createElement("article");
-      card.className = "list-card budget-card";
+      card.className = `list-card budget-card ${payerClass}`;
       card.innerHTML = `
         <div class="budget-icon" aria-hidden="true">${budgetIcon(entry)}</div>
         <div class="budget-body">
           <strong>${escapeHtml(entry.label)}</strong>
           <p>${escapeHtml(entry.category || "未分類")}${entry.memo ? `・${escapeHtml(entry.memo)}` : ""}</p>
-          <span class="budget-currency">${escapeHtml(currency.label)}</span>
           <span class="budget-currency">${escapeHtml(budgetPeopleLabel(entry, trip))}</span>
-          <span class="budget-currency">支払: ${escapeHtml(budgetPayer(entry, trip))}</span>
-          ${rateChip}
+          <span class="budget-currency payer-badge">${escapeHtml(payerLabel)}</span>
           <span class="budget-currency settlement-state ${entry.settled ? "is-settled" : "is-open"}">${entry.settled ? "精算済み" : "未精算"}</span>
+          ${rateLine}
         </div>
         <div class="amount">
           ${formatMoney(actualJpy, "JPY")}
-          ${originalLine}
         </div>
       `;
       card.addEventListener("click", () => editBudgetItem(entry.id));
