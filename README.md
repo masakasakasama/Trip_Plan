@@ -48,6 +48,7 @@ window.TRIP_SYNC_WORKER_URL = "https://trip-plan-sync.<your-subdomain>.workers.d
 - 未送信の変更は保存完了まで端末の`trip-plan-pending-v1`へ退避し、再起動後に復元します。
 - 同じ項目の同じ欄が同時変更された場合は、端末の`trip-plan-recovery-v1`へ直近3件の競合スナップショットを残します。
 - GitHubのコミット履歴には各保存前後の共有データが残ります。
+- GitHub Actionsが毎時データを確認し、変更時は`trip-plan-backups`ブランチにもJSONスナップショットを保存します。
 
 ## 天気
 

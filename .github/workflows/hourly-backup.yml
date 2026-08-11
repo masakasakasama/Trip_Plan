@@ -1,0 +1,61 @@
+name: Hourly trip data backup
+
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trip-plan-hourly-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current trip data
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate and stage source
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq empty trip-plan.json
+          cp trip-plan.json "$RUNNER_TEMP/trip-plan.json"
+          git rev-parse HEAD > "$RUNNER_TEMP/source-sha.txt"
+
+      - name: Save changed data to the backup branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin trip-plan-backups >/dev/null 2>&1; then
+            git fetch origin trip-plan-backups
+            git switch --force-create trip-plan-backups origin/trip-plan-backups
+          else
+            git switch --orphan trip-plan-backups
+            git rm -rf .
+          fi
+
+          mkdir -p snapshots
+          if [[ -f latest.json ]] && cmp -s latest.json "$RUNNER_TEMP/trip-plan.json"; then
+            echo "Trip data is unchanged; the previous snapshot is already complete."
+            exit 0
+          fi
+
+          timestamp="$(date -u +'%Y-%m-%dT%H00Z')"
+          cp "$RUNNER_TEMP/trip-plan.json" "snapshots/${timestamp}.json"
+          cp "$RUNNER_TEMP/trip-plan.json" latest.json
+          printf '%s\n' "$timestamp" > latest-backup-at.txt
+          cp "$RUNNER_TEMP/source-sha.txt" latest-source-sha.txt
+
+          git add snapshots latest.json latest-backup-at.txt latest-source-sha.txt
+          git commit -m "Backup trip data ${timestamp}"
+          git push origin trip-plan-backups
