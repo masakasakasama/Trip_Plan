@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-12T20:42:03.988Z",
+      "lastUpdated": "2026-08-12T20:42:14.171Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -448,10 +448,10 @@
           "theme": "Sydneyの王道をかわいく撮る",
           "items": [
             {
-              "id": "item-msqjydb3-zguu2",
-              "time": "02:00",
+              "id": "item-msqjxxyu-j17da",
+              "time": "09:00",
               "timezone": "AEST",
-              "title": "動物園(taronga or WILD LIFE Sydney Zoo )",
+              "title": "Botanical garden",
               "poiId": "",
               "memo": "",
               "homeTime": "",
@@ -461,10 +461,10 @@
               "emoji": ""
             },
             {
-              "id": "item-msqjxxyu-j17da",
-              "time": "09:00",
+              "id": "item-msqjydb3-zguu2",
+              "time": "14:00",
               "timezone": "AEST",
-              "title": "Botanical garden",
+              "title": "動物園(taronga or WILD LIFE Sydney Zoo )",
               "poiId": "",
               "memo": "",
               "homeTime": "",
