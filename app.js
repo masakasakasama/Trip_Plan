@@ -1,9 +1,8 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // ヘッダーに小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260813.6";
+const BUILD_VERSION = "20260813.7";
 
 const DATA_URL = "trip-plan.json";
-const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
 const WORKER_URL_KEY = "trip-plan-worker-url-v1";
 const MAPS_KEY = "trip-plan-google-maps-key-v1";
 const CACHE_KEY = "trip-plan-cache-v3";
@@ -105,27 +104,6 @@ function importTokenFromLink() {
 
 function clearLegacyToken() {
   localStorage.removeItem("trip-plan-github-token-v1");
-}
-
-// 共有リンクは素のURL。埋め込みトークンで同期するので #gh= は付けない。
-function buildShareUrl() {
-  return CANONICAL_URL;
-}
-
-async function copyText(text) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
-  }
-  const input = document.createElement("textarea");
-  input.value = text;
-  input.setAttribute("readonly", "");
-  input.style.position = "fixed";
-  input.style.opacity = "0";
-  document.body.append(input);
-  input.select();
-  document.execCommand("copy");
-  input.remove();
 }
 
 function setStatus(text, tone = "") {
@@ -1201,20 +1179,6 @@ function renderAppMeta() {
   if (els.siteVersion) els.siteVersion.textContent = `v${BUILD_VERSION}`;
 }
 
-async function shareTrip() {
-  const url = buildShareUrl();
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: currentTrip().title || "Trip Plan", url });
-      return;
-    } catch (error) {
-      if (error?.name === "AbortError") return;
-    }
-  }
-  await copyText(url);
-  setStatus("リンクをコピーしました");
-}
-
 // "2026-08-11" と "2026-08-16" → "2026.8.11 – 8.16"（区切りを混ぜず一貫させる）
 function formatHeaderRange(start, end) {
   const parts = (value) => {
@@ -2100,7 +2064,6 @@ function bind() {
     if (!canCloseEditor()) event.preventDefault();
   });
   document.querySelector("#trip-switcher").addEventListener("click", () => els.tripDialog.showModal());
-  document.querySelector("#share-trip")?.addEventListener("click", shareTrip);
   document.querySelector("#new-trip").addEventListener("click", newTrip);
   document.querySelector("#add-schedule-item")?.addEventListener("click", addScheduleItem);
   document.querySelector("#edit-day")?.addEventListener("click", () => {
