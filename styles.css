@@ -871,20 +871,57 @@ meter::-webkit-meter-bar {
   display: none !important;
 }
 
-.budget-summary .jpy-total,
-.budget-summary .exchange-rate-note {
+.budget-summary .exchange-rate-details {
   grid-column: 1 / -1;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.56);
+  overflow: hidden;
 }
 
-.budget-summary .exchange-rate-note {
-  padding: 11px 12px;
-  text-align: left;
+.budget-summary .exchange-rate-details summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 36px 10px 12px;
+  position: relative;
+  cursor: pointer;
+  list-style: none;
 }
 
-.budget-summary .exchange-rate-note strong {
-  margin-bottom: 5px;
+.budget-summary .exchange-rate-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.budget-summary .exchange-rate-details summary::after {
+  content: "⌄";
+  position: absolute;
+  right: 13px;
+  color: #75b9c7;
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+.budget-summary .exchange-rate-details[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.budget-summary .exchange-rate-details summary span {
   color: #527f8a;
   font-size: 0.78rem;
+}
+
+.budget-summary .exchange-rate-details summary small {
+  margin: 0 0 0 auto;
+  color: #8ca4ab;
+  font-size: 0.68rem;
+}
+
+.budget-summary .exchange-rate-note {
+  border-top: 1px solid rgba(145, 210, 223, 0.28);
+  padding: 10px 12px 12px;
+  text-align: left;
 }
 
 .budget-summary .exchange-rate-note span {
