@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // ヘッダーに小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260813.8";
+const BUILD_VERSION = "20260813.9";
 
 const DATA_URL = "trip-plan.json";
 const WORKER_URL_KEY = "trip-plan-worker-url-v1";
@@ -1962,16 +1962,6 @@ function budgetEditorFields(entry = {}, trip = currentTrip()) {
       step: "0.01",
       min: "0"
     },
-    {
-      name: "settled",
-      label: "精算状態",
-      type: "select",
-      value: entry.settled ? "settled" : "open",
-      options: [
-        { value: "open", label: "未精算" },
-        { value: "settled", label: "精算済み" }
-      ]
-    },
     { name: "memo", label: "メモ", type: "textarea", value: entry.memo, rows: 3 }
   ];
 }
@@ -1985,8 +1975,6 @@ function updateBudgetFromForm(entry, trip = currentTrip()) {
   entry.beneficiary = "";
   entry.planned = 0;
   entry.actual = Number(formValue("actual")) || 0;
-  entry.settled = formValue("settled") === "settled";
-  entry.settledAt = entry.settled ? entry.settledAt || new Date().toISOString() : "";
   entry.memo = formValue("memo");
 }
 
