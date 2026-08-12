@@ -300,7 +300,7 @@
       return;
     }
 
-    trip.budgetItems.forEach((entry) => {
+    [...trip.budgetItems].reverse().forEach((entry) => {
       const currency = budgetCurrency(entry.currency);
       const actualJpy = Math.round(toJPY(entry, "actual"));
       const foreign = currency.code !== "JPY";
