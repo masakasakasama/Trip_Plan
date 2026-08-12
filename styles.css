@@ -105,9 +105,10 @@ button {
 }
 
 .header-meta {
-  display: grid;
-  justify-items: center;
-  gap: 3px;
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
 }
 
 .header-meta span {
