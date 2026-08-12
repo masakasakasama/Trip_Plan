@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Plan</title>
-    <link rel="stylesheet" href="styles.css?v=20260813.4">
+    <link rel="stylesheet" href="styles.css?v=20260813.5">
   </head>
   <body>
     <main class="stage">
@@ -20,8 +20,8 @@
             <h1 id="trip-title">Australia 2026</h1>
           </div>
           <div class="header-meta">
-            <button class="ghost-button" id="sync-settings" type="button" aria-label="共有リンク">🔗</button>
-            <span id="site-version">v20260813.4</span>
+            <button class="ghost-button" id="share-trip" type="button" aria-label="旅行リンクを共有">🔗</button>
+            <span id="site-version">v20260813.5</span>
           </div>
         </header>
 
@@ -126,28 +126,6 @@
       </form>
     </dialog>
 
-    <dialog id="settings-dialog">
-      <form method="dialog">
-        <div class="dialog-head">
-          <h2>同期設定</h2>
-          <button type="submit">閉じる</button>
-        </div>
-        <label>共有リンク<input id="share-link" type="text" readonly></label>
-        <div class="dialog-actions">
-          <button id="copy-share-link" class="wide-action" type="button">リンクをコピー</button>
-          <button id="save-now" type="button">今すぐ同期</button>
-        </div>
-        <details class="advanced-sync">
-          <summary>Google Mapsルート地図を高品質にする</summary>
-          <label>Maps Embed APIキー<input id="maps-api-key" type="password" autocomplete="off" placeholder="AIza..."></label>
-          <div class="dialog-actions">
-            <button id="save-maps-key" class="wide-action" type="button">保存</button>
-            <button id="clear-maps-key" type="button">削除</button>
-          </div>
-        </details>
-      </form>
-    </dialog>
-
     <dialog id="editor-dialog" class="editor-dialog">
       <form method="dialog" id="editor-form">
         <div class="dialog-head editor-head">
@@ -165,10 +143,10 @@
     </dialog>
 
     <p id="sync-status" class="sync-feedback" aria-live="polite"></p>
-    <script src="sync-config.js?v=20260813.4"></script>
-    <script src="sync-merge.js?v=20260813.4"></script>
-    <script src="app.js?v=20260813.4" defer></script>
-    <script src="budget-jpy.js?v=20260813.4" defer></script>
-    <script src="weather-live.js?v=20260813.4" defer></script>
+    <script src="sync-config.js?v=20260813.5"></script>
+    <script src="sync-merge.js?v=20260813.5"></script>
+    <script src="app.js?v=20260813.5" defer></script>
+    <script src="budget-jpy.js?v=20260813.5" defer></script>
+    <script src="weather-live.js?v=20260813.5" defer></script>
   </body>
 </html>
