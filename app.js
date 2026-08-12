@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // ヘッダーに小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260813.7";
+const BUILD_VERSION = "20260813.8";
 
 const DATA_URL = "trip-plan.json";
 const WORKER_URL_KEY = "trip-plan-worker-url-v1";
@@ -1541,7 +1541,7 @@ function renderBudget() {
     appendEmptyState(els.budgetList, "予算項目はまだありません。");
     return;
   }
-  trip.budgetItems.forEach((entry) => {
+  [...trip.budgetItems].reverse().forEach((entry) => {
     const currency = budgetCurrency(entry.currency);
     const payer = budgetPayer(entry, trip);
     const payerClass = payer === trip.travelers[0] ? "payer-husband" : "payer-wife";
