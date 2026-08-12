@@ -104,6 +104,20 @@ button {
   font-size: 1.2rem;
 }
 
+.header-meta {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+}
+
+.header-meta span {
+  color: #aaa1aa;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 #trip-dates {
   margin: 8px 0 4px;
   color: var(--blue);
@@ -1364,6 +1378,45 @@ textarea {
 
 .editor-fields label {
   color: #6f646f;
+}
+
+.time12-field {
+  display: grid;
+  gap: 8px;
+}
+
+.time12-label {
+  color: #6f646f;
+  font-weight: 900;
+}
+
+.time12-controls {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr;
+  gap: 8px;
+}
+
+.time12-control {
+  position: relative;
+  display: block;
+}
+
+.time12-control select {
+  min-height: 48px;
+  padding-right: 28px;
+}
+
+.time12-control small {
+  position: absolute;
+  right: 26px;
+  bottom: 15px;
+  color: #aaa1aa;
+  font-size: 0.68rem;
+  pointer-events: none;
+}
+
+.time12-control:first-child small {
+  display: none;
 }
 
 .editor-fields input,

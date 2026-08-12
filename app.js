@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260812.1";
+const BUILD_VERSION = "20260813.2";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -62,6 +62,7 @@ const els = {
   mapsKey: document.querySelector("#maps-api-key"),
   shareLink: document.querySelector("#share-link"),
   buildVersion: document.querySelector("#build-version"),
+  siteVersion: document.querySelector("#site-version"),
   archiveToggle: document.querySelector("#archive-toggle"),
   routeMap: document.querySelector("#route-map"),
   mapDayTitle: document.querySelector("#map-day-title"),
@@ -150,6 +151,26 @@ function formValue(name) {
   return field ? field.value.trim() : "";
 }
 
+function time12Parts(value) {
+  const match = String(value || "").match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return { period: "AM", hour: "", minute: "00" };
+  const hour24 = Number(match[1]);
+  return {
+    period: hour24 >= 12 ? "PM" : "AM",
+    hour: String(hour24 % 12 || 12),
+    minute: match[2]
+  };
+}
+
+function time12FormValue(name) {
+  const hour = Number(formValue(`${name}Hour`));
+  if (!hour) return "";
+  const period = formValue(`${name}Period`) || "AM";
+  const minute = formValue(`${name}Minute`) || "00";
+  const hour24 = period === "PM" ? (hour % 12) + 12 : hour % 12;
+  return `${String(hour24).padStart(2, "0")}:${minute}`;
+}
+
 function formSnapshot() {
   if (!els.editorForm) return "";
   const data = new FormData(els.editorForm);
@@ -196,6 +217,48 @@ function showEditor({ title, fields, saveLabel = "保存", onSave, onDelete }) {
   els.editorFields.replaceChildren();
 
   fields.forEach((field) => {
+    if (field.type === "time12") {
+      const group = document.createElement("div");
+      group.className = "time12-field";
+      const caption = document.createElement("span");
+      caption.className = "time12-label";
+      caption.textContent = field.label;
+      const controls = document.createElement("div");
+      controls.className = "time12-controls";
+      const parts = time12Parts(field.value);
+      const definitions = [
+        { name: `${field.name}Period`, label: "AM/PM", value: parts.period, options: ["AM", "PM"] },
+        { name: `${field.name}Hour`, label: "時", value: parts.hour, options: [...Array(12)].map((_, index) => String(index + 1)), optional: !field.required },
+        { name: `${field.name}Minute`, label: "分", value: parts.minute, options: ["00", "15", "30", "45"] }
+      ];
+      definitions.forEach((definition) => {
+        const controlLabel = document.createElement("label");
+        controlLabel.className = "time12-control";
+        const select = document.createElement("select");
+        select.name = definition.name;
+        select.setAttribute("aria-label", `${field.label} ${definition.label}`);
+        if (definition.optional) {
+          const empty = document.createElement("option");
+          empty.value = "";
+          empty.textContent = "--";
+          select.append(empty);
+        }
+        definition.options.forEach((option) => {
+          const element = document.createElement("option");
+          element.value = option;
+          element.textContent = option;
+          select.append(element);
+        });
+        select.value = definition.value;
+        const unit = document.createElement("small");
+        unit.textContent = definition.label;
+        controlLabel.append(select, unit);
+        controls.append(controlLabel);
+      });
+      group.append(caption, controls);
+      els.editorFields.append(group);
+      return;
+    }
     const label = document.createElement("label");
     label.textContent = field.label;
     const input = field.type === "textarea"
@@ -1164,6 +1227,7 @@ function renderShareLink() {
   }
   if (els.mapsKey) els.mapsKey.value = getMapsKey();
   if (els.buildVersion) els.buildVersion.textContent = `v${BUILD_VERSION}`;
+  if (els.siteVersion) els.siteVersion.textContent = `v${BUILD_VERSION}`;
 }
 
 // "2026-08-11" と "2026-08-16" → "2026.8.11 – 8.16"（区切りを混ぜず一貫させる）
@@ -1695,9 +1759,9 @@ function timezoneOptions(value, trip = currentTrip()) {
 function scheduleFields(item, dayId) {
   return [
     { name: "dayId", label: "日付", type: "select", value: dayId, options: dayOptions() },
-    { name: "time", label: "現地時間", type: "time", value: item.time, required: true, step: "900" },
+    { name: "time", label: "現地時間", type: "time12", value: item.time, required: true },
     { name: "timezone", label: "タイムゾーン", type: "select", value: item.timezone, options: timezoneOptions(item.timezone) },
-    { name: "homeTime", label: "JST補助メモ（空なら自動換算）", type: "time", value: item.homeTime, step: "900" },
+    { name: "homeTime", label: "JST補助メモ（空なら自動換算）", type: "time12", value: item.homeTime },
     { name: "title", label: "予定名", value: item.title, required: true, placeholder: "例: ホテルにチェックイン" },
     { name: "poiId", label: "場所", type: "select", value: item.poiId, options: poiOptions() },
     { name: "flightNumber", label: "便名（任意）", value: item.flightNumber, placeholder: "例: PR423" },
@@ -1709,9 +1773,9 @@ function scheduleFields(item, dayId) {
 }
 
 function updateScheduleFromForm(item) {
-  item.time = formValue("time");
+  item.time = time12FormValue("time");
   item.timezone = formValue("timezone");
-  item.homeTime = formValue("homeTime");
+  item.homeTime = time12FormValue("homeTime");
   item.title = formValue("title");
   item.poiId = formValue("poiId");
   item.flightNumber = formValue("flightNumber");
