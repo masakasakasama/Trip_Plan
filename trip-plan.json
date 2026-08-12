@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-12T23:13:15.612Z",
+      "lastUpdated": "2026-08-12T23:14:16.718Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -416,6 +416,19 @@
               "airline": "Philippine Airlines",
               "aircraft": "Airbus A330-300",
               "memo": "SYD到着。到着日は詰め込まず時差と疲労を吸収。"
+            },
+            {
+              "id": "item-msqphfmn-82cc9",
+              "time": "10:00",
+              "timezone": "AEST",
+              "title": "Paddy's Markets Haymarket",
+              "poiId": "",
+              "memo": "",
+              "homeTime": "",
+              "flightNumber": "",
+              "airline": "",
+              "aircraft": "",
+              "emoji": ""
             },
             {
               "id": "item-sydney-light",
