@@ -320,7 +320,7 @@
       const payer = budgetPayer(entry, trip);
       const husbandPaid = payer === trip.travelers[0];
       const payerClass = husbandPaid ? "payer-husband" : "payer-wife";
-      const payerLabel = husbandPaid ? "夫が支払い" : `${payer}が支払い`;
+      const payerLabel = `${payer}が支払い`;
       const rateLine = foreign && actualRate
         ? `<small class="fx-detail">${formatMoney(budgetAmount(entry, "actual"), currency.code)} × ¥${Number(actualRate).toLocaleString("ja-JP", { maximumFractionDigits: 4 })}${rateDate ? `（${escapeHtml(rateDate.replaceAll("-", "/"))}）` : ""}</small>`
         : "";
@@ -330,15 +330,16 @@
       card.innerHTML = `
         <div class="budget-icon" aria-hidden="true">${budgetIcon(entry)}</div>
         <div class="budget-body">
-          <strong>${escapeHtml(entry.label)}</strong>
+          <div class="budget-title-row">
+            <strong>${escapeHtml(entry.label)}</strong>
+            <span class="amount">${formatMoney(actualJpy, "JPY")}</span>
+          </div>
           <p>${escapeHtml(entry.category || "未分類")}${entry.memo ? `・${escapeHtml(entry.memo)}` : ""}</p>
-          <span class="budget-currency">${escapeHtml(budgetPeopleLabel(entry, trip))}</span>
-          <span class="budget-currency payer-badge">${escapeHtml(payerLabel)}</span>
-          <span class="budget-currency settlement-state ${entry.settled ? "is-settled" : "is-open"}">${entry.settled ? "精算済み" : "未精算"}</span>
+          <div class="budget-meta">
+            <span class="budget-currency payer-badge">${escapeHtml(payerLabel)}</span>
+            <span class="budget-currency settlement-state ${entry.settled ? "is-settled" : "is-open"}">${entry.settled ? "精算済み" : "未精算"}</span>
+          </div>
           ${rateLine}
-        </div>
-        <div class="amount">
-          ${formatMoney(actualJpy, "JPY")}
         </div>
       `;
       card.addEventListener("click", () => editBudgetItem(entry.id));

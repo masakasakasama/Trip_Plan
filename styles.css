@@ -1058,10 +1058,16 @@ meter::-webkit-meter-bar {
 
 .budget-card {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  border-left: 5px solid transparent;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
+  border-left: 4px solid transparent;
+  border-radius: 16px;
+  padding: 13px 14px 13px 11px;
+}
+
+#budget-list {
+  gap: 10px;
 }
 
 .budget-card.payer-husband {
@@ -1089,8 +1095,8 @@ meter::-webkit-meter-bar {
 }
 
 .budget-icon {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border-radius: 15px;
@@ -1102,6 +1108,22 @@ meter::-webkit-meter-bar {
   min-width: 0;
 }
 
+.budget-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.budget-title-row strong {
+  min-width: 0;
+}
+
+.budget-title-row .amount {
+  flex: 0 0 auto;
+  font-size: 1rem;
+}
+
 .budget-body strong,
 .budget-body p {
   overflow-wrap: anywhere;
@@ -1109,13 +1131,19 @@ meter::-webkit-meter-bar {
 
 .budget-currency {
   display: inline-flex;
-  margin-top: 6px;
   border-radius: 999px;
   background: #eef9fb;
   color: #5d9aaa;
   font-size: 0.72rem;
   font-weight: 900;
   padding: 4px 8px;
+}
+
+.budget-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .budget-currency.settlement-state.is-open {
@@ -1140,7 +1168,7 @@ meter::-webkit-meter-bar {
 
 .fx-detail {
   display: block;
-  margin-top: 7px;
+  margin-top: 6px;
   color: #9b929c;
   font-size: 0.68rem;
   font-weight: 800;
@@ -1153,14 +1181,6 @@ meter::-webkit-meter-bar {
   font-weight: 900;
   color: var(--ink);
   white-space: nowrap;
-}
-
-.budget-card .amount small {
-  display: block;
-  margin-top: 2px;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 0.76rem;
 }
 
 .spot-card {
