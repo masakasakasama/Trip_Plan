@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Plan</title>
-    <link rel="stylesheet" href="styles.css?v=20260813.2">
+    <link rel="stylesheet" href="styles.css?v=20260813.3">
   </head>
   <body>
     <main class="stage">
@@ -21,7 +21,7 @@
           </div>
           <div class="header-meta">
             <button class="ghost-button" id="sync-settings" type="button" aria-label="共有リンク">🔗</button>
-            <span id="site-version">v20260813.2</span>
+            <span id="site-version">v20260813.3</span>
           </div>
         </header>
 
@@ -132,7 +132,6 @@
           <h2>同期設定</h2>
           <button type="submit">閉じる</button>
         </div>
-        <p class="hint">このリンクを開いた端末はすべて同じTripに自動同期します。別PC・別ブラウザ・スマホもこのリンクを開くだけ。追加設定は不要です。</p>
         <label>共有リンク<input id="share-link" type="text" readonly></label>
         <div class="dialog-actions">
           <button id="copy-share-link" class="wide-action" type="button">リンクをコピー</button>
@@ -140,14 +139,12 @@
         </div>
         <details class="advanced-sync">
           <summary>Google Mapsルート地図を高品質にする</summary>
-          <p class="hint">スポットのサムネイル地図は設定なしで表示されます。ここはルート地図(スポットタブ上部)を正式なEmbed APIで表示したい場合だけ設定。未設定でも簡易地図で動きます。</p>
           <label>Maps Embed APIキー<input id="maps-api-key" type="password" autocomplete="off" placeholder="AIza..."></label>
           <div class="dialog-actions">
             <button id="save-maps-key" class="wide-action" type="button">保存</button>
             <button id="clear-maps-key" type="button">削除</button>
           </div>
         </details>
-        <p class="build-version" id="build-version"></p>
       </form>
     </dialog>
 
@@ -168,10 +165,10 @@
     </dialog>
 
     <p id="sync-status" class="sync-feedback" aria-live="polite"></p>
-    <script src="sync-config.js?v=20260813.2"></script>
-    <script src="sync-merge.js?v=20260813.2"></script>
-    <script src="app.js?v=20260813.2" defer></script>
-    <script src="budget-jpy.js?v=20260813.2" defer></script>
-    <script src="weather-live.js?v=20260813.2" defer></script>
+    <script src="sync-config.js?v=20260813.3"></script>
+    <script src="sync-merge.js?v=20260813.3"></script>
+    <script src="app.js?v=20260813.3" defer></script>
+    <script src="budget-jpy.js?v=20260813.3" defer></script>
+    <script src="weather-live.js?v=20260813.3" defer></script>
   </body>
 </html>
