@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260813.2";
+const BUILD_VERSION = "20260813.3";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -61,7 +61,6 @@ const els = {
   settingsDialog: document.querySelector("#settings-dialog"),
   mapsKey: document.querySelector("#maps-api-key"),
   shareLink: document.querySelector("#share-link"),
-  buildVersion: document.querySelector("#build-version"),
   siteVersion: document.querySelector("#site-version"),
   archiveToggle: document.querySelector("#archive-toggle"),
   routeMap: document.querySelector("#route-map"),
@@ -1226,7 +1225,6 @@ function renderShareLink() {
     els.shareLink.value = shareUrl;
   }
   if (els.mapsKey) els.mapsKey.value = getMapsKey();
-  if (els.buildVersion) els.buildVersion.textContent = `v${BUILD_VERSION}`;
   if (els.siteVersion) els.siteVersion.textContent = `v${BUILD_VERSION}`;
 }
 
