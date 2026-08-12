@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260813.4";
+const BUILD_VERSION = "20260813.5";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -58,9 +58,6 @@ const els = {
   budgetList: document.querySelector("#budget-list"),
   tripDialog: document.querySelector("#trip-dialog"),
   tripList: document.querySelector("#trip-list"),
-  settingsDialog: document.querySelector("#settings-dialog"),
-  mapsKey: document.querySelector("#maps-api-key"),
-  shareLink: document.querySelector("#share-link"),
   siteVersion: document.querySelector("#site-version"),
   archiveToggle: document.querySelector("#archive-toggle"),
   routeMap: document.querySelector("#route-map"),
@@ -198,14 +195,6 @@ function closeDialogOnBackdrop(dialog, canClose = () => true) {
   dialog?.addEventListener("click", (event) => {
     if (event.target === dialog && canClose()) dialog.close();
   });
-}
-
-function settingsHasChanges() {
-  return Boolean(els.settingsDialog?.open) && (els.mapsKey?.value?.trim() || "") !== getMapsKey();
-}
-
-function canCloseSettings() {
-  return !settingsHasChanges() || window.confirm("入力内容が保存されていません。閉じますか？");
 }
 
 function showEditor({ title, fields, saveLabel = "保存", onSave, onDelete }) {
@@ -1205,16 +1194,25 @@ function render() {
   renderMap();
   renderTrips();
   renderView();
-  renderShareLink();
+  renderAppMeta();
 }
 
-function renderShareLink() {
-  const shareUrl = buildShareUrl();
-  if (els.shareLink) {
-    els.shareLink.value = shareUrl;
-  }
-  if (els.mapsKey) els.mapsKey.value = getMapsKey();
+function renderAppMeta() {
   if (els.siteVersion) els.siteVersion.textContent = `v${BUILD_VERSION}`;
+}
+
+async function shareTrip() {
+  const url = buildShareUrl();
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: currentTrip().title || "Trip Plan", url });
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+    }
+  }
+  await copyText(url);
+  setStatus("リンクをコピーしました");
 }
 
 // "2026-08-11" と "2026-08-16" → "2026.8.11 – 8.16"（区切りを混ぜず一貫させる）
@@ -2110,40 +2108,13 @@ function bind() {
     editorSubmitting = false;
   });
   closeDialogOnBackdrop(els.tripDialog);
-  els.settingsDialog?.querySelector("form")?.addEventListener("submit", (event) => {
-    if (!canCloseSettings()) event.preventDefault();
-  });
-  els.settingsDialog?.addEventListener("cancel", (event) => {
-    if (!canCloseSettings()) event.preventDefault();
-  });
-  closeDialogOnBackdrop(els.settingsDialog, canCloseSettings);
   closeDialogOnBackdrop(els.editorDialog, canCloseEditor);
   els.editorDialog?.addEventListener("cancel", (event) => {
     if (editorSubmitting) return;
     if (!canCloseEditor()) event.preventDefault();
   });
   document.querySelector("#trip-switcher").addEventListener("click", () => els.tripDialog.showModal());
-  document.querySelector("#sync-settings").addEventListener("click", () => {
-    renderShareLink();
-    els.settingsDialog.showModal();
-  });
-  document.querySelector("#copy-share-link").addEventListener("click", async () => {
-    await copyText(buildShareUrl());
-    setStatus("共有リンクをコピー済み");
-  });
-  document.querySelector("#save-maps-key")?.addEventListener("click", () => {
-    localStorage.setItem(MAPS_KEY, els.mapsKey.value.trim());
-    renderMap();
-  });
-  document.querySelector("#clear-maps-key")?.addEventListener("click", () => {
-    localStorage.removeItem(MAPS_KEY);
-    if (els.mapsKey) els.mapsKey.value = "";
-    renderMap();
-  });
-  document.querySelector("#save-now").addEventListener("click", () => {
-    dirty = true;
-    saveRemote();
-  });
+  document.querySelector("#share-trip")?.addEventListener("click", shareTrip);
   document.querySelector("#new-trip").addEventListener("click", newTrip);
   document.querySelector("#add-schedule-item")?.addEventListener("click", addScheduleItem);
   document.querySelector("#edit-day")?.addEventListener("click", () => {

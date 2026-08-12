@@ -1340,11 +1340,6 @@ textarea {
   resize: vertical;
 }
 
-#share-link {
-  color: #6f646f;
-  font-size: 0.82rem;
-}
-
 .dialog-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1480,23 +1475,6 @@ textarea {
 .danger-action {
   background: #fff3f7 !important;
   color: #c47494 !important;
-}
-
-.advanced-sync {
-  margin-top: 16px;
-  border-top: 1px solid var(--line);
-  padding-top: 14px;
-}
-
-.advanced-sync summary {
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 0.86rem;
-  font-weight: 850;
-}
-
-.advanced-sync label {
-  margin-top: 12px;
 }
 
 .trip-choice {
