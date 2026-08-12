@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-12T03:02:40.133Z",
+      "lastUpdated": "2026-08-12T03:02:46.111Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -95,7 +95,7 @@
           "due": "出発2週間前まで",
           "priority": "medium",
           "owner": "夫",
-          "status": "open"
+          "status": "done"
         },
         {
           "id": "todo-sydney-plan",
