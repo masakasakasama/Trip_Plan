@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-12T20:38:28.228Z",
+      "lastUpdated": "2026-08-12T20:38:47.177Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -446,17 +446,7 @@
           "date": "2026-08-13",
           "title": "Day 3",
           "theme": "Sydneyの王道をかわいく撮る",
-          "items": [
-            {
-              "id": "item-bondi",
-              "time": "16:00",
-              "timezone": "AEST",
-              "homeTime": "15:00",
-              "title": "海沿い散歩",
-              "poiId": "poi-bondi",
-              "memo": "天気次第でBondiかManlyに変更。"
-            }
-          ]
+          "items": []
         },
         {
           "id": "day-sydney-nature",
@@ -472,6 +462,19 @@
               "title": "Blue Mountains候補",
               "poiId": "poi-blue-mountains",
               "memo": "疲れそうなら市内ゆるめの日に変更。"
+            },
+            {
+              "id": "item-bondi",
+              "time": "16:00",
+              "timezone": "AEST",
+              "homeTime": "15:00",
+              "title": "海沿い散歩",
+              "poiId": "poi-bondi",
+              "memo": "天気次第でBondiかManlyに変更。",
+              "flightNumber": "",
+              "airline": "",
+              "aircraft": "",
+              "emoji": ""
             }
           ]
         },
