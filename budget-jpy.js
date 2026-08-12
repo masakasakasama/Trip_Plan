@@ -269,36 +269,25 @@
   renderBudget = function renderBudgetJpy() {
     const trip = currentTrip();
     const stats = budgetStats(trip);
-    const hasForeign = (trip.budgetItems || []).some((entry) => budgetCurrency(entry.currency).code !== "JPY" && (budgetAmount(entry, "planned") || budgetAmount(entry, "actual")));
-    const missingRate = (trip.budgetItems || []).some((entry) => {
-      const code = budgetCurrency(entry.currency).code;
-      if (code === "JPY") return false;
-      return (budgetAmount(entry, "planned") && !rateForEntry(entry, "planned")) ||
-        (budgetAmount(entry, "actual") && !rateForEntry(entry, "actual"));
-    });
 
     if (els.budgetSummary) {
-      const rateNote = missingRate
-        ? "外貨レート取得中"
-        : hasForeign
-          ? "外貨は各項目を登録した時点の基準レートで円換算"
-          : "すべて日本円";
+      const exchangeRateDetailsOpen = Boolean(els.budgetSummary.querySelector(".exchange-rate-details")?.open);
       els.budgetSummary.innerHTML = `
         <div class="budget-overview">
           <section><span>総予算</span><strong>${formatMoney(stats.total, "JPY")}</strong></section>
           <section><span>支出</span><strong>${formatMoney(stats.spent, "JPY")}</strong></section>
           <section><span>残り</span><strong>${formatMoney(stats.total - stats.spent, "JPY")}</strong></section>
         </div>
-        <div class="currency-total jpy-total">
-          <strong>${formatMoney(stats.spentPerPerson, "JPY")}</strong>
-          <span>日本円換算・1人あたり</span>
-          <small>${escapeHtml(rateNote)}</small>
-        </div>
-        <div class="exchange-rate-note">
-          <strong>換算レート ${escapeHtml(rateSummaryDate().replaceAll("-", "/"))}</strong>
-          <span>${escapeHtml(rateSummary())}</span>
-          <small>Frankfurter（中央銀行参照レート）</small>
-        </div>
+        <details class="exchange-rate-details"${exchangeRateDetailsOpen ? " open" : ""}>
+          <summary>
+            <span>換算レート</span>
+            <small>${escapeHtml(rateSummaryDate().replaceAll("-", "/"))}</small>
+          </summary>
+          <section class="exchange-rate-note">
+            <span>${escapeHtml(rateSummary())}</span>
+            <small>Frankfurter（中央銀行参照レート）</small>
+          </section>
+        </details>
         <meter min="0" max="100" value="${stats.percent}"></meter>
       `;
     }

@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
-// 設定ダイアログ下部に小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260813.5";
+// ヘッダーに小さく表示し、公開リンクに反映されているか確認できるようにする。
+const BUILD_VERSION = "20260813.6";
 
 const DATA_URL = "trip-plan.json";
 const CANONICAL_URL = "https://masakasakasama.github.io/Trip_Plan/";
@@ -1561,26 +1561,12 @@ function renderBudget() {
   const trip = currentTrip();
   const stats = budgetStats(trip);
   if (els.budgetSummary) {
-    const totals = BUDGET_CURRENCIES
-      .filter((currency) => currency.showTotal && currency.code !== "JPY")
-      .map((currency) => {
-        const total = stats.totalsByCurrency[currency.code] || { spent: 0, planned: 0, spentPerPerson: 0, plannedPerPerson: 0 };
-        return `
-          <div class="currency-total">
-            <strong>${formatMoney(total.spent, currency.code)}</strong>
-            <span>${currency.label} / 予定 ${formatMoney(total.planned, currency.code)}</span>
-            <small>1人あたり ${formatMoney(total.spentPerPerson, currency.code)}</small>
-          </div>
-        `;
-      }).join("");
     els.budgetSummary.innerHTML = `
       <div class="budget-overview">
         <section><span>総予算</span><strong>${formatMoney(stats.total, "JPY")}</strong></section>
         <section><span>支出</span><strong>${formatMoney(stats.spent, "JPY")}</strong></section>
         <section><span>残り</span><strong>${formatMoney(stats.total - stats.spent, "JPY")}</strong></section>
       </div>
-      <div class="currency-total"><strong>${formatMoney(stats.totalsByCurrency.JPY.spentPerPerson, "JPY")}</strong><span>日本円・1人あたり</span><small>予定 ${formatMoney(stats.totalsByCurrency.JPY.plannedPerPerson, "JPY")}</small></div>
-      ${totals}
       <meter min="0" max="100" value="${stats.percent}"></meter>
     `;
   }
