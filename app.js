@@ -1962,7 +1962,14 @@ function budgetEditorFields(entry = {}, trip = currentTrip()) {
     { name: "currency", label: "通貨", type: "select", value: budgetCurrency(entry.currency).code, options: currencyOptions },
     { name: "paidBy", label: "支払った人", type: "select", value: budgetPayer(entry, trip), options: travelerOptions },
     { name: "split", label: "負担する人", type: "select", value: splitValue, options: splitOptions },
-    { name: "actual", label: "支払金額", type: "number", value: budgetAmount(entry, "actual"), step: "0.01", min: "0" },
+    {
+      name: "actual",
+      label: "支払金額",
+      type: "number",
+      value: Object.hasOwn(entry, "actual") ? budgetAmount(entry, "actual") : "",
+      step: "0.01",
+      min: "0"
+    },
     {
       name: "settled",
       label: "精算状態",
