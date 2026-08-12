@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-12T20:38:47.177Z",
+      "lastUpdated": "2026-08-12T20:39:05.909Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -446,7 +446,21 @@
           "date": "2026-08-13",
           "title": "Day 3",
           "theme": "Sydneyの王道をかわいく撮る",
-          "items": []
+          "items": [
+            {
+              "id": "item-msqjxxyu-j17da",
+              "time": "09:00",
+              "timezone": "AEST",
+              "title": "Botanical garden",
+              "poiId": "",
+              "memo": "",
+              "homeTime": "",
+              "flightNumber": "",
+              "airline": "",
+              "aircraft": "",
+              "emoji": ""
+            }
+          ]
         },
         {
           "id": "day-sydney-nature",
