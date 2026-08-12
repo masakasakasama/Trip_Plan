@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-12T03:02:56.004Z",
+      "lastUpdated": "2026-08-12T03:03:19.106Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -65,7 +65,7 @@
           "id": "todo-manila-transit",
           "title": "Manila長時間乗継の休憩先を確定",
           "detail": "Hotel Sogo EDSA near Taftを予約済み。8/11 14:00チェックイン、返金不可。16:30にホテルを出発し、17:30までにNAIA Terminal 1へ戻る予定。",
-          "due": "完了",
+          "due": "滞在中",
           "priority": "high",
           "owner": "2人",
           "status": "done"
