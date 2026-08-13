@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // ヘッダーに小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260813.11";
+const BUILD_VERSION = "20260813.12";
 
 const DATA_URL = "trip-plan.json";
 const WORKER_URL_KEY = "trip-plan-worker-url-v1";
@@ -41,6 +41,7 @@ const els = {
   tripStatus: document.querySelector("#trip-status"),
   status: document.querySelector("#sync-status"),
   countdown: document.querySelector("#countdown-days"),
+  countdownPanel: document.querySelector("#trip-countdown"),
   dayTabs: document.querySelector("#day-tabs"),
   dayToolbar: document.querySelector("#day-toolbar"),
   currentDayTitle: document.querySelector("#current-day-title"),
@@ -1207,6 +1208,9 @@ function formatHeaderRange(start, end) {
 
 function renderHeader() {
   const trip = currentTrip();
+  const today = localDateKey();
+  const duringTrip = Boolean(trip.startDate && trip.endDate && today >= trip.startDate && today <= trip.endDate);
+  const beforeTrip = Boolean(trip.startDate && today < trip.startDate);
   els.title.textContent = trip.title;
   els.dates.textContent = formatHeaderRange(trip.startDate, trip.endDate);
 
@@ -1217,8 +1221,12 @@ function renderHeader() {
     ? `${cityLabel}・${climate.label} 平年${climate.high}°`
     : `${cityLabel}・季節の目安なし`;
 
-  if (els.tripStatus) els.tripStatus.textContent = trip.status || "旅行準備中";
-  els.countdown.textContent = `${daysUntil(trip.startDate)}日`;
+  if (els.tripStatus) {
+    els.tripStatus.textContent = trip.status || "";
+    els.tripStatus.hidden = duringTrip || !trip.status;
+  }
+  if (els.countdownPanel) els.countdownPanel.hidden = !beforeTrip;
+  if (beforeTrip) els.countdown.textContent = `${daysUntil(trip.startDate)}日`;
   if (els.archiveToggle) els.archiveToggle.textContent = trip.archived ? "現在Tripに戻す" : "過去Tripへ移動";
 }
 
@@ -1303,6 +1311,10 @@ function renderTimeline() {
     // 航空券の便名・航空会社・機材を旅程に統合表示。
     const flightBits = [item.flightNumber, item.airline, item.aircraft].filter(Boolean);
     const flightInfo = flightBits.length ? `<small class="flight-info">${escapeHtml(flightBits.join(" ・ "))}</small>` : "";
+    const detail = String(poi?.name || item.memo || "").trim();
+    const detailInfo = detail && detail !== String(item.title || "").trim()
+      ? `<small>${escapeHtml(detail)}</small>`
+      : "";
 
     // 地図サムネイルは場所(POI)が紐づく予定だけ。便や乗継などは絵文字のまま。
     const photoUrl = item.imageUrl || poi?.imageUrl || "";
@@ -1316,10 +1328,10 @@ function renderTimeline() {
       </div>
       <span class="dot ${index % 2 ? "blue" : "pink"}"></span>
       <article class="event-card">
-        ${thumbMarkup(photoUrl, defaultEmoji(item, poi), "event-thumb", poi?.name || item.title)}
+          ${thumbMarkup(photoUrl, defaultEmoji(item, poi), "event-thumb", poi?.name || item.title)}
         <a class="event-body" href="${escapeHtml(eventMapsUrl(item))}" target="_blank" rel="noreferrer">
           <strong>${escapeHtml(item.title)}</strong>
-          <small>${escapeHtml(poi ? poi.name : item.memo || "メモなし")}</small>
+          ${detailInfo}
           ${flightInfo}
           <div class="event-foot">${homeTime}${elapsed}</div>
         </a>
@@ -1409,7 +1421,7 @@ function renderTodos() {
     } else if (index === 0 && todo.status !== "done") {
       const heading = document.createElement("p");
       heading.className = "list-group-title";
-      heading.textContent = "未完了・重要順";
+      heading.textContent = "未完了";
       els.todoList.append(heading);
     }
     const card = document.createElement("article");
@@ -1458,13 +1470,14 @@ function renderSpots() {
     }
     const card = document.createElement("article");
     card.className = `list-card spot-card ${poi.visited ? "is-visited" : ""}`;
+    const details = [poi.area, poi.memo].map((value) => String(value || "").trim()).filter(Boolean).join("・");
     card.innerHTML = `
       ${thumbMarkup(poi.imageUrl || "", defaultEmoji(null, poi), "spot-thumb", poi.name)}
       <div class="spot-body">
         <strong>${escapeHtml(poi.name)}</strong>
-        <p>${escapeHtml(poi.area)}・${escapeHtml(poi.memo || "メモなし")}</p>
+        ${details ? `<p>${escapeHtml(details)}</p>` : ""}
         <div class="spot-actions">
-          <a href="${escapeHtml(mapsUrl(poi))}" target="_blank" rel="noreferrer">Mapで開く</a>
+          <a href="${escapeHtml(mapsUrl(poi))}" target="_blank" rel="noreferrer">地図を開く</a>
           <button class="spot-visit" type="button" aria-pressed="${poi.visited}">
             ${poi.visited ? "✓ 完了" : "行った"}
           </button>
@@ -1496,11 +1509,11 @@ function renderMap() {
   if (els.mapDayTitle) els.mapDayTitle.textContent = mapTitle;
   if (els.mapDaySubtitle) {
     els.mapDaySubtitle.textContent = fallback
-      ? `この日に場所が未登録なので、旅行全体の${countLabel}を表示`
-      : `この日の${countLabel}を表示`;
+      ? `旅行全体・${countLabel}`
+      : countLabel;
   }
   els.openDayRoute.href = googleMapsDirectionsUrl(points);
-  els.openDayRoute.textContent = points.length >= 2 ? "ルートを開く" : "Mapで開く";
+  els.openDayRoute.textContent = points.length >= 2 ? "ルートを開く" : "地図を開く";
   const nextMapSrc = googleMapsEmbedUrl(points);
   if (els.routeMap.dataset.mapSrc !== nextMapSrc) {
     els.routeMap.dataset.mapSrc = nextMapSrc;
@@ -1540,7 +1553,6 @@ function renderBudget() {
         <section><span>支出</span><strong>${formatMoney(stats.spent, "JPY")}</strong></section>
         <section><span>残り</span><strong>${formatMoney(stats.total - stats.spent, "JPY")}</strong></section>
       </div>
-      <meter min="0" max="100" value="${stats.percent}"></meter>
     `;
   }
   if (!els.budgetList) return;
@@ -1584,18 +1596,13 @@ function renderSettlement(trip) {
   const unsettledCount = groups.reduce((sum, group) => sum + group.count, 0);
 
   if (!groups.length) {
-    els.settlementSummary.className = "settlement-panel is-complete";
-    els.settlementSummary.innerHTML = `
-      <div class="settlement-heading">
-        <div><span>2人の精算</span><strong>いまのところ精算済み</strong></div>
-        <span class="settlement-count">✓ 完了</span>
-      </div>
-    `;
+    els.settlementSummary.hidden = true;
+    els.settlementSummary.replaceChildren();
     return;
   }
 
+  els.settlementSummary.hidden = false;
   const rows = groups.map((group) => {
-    const currency = budgetCurrency(group.code);
     const transfers = group.transfers.map((transfer) => `
       <div class="settlement-transfer">
         <span class="settlement-person">${escapeHtml(transfer.from)}</span>
@@ -1606,12 +1613,8 @@ function renderSettlement(trip) {
     `).join("");
     return `
       <article class="settlement-row">
-        <div class="settlement-row-head">
-          <span>${escapeHtml(currency.label)}・${group.count}件</span>
-          <strong>未精算</strong>
-        </div>
         ${transfers}
-        <button type="button" data-settle-currency="${escapeHtml(group.code)}">まとめて精算済みにする</button>
+        <button type="button" data-settle-currency="${escapeHtml(group.code)}">まとめて精算</button>
       </article>
     `;
   }).join("");
@@ -1619,8 +1622,8 @@ function renderSettlement(trip) {
   els.settlementSummary.className = "settlement-panel";
   els.settlementSummary.innerHTML = `
     <div class="settlement-heading">
-      <div><span>2人の精算</span><strong>立替分をまとめて確認</strong></div>
-      <span class="settlement-count">未精算 ${unsettledCount}件</span>
+      <strong>精算</strong>
+      <span class="settlement-count">${unsettledCount}件</span>
     </div>
     <div class="settlement-rows">${rows}</div>
   `;
@@ -1636,7 +1639,7 @@ function settleCurrency(currencyCode) {
   const transferText = group.transfers
     .map((transfer) => `${transfer.from} → ${transfer.to} ${formatMoney(transfer.amount, currencyCode)}`)
     .join("、");
-  if (!window.confirm(`${transferText}\n精算済みにしますか？`)) return;
+  if (!window.confirm(`${transferText}\n${group.count}件を精算済みにしますか？`)) return;
   commitChange(() => {
     trip.budgetItems.forEach((entry) => {
       if (budgetCurrency(entry.currency).code === currencyCode && !entry.settled && budgetAmount(entry, "actual")) {
