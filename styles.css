@@ -1194,6 +1194,11 @@ meter::-webkit-meter-bar {
   color: #6ba286;
 }
 
+.budget-currency.expense-date {
+  background: #f5f2f5;
+  color: #7d737d;
+}
+
 .budget-card.payer-husband .payer-badge {
   background: #e9f8fb;
   color: #4f909e;

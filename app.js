@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // ヘッダーに小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260813.9";
+const BUILD_VERSION = "20260813.10";
 
 const DATA_URL = "trip-plan.json";
 const WORKER_URL_KEY = "trip-plan-worker-url-v1";
@@ -275,6 +275,14 @@ function localDateKey(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function budgetExpenseDate(entry = {}) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(entry.expenseDate || "")) return entry.expenseDate;
+  const capturedAt = entry.actualFxCapturedAt || entry.plannedFxCapturedAt;
+  const capturedDate = String(capturedAt || "").match(/^(\d{4}-\d{2}-\d{2})T/);
+  if (capturedDate) return capturedDate[1];
+  return entry.actualFxRateDate || entry.plannedFxRateDate || "";
+}
+
 function preferredDayIndex(trip, today = localDateKey()) {
   if (!trip?.days?.length) return 0;
   const datedDays = trip.days
@@ -391,7 +399,8 @@ function normalizeTrip(trip) {
       peopleCount: travelers.length,
       paidBy: travelers.includes(entry.paidBy) ? entry.paidBy : travelers[0],
       beneficiary: "",
-      settled: Boolean(entry.settled)
+      settled: Boolean(entry.settled),
+      expenseDate: budgetExpenseDate(entry)
     }))
     : [];
   return {
@@ -560,7 +569,7 @@ function budgetIcon(entry) {
   if (/hotel|ホテル|宿|チェックイン|チェックアウト/.test(text)) return "🏨";
   if (/食|ごはん|レストラン|カフェ|coffee|meal|food/.test(text)) return "🍽️";
   if (/移動|電車|バス|taxi|uber|grab|空港|transport/.test(text)) return "🚕";
-  if (/観光|入場|ツアー|spot|museum|opera|beach/.test(text)) return "🎟️";
+  if (/観光|入場|ツアー|動物園|zoo|wildlife|spot|museum|opera|beach/.test(text)) return "🎟️";
   if (/保険|insurance/.test(text)) return "🛡️";
   if (/visa|ビザ|eta/.test(text)) return "🛂";
   if (/買|土産|shopping|shop/.test(text)) return "🛍️";
@@ -1545,6 +1554,7 @@ function renderBudget() {
     const currency = budgetCurrency(entry.currency);
     const payer = budgetPayer(entry, trip);
     const payerClass = payer === trip.travelers[0] ? "payer-husband" : "payer-wife";
+    const expenseDate = budgetExpenseDate(entry);
     const card = document.createElement("article");
     card.className = `list-card budget-card ${payerClass}`;
     card.innerHTML = `
@@ -1556,6 +1566,7 @@ function renderBudget() {
         </div>
         <p>${escapeHtml(entry.category || "未分類")}${entry.memo ? `・${escapeHtml(entry.memo)}` : ""}</p>
         <div class="budget-meta">
+          ${expenseDate ? `<span class="budget-currency expense-date">${escapeHtml(formatShortDate(expenseDate))} 支払</span>` : ""}
           <span class="budget-currency payer-badge">${escapeHtml(payer)}が支払い</span>
           <span class="budget-currency settlement-state ${entry.settled ? "is-settled" : "is-open"}">${entry.settled ? "精算済み" : "未精算"}</span>
         </div>
@@ -1954,6 +1965,7 @@ function budgetEditorFields(entry = {}, trip = currentTrip()) {
     { name: "newCategory", label: "カテゴリ追加", placeholder: "候補にない時だけ入力" },
     { name: "currency", label: "通貨", type: "select", value: budgetCurrency(entry.currency).code, options: currencyOptions },
     { name: "paidBy", label: "支払った人", type: "select", value: budgetPayer(entry, trip), options: travelerOptions },
+    { name: "expenseDate", label: "支払日", type: "date", value: budgetExpenseDate(entry) || localDateKey(), required: true },
     {
       name: "actual",
       label: "支払金額",
@@ -1973,6 +1985,7 @@ function updateBudgetFromForm(entry, trip = currentTrip()) {
   entry.paidBy = formValue("paidBy") || trip.travelers[0];
   entry.peopleCount = travelerCount(trip);
   entry.beneficiary = "";
+  entry.expenseDate = formValue("expenseDate") || budgetExpenseDate(entry) || localDateKey();
   entry.planned = 0;
   entry.actual = Number(formValue("actual")) || 0;
   entry.memo = formValue("memo");
@@ -1987,6 +2000,7 @@ function addBudgetItem() {
     category: "その他",
     paidBy: trip.travelers[0],
     beneficiary: "",
+    expenseDate: localDateKey(),
     settled: false
   };
   showEditor({
