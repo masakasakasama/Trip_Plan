@@ -1,6 +1,6 @@
 // index.htmlのキャッシュバスティング版(?v=...)と揃えて、更新のたび一緒に上げる。
 // ヘッダーに小さく表示し、公開リンクに反映されているか確認できるようにする。
-const BUILD_VERSION = "20260813.10";
+const BUILD_VERSION = "20260813.11";
 
 const DATA_URL = "trip-plan.json";
 const WORKER_URL_KEY = "trip-plan-worker-url-v1";
@@ -1566,8 +1566,8 @@ function renderBudget() {
         </div>
         <p>${escapeHtml(entry.category || "未分類")}${entry.memo ? `・${escapeHtml(entry.memo)}` : ""}</p>
         <div class="budget-meta">
-          ${expenseDate ? `<span class="budget-currency expense-date">${escapeHtml(formatShortDate(expenseDate))} 支払</span>` : ""}
-          <span class="budget-currency payer-badge">${escapeHtml(payer)}が支払い</span>
+          ${expenseDate ? `<span class="budget-currency expense-date">${escapeHtml(formatShortDate(expenseDate))}</span>` : ""}
+          <span class="budget-currency payer-badge">${escapeHtml(payer)}</span>
           <span class="budget-currency settlement-state ${entry.settled ? "is-settled" : "is-open"}">${entry.settled ? "精算済み" : "未精算"}</span>
         </div>
       </div>
