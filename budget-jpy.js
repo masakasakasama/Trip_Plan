@@ -304,7 +304,6 @@
       const payer = budgetPayer(entry, trip);
       const husbandPaid = payer === trip.travelers[0];
       const payerClass = husbandPaid ? "payer-husband" : "payer-wife";
-      const payerLabel = `${payer}が支払い`;
       const rateLine = foreign && actualRate
         ? `<small class="fx-detail">${formatMoney(budgetAmount(entry, "actual"), currency.code)} × ¥${Number(actualRate).toLocaleString("ja-JP", { maximumFractionDigits: 4 })}</small>`
         : "";
@@ -320,8 +319,8 @@
           </div>
           <p>${escapeHtml(entry.category || "未分類")}${entry.memo ? `・${escapeHtml(entry.memo)}` : ""}</p>
           <div class="budget-meta">
-            ${expenseDate ? `<span class="budget-currency expense-date">${escapeHtml(formatShortDate(expenseDate))} 支払</span>` : ""}
-            <span class="budget-currency payer-badge">${escapeHtml(payerLabel)}</span>
+            ${expenseDate ? `<span class="budget-currency expense-date">${escapeHtml(formatShortDate(expenseDate))}</span>` : ""}
+            <span class="budget-currency payer-badge">${escapeHtml(payer)}</span>
             <span class="budget-currency settlement-state ${entry.settled ? "is-settled" : "is-open"}">${entry.settled ? "精算済み" : "未精算"}</span>
           </div>
           ${rateLine}
