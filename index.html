@@ -4,12 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trip Plan</title>
-    <link rel="stylesheet" href="styles.css?v=20260813.11">
+    <link rel="stylesheet" href="styles.css?v=20260813.12">
   </head>
   <body>
     <main class="stage">
-      <p class="theme-label"><span>1b</span>すっきりタイムライン</p>
-
       <section class="phone" aria-label="Trip Plan">
         <div class="notch"></div>
 
@@ -20,7 +18,7 @@
             <h1 id="trip-title">Australia 2026</h1>
           </div>
           <div class="header-meta">
-            <span id="site-version">v20260813.11</span>
+            <span id="site-version">v20260813.12</span>
           </div>
         </header>
 
@@ -30,7 +28,7 @@
             <strong id="trip-place">Sydney・晴れ 26°</strong>
             <p id="trip-status">航空券確定</p>
           </div>
-          <div class="countdown">
+          <div class="countdown" id="trip-countdown">
             <span>あと</span>
             <strong id="countdown-days">--日</strong>
           </div>
@@ -101,7 +99,7 @@
             <button id="add-budget-item" type="button">追加</button>
           </div>
           <div class="budget-summary" id="budget-summary"></div>
-          <section class="settlement-panel" id="settlement-summary" aria-label="2人の精算"></section>
+          <section class="settlement-panel" id="settlement-summary" aria-label="精算"></section>
           <div class="stack-list" id="budget-list"></div>
         </section>
 
@@ -142,10 +140,10 @@
     </dialog>
 
     <p id="sync-status" class="sync-feedback" aria-live="polite"></p>
-    <script src="sync-config.js?v=20260813.11"></script>
-    <script src="sync-merge.js?v=20260813.11"></script>
-    <script src="app.js?v=20260813.11" defer></script>
-    <script src="budget-jpy.js?v=20260813.11" defer></script>
-    <script src="weather-live.js?v=20260813.11" defer></script>
+    <script src="sync-config.js?v=20260813.12"></script>
+    <script src="sync-merge.js?v=20260813.12"></script>
+    <script src="app.js?v=20260813.12" defer></script>
+    <script src="budget-jpy.js?v=20260813.12" defer></script>
+    <script src="weather-live.js?v=20260813.12" defer></script>
   </body>
 </html>

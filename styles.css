@@ -48,23 +48,6 @@ button {
   padding: 28px 14px;
 }
 
-.theme-label {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: 0;
-  color: #6f646f;
-  font-size: clamp(1.05rem, 4vw, 1.4rem);
-  font-weight: 900;
-}
-
-.theme-label span {
-  border-radius: 999px;
-  background: var(--blue);
-  color: white;
-  padding: 6px 16px;
-}
-
 .phone {
   position: relative;
   width: min(430px, 100%);
@@ -967,20 +950,6 @@ meter::-webkit-meter-bar {
   font-weight: 900;
 }
 
-.budget-summary meter {
-  grid-column: 1 / -1;
-  margin-top: 2px;
-}
-
-.budget-summary meter::-webkit-meter-optimum-value {
-  border-radius: 999px;
-  background: #83c9d8;
-}
-
-.budget-summary meter::-moz-meter-bar {
-  background: #83c9d8;
-}
-
 .settlement-panel {
   margin-bottom: 18px;
   border: 1px solid rgba(131, 201, 216, 0.42);
@@ -997,30 +966,20 @@ meter::-webkit-meter-bar {
   padding: 15px 16px;
 }
 
-.settlement-heading div {
-  min-width: 0;
-}
-
-.settlement-heading span,
-.settlement-row-head span {
-  display: block;
-  color: #7597a0;
-  font-size: 0.74rem;
-  font-weight: 900;
-}
-
 .settlement-heading strong {
-  display: block;
-  margin-top: 2px;
   color: var(--ink);
   font-size: 0.98rem;
 }
 
 .settlement-count {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
   border-radius: 999px;
   background: #fff;
   color: #5d9aaa !important;
+  font-size: 0.74rem;
+  font-weight: 900;
   padding: 6px 9px;
 }
 
@@ -1037,24 +996,16 @@ meter::-webkit-meter-bar {
   border-top: 1px solid var(--line);
 }
 
-.settlement-row-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.settlement-row-head strong {
-  color: #c47494;
-  font-size: 0.74rem;
-}
-
 .settlement-transfer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 7px;
   margin-top: 11px;
+}
+
+.settlement-row > .settlement-transfer:first-child {
+  margin-top: 0;
 }
 
 .settlement-person {
@@ -1087,11 +1038,6 @@ meter::-webkit-meter-bar {
   background: #eef9fb;
   color: #527f8a;
   font-weight: 900;
-}
-
-.settlement-panel.is-complete {
-  border-color: rgba(161, 210, 186, 0.5);
-  background: #f5fbf8;
 }
 
 .budget-card {
@@ -1547,10 +1493,6 @@ textarea {
   .stage {
     display: block;
     padding: 0;
-  }
-
-  .theme-label {
-    display: none;
   }
 
   .phone {

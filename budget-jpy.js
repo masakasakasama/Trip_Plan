@@ -250,7 +250,7 @@
     const transferText = group.transfers
       .map((transfer) => `${transfer.from} → ${transfer.to} ${formatMoney(transfer.amount, "JPY")}`)
       .join("、");
-    if (!window.confirm(`${transferText}\nすべての通貨の立替分を円換算で精算済みにしますか？`)) return;
+    if (!window.confirm(`${transferText}\n${group.count}件を精算済みにしますか？`)) return;
     commitChange(() => {
       trip.budgetItems.forEach((entry) => {
         if (!entry.settled && budgetAmount(entry, "actual")) {
@@ -283,7 +283,6 @@
             <small>Frankfurter（中央銀行参照レート）</small>
           </section>
         </details>
-        <meter min="0" max="100" value="${stats.percent}"></meter>
       `;
     }
 
