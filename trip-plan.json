@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-13T03:38:51.458Z",
+      "lastUpdated": "2026-08-13T23:47:38.871Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -524,6 +524,19 @@
               "title": "海沿い散歩",
               "poiId": "poi-bondi",
               "memo": "天気次第でBondiかManlyに変更。",
+              "flightNumber": "",
+              "airline": "",
+              "aircraft": "",
+              "emoji": ""
+            },
+            {
+              "id": "item-mss649e6-a8ovj",
+              "time": "16:00",
+              "timezone": "AEST",
+              "title": "Darling Harbour",
+              "poiId": "",
+              "memo": "",
+              "homeTime": "17:00",
               "flightNumber": "",
               "airline": "",
               "aircraft": "",
