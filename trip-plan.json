@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-14T01:39:53.699Z",
+      "lastUpdated": "2026-08-14T01:39:55.736Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -250,8 +250,8 @@
           "imageUrl": "",
           "emoji": "",
           "memo": "",
-          "visited": false,
-          "visitedAt": ""
+          "visited": true,
+          "visitedAt": "2026-08-14T01:39:54.459Z"
         },
         {
           "id": "poi-hotel-breakfree-broadway",
