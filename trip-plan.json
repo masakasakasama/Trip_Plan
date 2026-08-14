@@ -15,7 +15,7 @@
       "mood": "Sydneyを中心に、無理しない移動とかわいい写真を優先。時刻は空港の現地時刻を主表示し、日本時間は補助メモで見る。",
       "budget": 450000,
       "status": "航空券確定",
-      "lastUpdated": "2026-08-14T21:19:23.154Z",
+      "lastUpdated": "2026-08-14T22:42:51.325Z",
       "archived": false,
       "timezones": {
         "home": "JST UTC+9",
@@ -1077,6 +1077,26 @@
           "actualFxRateToJPY": 112.19,
           "actualFxRateDate": "2026-08-11",
           "actualFxCapturedAt": "2026-08-14T21:19:22.791Z"
+        },
+        {
+          "id": "budget-mstj8edb-eseya",
+          "currency": "AUD",
+          "peopleCount": 2,
+          "category": "食事",
+          "paidBy": "夫",
+          "beneficiary": "",
+          "expenseDate": "2026-08-15",
+          "settled": false,
+          "label": "空港マック",
+          "planned": 0,
+          "actual": 30,
+          "memo": "",
+          "plannedFxRateToJPY": 112.48,
+          "plannedFxRateDate": "2026-08-14",
+          "plannedFxCapturedAt": "2026-08-14T22:42:50.962Z",
+          "actualFxRateToJPY": 112.48,
+          "actualFxRateDate": "2026-08-14",
+          "actualFxCapturedAt": "2026-08-14T22:42:50.962Z"
         }
       ]
     }
