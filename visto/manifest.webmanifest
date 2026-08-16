@@ -1,0 +1,10 @@
+{
+  "name": "Trip OS",
+  "short_name": "Trip OS",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#06101d",
+  "theme_color": "#07111f",
+  "description": "旅行計画、旅行中、写真記録、Passport、Bucket Listを一体化したTravel OS",
+  "icons": []
+}
