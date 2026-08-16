@@ -1,4 +1,4 @@
-const CACHE = 'trip-os-v2';
+const CACHE = 'trip-os-v3';
 const CORE = [
   './',
   './index.html',
@@ -12,7 +12,8 @@ const CORE = [
   './parts/p05.txt',
   './parts/p06.txt',
   './parts/p07.txt',
-  './parts/p08.txt'
+  './parts/p08.txt',
+  './parts/p09.txt'
 ];
 
 self.addEventListener('install', (event) => {
