@@ -1,4 +1,4 @@
-const CACHE = 'trip-os-v2';
+const CACHE = 'trip-os-v4';
 const CORE = [
   './',
   './index.html',
@@ -12,11 +12,27 @@ const CORE = [
   './parts/p05.txt',
   './parts/p06.txt',
   './parts/p07.txt',
-  './parts/p08.txt'
+  './parts/p08.txt',
+  './parts/p09.txt',
+  './parts/p10.txt',
+  './parts/p11.txt',
+  './parts/p12.txt'
+];
+const OPTIONAL = [
+  'https://cdn.jsdelivr.net/npm/d3@7',
+  'https://cdn.jsdelivr.net/npm/topojson-client@3',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  'https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/lite.umd.js'
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(CORE)).then(() => self.skipWaiting()));
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.addAll(CORE);
+    await Promise.allSettled(OPTIONAL.map((url) => cache.add(url)));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {
