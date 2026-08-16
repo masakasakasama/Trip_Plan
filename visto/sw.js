@@ -1,4 +1,4 @@
-const CACHE = 'trip-os-v1';
+const CACHE = 'trip-os-v2';
 const CORE = [
   './',
   './index.html',
@@ -36,6 +36,11 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => {});
         return response;
       })
-      .catch(() => caches.match(request).then((response) => response || caches.match('./index.html')))
+      .catch(async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        if (request.mode === 'navigate') return caches.match('./index.html');
+        return Response.error();
+      })
   );
 });
