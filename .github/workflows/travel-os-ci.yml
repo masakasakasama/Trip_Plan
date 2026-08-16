@@ -19,6 +19,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate loader
         run: node --check visto/app.js
+      - name: Validate history seed
+        run: node --check visto/history-seed.js
       - name: Validate concatenated app
         run: cat visto/parts/p*.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
       - name: Validate manifest

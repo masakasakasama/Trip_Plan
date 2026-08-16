@@ -1,10 +1,11 @@
-const CACHE = 'trip-os-v4';
+const CACHE = 'trip-os-v5';
 const CORE = [
   './',
   './index.html',
   './manifest.webmanifest',
   './app.css',
   './app.js',
+  './history-seed.js',
   './parts/p01.txt',
   './parts/p02.txt',
   './parts/p03.txt',
