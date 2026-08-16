@@ -1,0 +1,46 @@
+(() => {
+'use strict';
+const APP_KEY='trip-os-demo-v1';
+const WORKER='https://trip-plan-sync.masakasakasama-man.workers.dev/state';
+const COUNTRY_TOTAL=195;
+const NAV=[['globe','🌍','Globe'],['trips','🧳','Trips'],['today','🗓️','Today'],['passport','🛂','Passport'],['bucket','⭐','Bucket'],['profile','👤','Profile']];
+const COUNTRY_META={
+ '036':{name:'Australia',flag:'🇦🇺',currency:'AUD',tz:'Australia/Sydney',socket:'Type I',continent:'Oceania',lat:-25.3,lng:133.8},
+ '608':{name:'Philippines',flag:'🇵🇭',currency:'PHP',tz:'Asia/Manila',socket:'Type A/B/C',continent:'Asia',lat:12.8,lng:121.8},
+ '392':{name:'Japan',flag:'🇯🇵',currency:'JPY',tz:'Asia/Tokyo',socket:'Type A',continent:'Asia',lat:36.2,lng:138.3},
+ '276':{name:'Germany',flag:'🇩🇪',currency:'EUR',tz:'Europe/Berlin',socket:'Type C/F',continent:'Europe',lat:51.1,lng:10.4},
+ '250':{name:'France',flag:'🇫🇷',currency:'EUR',tz:'Europe/Paris',socket:'Type C/E',continent:'Europe',lat:46.2,lng:2.2},
+ '528':{name:'Netherlands',flag:'🇳🇱',currency:'EUR',tz:'Europe/Amsterdam',socket:'Type C/F',continent:'Europe',lat:52.1,lng:5.3},
+ '056':{name:'Belgium',flag:'🇧🇪',currency:'EUR',tz:'Europe/Brussels',socket:'Type C/E',continent:'Europe',lat:50.5,lng:4.4},
+ '616':{name:'Poland',flag:'🇵🇱',currency:'PLN',tz:'Europe/Warsaw',socket:'Type C/E',continent:'Europe',lat:51.9,lng:19.1},
+ '792':{name:'Türkiye',flag:'🇹🇷',currency:'TRY',tz:'Europe/Istanbul',socket:'Type C/F',continent:'Asia',lat:39,lng:35},
+ '764':{name:'Thailand',flag:'🇹🇭',currency:'THB',tz:'Asia/Bangkok',socket:'Type A/B/C/O',continent:'Asia',lat:15.8,lng:101},
+ '704':{name:'Vietnam',flag:'🇻🇳',currency:'VND',tz:'Asia/Ho_Chi_Minh',socket:'Type A/C/F',continent:'Asia',lat:14.1,lng:108.3},
+ '156':{name:'China',flag:'🇨🇳',currency:'CNY',tz:'Asia/Shanghai',socket:'Type A/C/I',continent:'Asia',lat:35.9,lng:104.2},
+ '410':{name:'South Korea',flag:'🇰🇷',currency:'KRW',tz:'Asia/Seoul',socket:'Type C/F',continent:'Asia',lat:35.9,lng:127.8},
+ '344':{name:'Hong Kong',flag:'🇭🇰',currency:'HKD',tz:'Asia/Hong_Kong',socket:'Type G',continent:'Asia',lat:22.3,lng:114.2}
+};
+const NAME_TO_ID=Object.fromEntries(Object.entries(COUNTRY_META).map(([id,v])=>[v.name.toLowerCase(),id]));
+const CITY_GEO={Sydney:[-33.8688,151.2093],Manila:[14.5995,120.9842],Tokyo:[35.6762,139.6503],Heidelberg:[49.3988,8.6724],Paris:[48.8566,2.3522],Bangkok:[13.7563,100.5018],Hanoi:[21.0278,105.8342],Seoul:[37.5665,126.978],Shanghai:[31.2304,121.4737],Istanbul:[41.0082,28.9784]};
+let state={base:null,travelOS:{bucket:[],profile:{name:'Traveler'},settings:{cloudSync:false},photoMeta:[]}};
+let remoteSha=''; let currentView='globe'; let selectedTripId=''; let leafletMap=null; let worldData=null; let photoUrls=[];
+const $=s=>document.querySelector(s); const view=$('#view');
+const uid=(p='id')=>`${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));
+const fmtDate=d=>{try{return new Intl.DateTimeFormat('ja-JP',{year:'numeric',month:'short',day:'numeric'}).format(new Date(d+'T12:00:00'))}catch{return d}};
+const toast=msg=>{const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)};
+function trips(){return Array.isArray(state.base?.trips)?state.base.trips:[]}
+function activeTrip(){return trips().find(t=>t.id===selectedTripId)||trips().find(t=>t.id===state.base?.activeTripId)||trips()[0]}
+function normalize(){state.base=state.base&&Array.isArray(state.base.trips)?state.base:{schemaVersion:3,activeTripId:'',trips:[]};state.travelOS=state.base.travelOS||state.travelOS||{};state.travelOS.bucket=state.travelOS.bucket||[];state.travelOS.profile=state.travelOS.profile||{name:'Traveler'};state.travelOS.settings=state.travelOS.settings||{cloudSync:false};state.travelOS.photoMeta=state.travelOS.photoMeta||[];state.base.travelOS=state.travelOS;selectedTripId=selectedTripId||state.base.activeTripId||trips()[0]?.id||''}
+function saveLocal(){normalize();localStorage.setItem(APP_KEY,JSON.stringify(state.base));}
+function loadLocal(){const raw=localStorage.getItem(APP_KEY);if(raw){try{state.base=JSON.parse(raw)}catch{}}normalize()}
+async function seedFromCloud(){if(localStorage.getItem(APP_KEY))return;try{const r=await fetch(WORKER,{cache:'no-store'});if(!r.ok)throw 0;state.base=await r.json();remoteSha=r.headers.get('X-Trip-Sha')||r.headers.get('ETag')?.replaceAll('"','')||'';normalize();saveLocal();$('#syncBadge').textContent='cloud seed loaded'}catch{seedFallback();}}
+function seedFallback(){state.base={schemaVersion:3,activeTripId:'demo-australia',trips:[{id:'demo-australia',title:'Australia 2026',destination:'Sydney',countries:['Australia','Philippines'],cities:['Sydney','Manila'],startDate:'2026-08-11',endDate:'2026-08-16',budget:450000,status:'旅行中',archived:false,cover:'',todos:[],pois:[],days:[],expenses:[]}],travelOS:{bucket:[],profile:{name:'Traveler'},settings:{cloudSync:false},photoMeta:[]}};normalize();saveLocal()}
+function renderNav(){const make=(compact=false)=>NAV.map(([id,ico,label])=>`<button data-nav="${id}" class="${currentView===id?'active':''}">${compact?`<span>${ico}</span>`:`${ico} ${label}`}</button>`).join('');$('#sideNav').innerHTML=make(false);$('#bottomNav').innerHTML=make(true);document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>navigate(b.dataset.nav));}
+function navigate(v){currentView=v;renderNav();$('#pageTitle').textContent=NAV.find(n=>n[0]===v)?.[2]||v;render()}
+function dateRangeDays(a,b){if(!a||!b)return 0;return Math.max(1,Math.round((new Date(b)-new Date(a))/86400000)+1)}
+function getCountries(){const out=[];trips().filter(t=>!t.archived).forEach(t=>{(t.countries||inferCountries(t)).forEach(c=>{if(c&&!out.includes(c))out.push(c)})});return out}
+function inferCountries(t){const text=(t.destination||'')+' '+(t.title||'');const arr=[];Object.values(COUNTRY_META).forEach(m=>{if(text.toLowerCase().includes(m.name.toLowerCase()))arr.push(m.name)});if(t.id==='australia-2026')return ['Australia','Philippines'];return arr.length?arr:['Australia']}
+function getCities(t){if(Array.isArray(t.cities)&&t.cities.length)return t.cities;const c=new Set();(t.pois||[]).forEach(p=>{if(p.area)c.add(p.area.split(',')[0])});if(t.destination)c.add(t.destination);return [...c]}
+function tripCountryIds(t){return (t.countries||inferCountries(t)).map(n=>NAME_TO_ID[n.toLowerCase()]).filter(Boolean)}
+function coverage(){return ((getCountries().length/
