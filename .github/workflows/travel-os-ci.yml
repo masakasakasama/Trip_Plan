@@ -1,0 +1,27 @@
+name: Travel OS CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'visto/**'
+      - '.github/workflows/travel-os-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate loader
+        run: node --check visto/app.js
+      - name: Validate concatenated app
+        run: cat visto/parts/p*.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
+      - name: Validate manifest
+        run: node -e "JSON.parse(require('fs').readFileSync('visto/manifest.webmanifest','utf8'))"
+      - name: Existing sync tests
+        run: node --test sync-merge.test.js
