@@ -1,0 +1,13 @@
+s[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.trips))throw 0;state.base=d;normalize();saveLocal();closeModal();toast('復元完了');render()}catch{toast('不正なJSON')}}}
+async function shareCurrent(){const t=activeTrip();const payload={type:currentView,trip:t?{id:t.id,title:t.title,startDate:t.startDate,endDate:t.endDate,countries:t.countries||inferCountries(t)}:null};const url=location.origin+location.pathname+'#share='+btoa(unescape(encodeURIComponent(JSON.stringify(payload))));if(navigator.share){try{await navigator.share({title:'Trip OS',text:t?.title||'Trip OS',url});return}catch{}}await navigator.clipboard.writeText(url);toast('共有URLをコピー')}
+async function sharePassportCard(){const text=`Passport: ${getCountries().length}/${COUNTRY_TOTAL} countries · ${coverage()}%`;if(navigator.share){try{await navigator.share({title:'My Travel Passport',text});return}catch{}}await navigator.clipboard.writeText(text);toast('Passport情報をコピー')}
+function handleShareHash(){const m=location.hash.match(/share=([^&]+)/);if(!m)return;try{const p=JSON.parse(decodeURIComponent(escape(atob(m[1]))));modal(`<div class="row"><h2>共有Trip</h2><button class="btn ghost" id="mClose">×</button></div><div class="list-item"><h3>${esc(p.trip?.title||'Trip OS')}</h3><div class="muted">${esc((p.trip?.countries||[]).join(', '))}</div><p>${esc(p.trip?.startDate||'')} → ${esc(p.trip?.endDate||'')}</p></div>`);$('#mClose').onclick=closeModal}catch{}}
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('trip-os-photos',1);r.onupgradeneeded=()=>r.result.createObjectStore('photos');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbPut(k,v){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
+async function idbGet(k){const db=await idb();return new Promise((res,rej)=>{const r=db.transaction('photos').objectStore('photos').get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+let deferredInstall=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;window._deferredInstall=e});
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+window.addEventListener('online',()=>toast('オンラインに復帰'));window.addEventListener('offline',()=>toast('オフラインモード'));
+$('#modalWrap').addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+(async function init(){loadLocal();await seedFromCloud();renderNav();render();handleShareHash()})();
+})();
