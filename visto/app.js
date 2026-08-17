@@ -5,6 +5,7 @@
     `./parts/p13.txt?v=${BUILD}`,
     `./parts/p14.txt?v=${BUILD}`,
     `./parts/p15.txt?v=${BUILD}`,
+    `./parts/p16.txt?v=${BUILD}`,
     `./parts/p12.txt?v=${BUILD}`
   ];
   try {
