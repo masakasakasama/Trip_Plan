@@ -1,8 +1,9 @@
 (async () => {
-  const BUILD = '20260817c';
+  const BUILD = '20260817d';
   const parts = [
     ...Array.from({ length: 11 }, (_, i) => `./parts/p${String(i + 1).padStart(2, '0')}.txt?v=${BUILD}`),
     `./parts/p13.txt?v=${BUILD}`,
+    `./parts/p14.txt?v=${BUILD}`,
     `./parts/p12.txt?v=${BUILD}`
   ];
   try {
