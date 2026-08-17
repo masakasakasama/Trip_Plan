@@ -23,6 +23,20 @@ jobs:
         run: node --check visto/history-seed.js
       - name: Validate actual concatenated app order
         run: cat visto/parts/p{01..11}.txt visto/parts/p13.txt visto/parts/p12.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
+      - name: Validate real flag implementation
+        run: |
+          grep -q 'flagcdn.com/w80/' visto/parts/p13.txt
+          grep -q 'flag-fix.css' visto/index.html
+          ! grep -q "FLAG_FALLBACK" visto/parts/p13.txt
+      - name: Browser visual smoke
+        run: |
+          python3 -m http.server 4173 --directory . >/tmp/trip-os-http.log 2>&1 &
+          sleep 2
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=9000 --dump-dom http://127.0.0.1:4173/visto/visual-smoke.html > /tmp/visual-dom.html
+          cat /tmp/visual-dom.html
+          grep -q 'VISUAL_SMOKE_PASS' /tmp/visual-dom.html
       - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('visto/manifest.webmanifest','utf8'))"
       - name: Existing sync tests
