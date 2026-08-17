@@ -1,12 +1,13 @@
-const CACHE = 'trip-os-v7-20260817c';
+const CACHE = 'trip-os-v8-20260817d';
 const CORE = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './app.css?v=20260817c',
-  './redesign.css?v=20260817c',
-  './app.js?v=20260817c',
-  './history-seed.js?v=20260817c'
+  './app.css?v=20260817d',
+  './redesign.css?v=20260817d',
+  './flag-fix.css?v=20260817d',
+  './app.js?v=20260817d',
+  './history-seed.js?v=20260817d'
 ];
 const OPTIONAL = [
   'https://cdn.jsdelivr.net/npm/d3@7',
