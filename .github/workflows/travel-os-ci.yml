@@ -23,14 +23,17 @@ jobs:
         run: |
           node --check visto/history-seed.js
           node --check visto/flight-seed.js
+          node --check visto/shared-trips.js
       - name: Validate S-suite and persona extensions
         run: |
           cp visto/parts/p15.txt /tmp/p15.js
           cp visto/parts/p16.txt /tmp/p16.js
           cp visto/parts/p17.txt /tmp/p17.js
+          cp visto/parts/p18.txt /tmp/p18.js
           node --check /tmp/p15.js
           node --check /tmp/p16.js
           node --check /tmp/p17.js
+          node --check /tmp/p18.js
           grep -q 'trip-filter-bar' visto/parts/p15.txt
           grep -q 'trip-year-timeline' visto/parts/p15.txt
           grep -q 'trip-calendar' visto/parts/p15.txt
@@ -45,8 +48,10 @@ jobs:
           grep -q '自動保存 ON' visto/parts/p17.txt
           grep -q 'globe-zoom-controls' visto/parts/p17.txt
           grep -q 'backside' visto/parts/p17.txt
+          grep -q 'history-vietnam-2025-04' visto/shared-trips.js
+          grep -q 'TRIP_OS_SHARED_TRIPS' visto/parts/p18.txt
       - name: Validate actual concatenated app order
-        run: cat visto/parts/p{01..11}.txt visto/parts/p13.txt visto/parts/p14.txt visto/parts/p15.txt visto/parts/p16.txt visto/parts/p17.txt visto/parts/p12.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
+        run: cat visto/parts/p{01..11}.txt visto/parts/p13.txt visto/parts/p14.txt visto/parts/p15.txt visto/parts/p16.txt visto/parts/p17.txt visto/parts/p18.txt visto/parts/p12.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
       - name: Validate persona pages and themes
         run: |
           test -f visto/tatsu/index.html
@@ -55,6 +60,8 @@ jobs:
           grep -q "TRIP_OS_PERSONA='tatsu'" visto/tatsu/index.html
           grep -q "TRIP_OS_PERSONA='rebecca'" visto/rebecca/index.html
           grep -q 'data-theme="cute"' visto/rebecca/index.html
+          grep -q 'shared-trips.js' visto/tatsu/index.html
+          grep -q 'shared-trips.js' visto/rebecca/index.html
           grep -q 'theme-preview-midnight' visto/themes.css
           grep -q 'theme-preview-cute' visto/themes.css
           grep -q 'theme-preview-paper' visto/themes.css
@@ -91,6 +98,7 @@ jobs:
           cat /tmp/visual-dom.html
           grep -q 'data-result="pass"' /tmp/visual-dom.html
           grep -q 'id="result">VISUAL_SMOKE_PASS' /tmp/visual-dom.html
+          grep -q 'vietnam=true' /tmp/visual-dom.html
       - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('visto/manifest.webmanifest','utf8'))"
       - name: Existing sync tests
