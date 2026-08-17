@@ -21,8 +21,8 @@ jobs:
         run: node --check visto/app.js
       - name: Validate history seed
         run: node --check visto/history-seed.js
-      - name: Validate concatenated app
-        run: cat visto/parts/p*.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
+      - name: Validate actual concatenated app order
+        run: cat visto/parts/p{01..11}.txt visto/parts/p13.txt visto/parts/p12.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
       - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('visto/manifest.webmanifest','utf8'))"
       - name: Existing sync tests
