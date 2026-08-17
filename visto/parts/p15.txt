@@ -1,0 +1,331 @@
+
+const S15_BUILD='20260817f';
+const S15_FLIGHT=()=>window.FLIGHT_HISTORY_SEED||{airports:{},flights:[],earthCircumferenceKm:40075};
+const S15_PHASE_LABEL={current:'旅行中',upcoming:'予定',past:'過去',archived:'Archive'};
+const S15_tripExplorer={query:'',country:'',year:'',phase:'all',mode:'cards'};
+const S15_photoUrls=new Map();
+let S15_photoCandidates=[];
+
+function S15_haversine(a,b){
+  const R=6371,toRad=v=>v*Math.PI/180;
+  const dLat=toRad(b.lat-a.lat),dLon=toRad(b.lng-a.lng);
+  const x=Math.sin(dLat/2)**2+Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+function S15_flightStats(){
+  const seed=S15_FLIGHT(),airports=seed.airports||{},flights=(seed.flights||[]).filter(f=>f.status==='flown');
+  const airline={},airport={},decorated=[];let total=0;
+  flights.forEach(f=>{
+    const a=airports[f.from],b=airports[f.to];
+    const km=a&&b?S15_haversine(a,b):0; total+=km;
+    const ar=airline[f.airline]||(airline[f.airline]={flights:0,km:0});ar.flights++;ar.km+=km;
+    [f.from,f.to].forEach(code=>{airport[code]=(airport[code]||0)+1});
+    decorated.push({...f,km});
+  });
+  return {
+    flights:decorated,totalKm:Math.round(total),
+    earthLaps:total/Number(seed.earthCircumferenceKm||40075),
+    airline,airport,
+    airlineCount:Object.keys(airline).length,
+    airportCount:Object.keys(airport).length
+  };
+}
+function S15_tripMatches(t){
+  const q=S15_tripExplorer.query.trim().toLowerCase();
+  const countries=(t.countries||inferCountries(t)).filter(Boolean),cities=getCities(t);
+  if(q){
+    const hay=[t.title,t.destination,...countries,...cities].filter(Boolean).join(' ').toLowerCase();
+    if(!hay.includes(q))return false;
+  }
+  if(S15_tripExplorer.country&&!countries.includes(S15_tripExplorer.country))return false;
+  if(S15_tripExplorer.year&&String(t.startDate||'').slice(0,4)!==S15_tripExplorer.year)return false;
+  if(S15_tripExplorer.phase!=='all'&&tripPhase(t)!==S15_tripExplorer.phase)return false;
+  return true;
+}
+function S15_allSorted(list){
+  return list.slice().sort((a,b)=>String(b.startDate||'').localeCompare(String(a.startDate||''))||String(a.id).localeCompare(String(b.id)));
+}
+function S15_exactDateKnown(t){return !String(t.dateLabel||'').includes('正確な日付')&&!String(t.dateLabel||'').includes('未記載')}
+function S15_qualityIssues(){
+  const issues=[],all=trips(),ids=new Set();
+  all.forEach(t=>{
+    if(!t.id)issues.push({level:'error',text:`IDなし: ${t.title||'Untitled'}`});
+    else if(ids.has(t.id))issues.push({level:'error',text:`Trip ID重複: ${t.id}`}); else ids.add(t.id);
+    if(t.startDate&&t.endDate&&t.startDate>t.endDate)issues.push({level:'error',text:`日付逆転: ${t.title}`});
+    if(!(t.countries||inferCountries(t)).filter(Boolean).length)issues.push({level:'warn',text:`国未設定: ${t.title}`});
+    if(t.startDate&&t.endDate&&S15_exactDateKnown(t)){
+      (t.days||[]).forEach(d=>{if(d.date&&(d.date<t.startDate||d.date>t.endDate))issues.push({level:'warn',text:`Trip期間外の予定: ${t.title} ${d.date}`})});
+    }
+    const dayIds=new Set();
+    (t.days||[]).forEach(d=>{
+      if(d.id&&dayIds.has(d.id))issues.push({level:'error',text:`Day ID重複: ${t.title} ${d.id}`}); if(d.id)dayIds.add(d.id);
+      const times=(d.items||[]).map(i=>String(i.time||'')).filter(Boolean);
+      if(times.some((v,i)=>i&&times[i-1]>v))issues.push({level:'warn',text:`時刻順不整合: ${t.title} ${d.date}`});
+    });
+  });
+  const seed=S15_FLIGHT(),flightIds=new Set();
+  (seed.flights||[]).forEach(f=>{
+    if(flightIds.has(f.id))issues.push({level:'error',text:`Flight ID重複: ${f.id}`});flightIds.add(f.id);
+    if(!seed.airports?.[f.from]||!seed.airports?.[f.to])issues.push({level:'error',text:`空港座標なし: ${f.flight||f.id} ${f.from}-${f.to}`});
+  });
+  const expected=new Set((typeof historicalTrips==='function'?historicalTrips():all.filter(t=>tripPhase(t)!=='upcoming')).flatMap(t=>(t.countries||inferCountries(t)).filter(Boolean)));
+  const actual=new Set(getCountries());
+  [...actual].filter(c=>!expected.has(c)).forEach(c=>issues.push({level:'error',text:`未来Tripが訪問済みに混入: ${c}`}));
+  return issues;
+}
+function S15_qualityHtml(){
+  const issues=S15_qualityIssues(),errors=issues.filter(x=>x.level==='error').length,warns=issues.filter(x=>x.level==='warn').length;
+  return `<details class="quality-panel" ${errors?'open':''}><summary><span>データ品質</span><b class="${errors?'bad':'good'}">${errors?`${errors} errors`:warns?`${warns} warnings`:'OK'}</b></summary><div class="quality-body">${issues.map(x=>`<div class="quality-row ${x.level}"><span>${x.level==='error'?'×':'!'}</span><span>${esc(x.text)}</span></div>`).join('')||'<div class="quality-ok">日付、重複、集計、Flight参照の整合性チェック済み</div>'}</div></details>`;
+}
+function S15_yearTimeline(list){
+  const groups={};S15_allSorted(list).forEach(t=>{const y=String(t.startDate||'不明').slice(0,4);(groups[y]=groups[y]||[]).push(t)});
+  return `<div class="trip-year-timeline" data-year-timeline>${Object.keys(groups).sort().reverse().map(y=>`<section class="year-line"><div class="year-label">${esc(y)}</div><div class="year-trips">${groups[y].map(t=>`<button class="timeline-trip" data-trip="${esc(t.id)}"><span class="timeline-flags">${flagsForTrip(t).slice(0,4).map(c=>flagImg(c,'flag-inline')).join('')}</span><span><b>${esc(tripPrimaryLabel(t))}</b><small>${esc(tripDateLabel(t))} · ${getCities(t).length} cities</small></span></button>`).join('')}</div></section>`).join('')||'<div class="empty">該当Tripなし</div>'}</div>`;
+}
+function S15_monthIntersects(t,year,month){
+  if(!t.startDate&&!t.endDate)return false;
+  const start=t.startDate||t.endDate,end=t.endDate||t.startDate;
+  const ms=`${year}-${String(month).padStart(2,'0')}-01`;
+  const last=new Date(year,month,0).getDate(),me=`${year}-${String(month).padStart(2,'0')}-${last}`;
+  return start<=me&&end>=ms;
+}
+function S15_calendar(list){
+  const year=Number(S15_tripExplorer.year)||new Date().getFullYear();
+  const months=Array.from({length:12},(_,i)=>i+1);
+  return `<div class="calendar-head"><b>${year}</b><span>${S15_tripExplorer.year?'選択年':'現在年'}のTrip</span></div><div class="trip-calendar" data-trip-calendar>${months.map(m=>{const ms=S15_allSorted(list.filter(t=>S15_monthIntersects(t,year,m)));return `<section class="calendar-month"><h3>${m}月</h3><div>${ms.map(t=>`<button data-trip="${esc(t.id)}" class="calendar-trip">${flagsForTrip(t).slice(0,2).map(c=>flagImg(c,'flag-tiny')).join('')}<span>${esc(tripPrimaryLabel(t))}</span></button>`).join('')||'<span class="calendar-empty">–</span>'}</div></section>`}).join('')}</div>`;
+}
+function S15_cardsGrouped(list){
+  const order=['current','upcoming','past','archived'];
+  return order.map(phase=>{
+    const subset=list.filter(t=>tripPhase(t)===phase);
+    const sorted=typeof sortTripsForPhase==='function'?sortTripsForPhase(subset,phase):S15_allSorted(subset);
+    return sorted.length?`<div class="section-title compact"><h2>${S15_PHASE_LABEL[phase]}</h2><span class="muted">${sorted.length} trips</span></div><div class="grid cols3" data-trip-group="${phase}">${tripCards(sorted)}</div>`:'';
+  }).join('')||'<div class="empty">条件に一致するTripなし</div>';
+}
+function S15_bindTripCards(){
+  document.querySelectorAll('[data-trip]').forEach(el=>el.onclick=()=>{selectedTripId=el.dataset.trip;renderTrips()});
+  S15_attachCardPhotos();
+}
+function S15_renderTripExplorerBody(){
+  const body=$('#tripExplorerBody');if(!body)return;
+  const list=trips().filter(S15_tripMatches);
+  body.innerHTML=S15_tripExplorer.mode==='timeline'?S15_yearTimeline(list):S15_tripExplorer.mode==='calendar'?S15_calendar(list):S15_cardsGrouped(list);
+  document.querySelectorAll('[data-view-mode]').forEach(b=>b.classList.toggle('active',b.dataset.viewMode===S15_tripExplorer.mode));
+  S15_bindTripCards();
+}
+function S15_attachTripControls(){
+  const q=$('#tripSearch'),country=$('#tripCountry'),year=$('#tripYear'),phase=$('#tripPhase');
+  if(q)q.oninput=()=>{S15_tripExplorer.query=q.value;S15_renderTripExplorerBody()};
+  if(country)country.onchange=()=>{S15_tripExplorer.country=country.value;S15_renderTripExplorerBody()};
+  if(year)year.onchange=()=>{S15_tripExplorer.year=year.value;S15_renderTripExplorerBody()};
+  if(phase)phase.onchange=()=>{S15_tripExplorer.phase=phase.value;S15_renderTripExplorerBody()};
+  document.querySelectorAll('[data-view-mode]').forEach(b=>b.onclick=()=>{S15_tripExplorer.mode=b.dataset.viewMode;S15_renderTripExplorerBody()});
+  const n=$('#newTrip');if(n)n.onclick=()=>openTripModal();
+}
+renderTrips=function(){
+  const all=trips();
+  if(selectedTripId&&all.some(t=>t.id===selectedTripId))return renderTripDetail(activeTrip());
+  const countries=[...new Set(all.flatMap(t=>(t.countries||inferCountries(t)).filter(Boolean)))].sort();
+  const years=[...new Set(all.map(t=>String(t.startDate||'').slice(0,4)).filter(y=>/^\d{4}$/.test(y)))].sort().reverse();
+  view.innerHTML=`<div class="row wrap trips-head"><div><div class="eyebrow">TRIPS</div><div class="big">旅の記録</div><div class="muted">${all.length} trips · 検索、年表、カレンダー</div></div><button class="btn primary" id="newTrip">＋ Trip作成</button></div>
+  <section class="trip-filter-bar">
+    <label class="trip-search"><span>検索</span><input id="tripSearch" type="search" placeholder="国、都市、Trip名" value="${esc(S15_tripExplorer.query)}"></label>
+    <label><span>国</span><select id="tripCountry"><option value="">すべて</option>${countries.map(c=>`<option ${S15_tripExplorer.country===c?'selected':''}>${esc(c)}</option>`).join('')}</select></label>
+    <label><span>年</span><select id="tripYear"><option value="">すべて</option>${years.map(y=>`<option ${S15_tripExplorer.year===y?'selected':''}>${y}</option>`).join('')}</select></label>
+    <label><span>状態</span><select id="tripPhase">${[['all','すべて'],['current','旅行中'],['upcoming','予定'],['past','過去'],['archived','Archive']].map(([v,l])=>`<option value="${v}" ${S15_tripExplorer.phase===v?'selected':''}>${l}</option>`).join('')}</select></label>
+    <div class="view-switch" role="group" aria-label="表示"><button class="btn" data-view-mode="cards">カード</button><button class="btn" data-view-mode="timeline">年表</button><button class="btn" data-view-mode="calendar">カレンダー</button></div>
+  </section>
+  ${S15_qualityHtml()}
+  <div id="tripExplorerBody"></div>`;
+  S15_attachTripControls();S15_renderTripExplorerBody();
+};
+
+function S15_cityCountryMap(){
+  const out={};
+  trips().forEach(t=>{const cs=(t.countries||inferCountries(t)).filter(Boolean);if(cs.length===1)getCities(t).forEach(c=>out[c]=cs[0])});
+  Object.values(S15_FLIGHT().airports||{}).forEach(a=>{if(a.city&&a.country)out[a.city]=a.country});
+  return out;
+}
+function S15_nearestCountry(lat,lng){
+  let best=null,dist=Infinity;
+  Object.values(COUNTRY_META).forEach(c=>{if(c.lat==null||c.lng==null)return;const d=S15_haversine({lat,lng},{lat:c.lat,lng:c.lng});if(d<dist){dist=d;best=c.name}});
+  return best||'';
+}
+function S15_nearestCity(lat,lng){
+  let best='',dist=Infinity;
+  Object.entries(CITY_GEO).forEach(([city,g])=>{const d=S15_haversine({lat,lng},{lat:g[0],lng:g[1]});if(d<dist){dist=d;best=city}});
+  return dist<=200?best:'';
+}
+function S15_countryCities(name,related){
+  const map=S15_cityCountryMap(),out=new Set();
+  related.forEach(t=>getCities(t).forEach(c=>{
+    let country=map[c];
+    if(!country&&CITY_GEO[c])country=S15_nearestCountry(CITY_GEO[c][0],CITY_GEO[c][1]);
+    if(country===name)out.add(c);
+  }));
+  return [...out];
+}
+const S15_showCountryBase=showCountry;
+showCountry=async function(id,name){
+  await S15_showCountryBase(id,name);
+  const p=$('#countryPanel');if(!p)return;
+  const meta=COUNTRY_META[id]||{name},country=meta.name||name;
+  const baseTrips=typeof historicalTrips==='function'?historicalTrips():trips().filter(t=>tripPhase(t)!=='upcoming');
+  const related=baseTrips.filter(t=>(t.countries||inferCountries(t)).includes(country));
+  const cities=S15_countryCities(country,related);
+  const periodDays=related.reduce((n,t)=>n+tripDurationDays(t),0);
+  const airportCodes=Object.entries(S15_FLIGHT().airports||{}).filter(([,a])=>a.country===country).map(([c])=>c);
+  const fs=S15_flightStats().flights.filter(f=>airportCodes.includes(f.from)||airportCodes.includes(f.to));
+  p.insertAdjacentHTML('beforeend',`<section class="country-history-v4"><div class="country-mini-stats"><div><b>${related.length}</b><span>Trips</span></div><div><b>${cities.length}</b><span>Cities</span></div><div><b>${periodDays}</b><span>Trip期間日数</span></div><div><b>${fs.length}</b><span>Flights</span></div></div><div class="country-city-list">${cities.map(c=>`<span>${esc(c)}</span>`).join('')||'<span>都市記録なし</span>'}</div><div class="country-trip-list">${S15_allSorted(related).map(t=>`<button data-country-trip="${esc(t.id)}"><b>${esc(tripPrimaryLabel(t))}</b><small>${esc(tripDateLabel(t))}</small></button>`).join('')}</div></section>`);
+  p.querySelectorAll('[data-country-trip]').forEach(b=>b.onclick=()=>{selectedTripId=b.dataset.countryTrip;navigate('trips')});
+};
+
+function S15_recordedCitySegments(){
+  const seg=[];
+  (typeof historicalTrips==='function'?historicalTrips():trips()).forEach(t=>{
+    const cities=getCities(t).filter(c=>CITY_GEO[c]);
+    for(let i=1;i<cities.length;i++){
+      const a=CITY_GEO[cities[i-1]],b=CITY_GEO[cities[i]];
+      seg.push({from:{lat:a[0],lng:a[1]},to:{lat:b[0],lng:b[1]},kind:'trip',label:t.title});
+    }
+  });
+  return seg;
+}
+async function S15_renderAllRouteMap(){
+  const svg=d3.select('#allRouteMap');if(svg.empty())return;
+  const node=svg.node(),w=node.clientWidth||1000,h=node.clientHeight||430;svg.attr('viewBox',`0 0 ${w} ${h}`).selectAll('*').remove();
+  const projection=d3.geoNaturalEarth1().fitExtent([[12,12],[w-12,h-12]],{type:'Sphere'});
+  const path=d3.geoPath(projection);
+  svg.append('path').datum({type:'Sphere'}).attr('d',path).attr('class','route-ocean');
+  try{
+    let land=worldData;
+    if(!land){const topo=await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r=>r.json());land=topojson.feature(topo,topo.objects.countries).features}
+    svg.append('g').selectAll('path').data(land).join('path').attr('d',path).attr('class','route-land');
+  }catch{}
+  const seed=S15_FLIGHT(),stats=S15_flightStats();
+  const flightSeg=stats.flights.map(f=>({from:seed.airports[f.from],to:seed.airports[f.to],kind:'flight',label:`${f.flight||f.airline} ${f.from}-${f.to}`}));
+  const segments=[...S15_recordedCitySegments(),...flightSeg].filter(s=>s.from&&s.to);
+  const lineGeo=s=>{
+    const inter=d3.geoInterpolate([s.from.lng,s.from.lat],[s.to.lng,s.to.lat]);
+    return {type:'LineString',coordinates:d3.range(0,1.001,.04).map(inter)};
+  };
+  svg.append('g').attr('class','recorded-routes').selectAll('path').data(segments.filter(s=>s.kind==='trip')).join('path').attr('d',s=>path(lineGeo(s))).attr('class','route-line route-trip');
+  svg.append('g').attr('class','flight-routes').selectAll('path').data(segments.filter(s=>s.kind==='flight')).join('path').attr('d',s=>path(lineGeo(s))).attr('class','route-line route-flight');
+  const airportEntries=Object.entries(seed.airports||{}).filter(([code])=>stats.airport[code]);
+  svg.append('g').selectAll('circle').data(airportEntries).join('circle').attr('cx',d=>projection([d[1].lng,d[1].lat])?.[0]).attr('cy',d=>projection([d[1].lng,d[1].lat])?.[1]).attr('r',d=>2+Math.min(4,(stats.airport[d[0]]||0)*.25)).attr('class','route-airport');
+  svg.attr('data-route-count',segments.length);
+}
+const S15_renderGlobeBase=renderGlobe;
+renderGlobe=function(){
+  S15_renderGlobeBase();
+  const stats=S15_flightStats(),metric=view.querySelector('.metric-strip');
+  const html=`<section class="route-section"><div class="section-title route-title"><div><div class="eyebrow">TRAVEL ROUTES</div><h2>これまでの移動</h2></div><span class="muted">航空ルートはGmail確認済み、都市間は記録順</span></div><div class="route-metrics"><div><b>${stats.totalKm.toLocaleString()}</b><span>km flown</span></div><div><b>${stats.earthLaps.toFixed(2)}</b><span>地球周</span></div><div><b>${stats.flights.length}</b><span>Flights</span></div><div><b>${stats.airportCount}</b><span>Airports</span></div></div><div class="all-route-map"><svg id="allRouteMap" aria-label="全旅行ルート"></svg></div></section>`;
+  if(metric)metric.insertAdjacentHTML('afterend',html);else view.insertAdjacentHTML('beforeend',html);
+  S15_renderAllRouteMap();
+};
+
+function S15_airlineRows(stats){
+  return Object.entries(stats.airline).sort((a,b)=>b[1].km-a[1].km).map(([name,v])=>`<div class="rank-row"><span>${esc(name)}</span><b>${v.flights} flights</b><em>${Math.round(v.km).toLocaleString()} km</em></div>`).join('');
+}
+function S15_airportRows(stats){
+  const seed=S15_FLIGHT();
+  return Object.entries(stats.airport).sort((a,b)=>b[1]-a[1]).map(([code,n])=>{const a=seed.airports[code]||{};return `<div class="rank-row"><span><b>${code}</b> ${esc(a.city||'')}</span><b>${n} uses</b><em>${esc(a.name||'')}</em></div>`}).join('');
+}
+function S15_flightLog(stats){
+  return stats.flights.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(f=>`<div class="flight-row"><time>${esc(f.date)}</time><div><b>${esc(f.flight||f.airline)}</b><span>${esc(f.airline)}</span></div><strong>${f.from}<span>→</span>${f.to}</strong><em>${Math.round(f.km).toLocaleString()} km</em></div>`).join('');
+}
+const S15_renderPassportBase=renderPassport;
+renderPassport=function(){
+  S15_renderPassportBase();
+  const stats=S15_flightStats();
+  window.__tripOSMetrics={flightKm:stats.totalKm,earthLaps:Number(stats.earthLaps.toFixed(3)),flights:stats.flights.length,airlines:stats.airlineCount,airports:stats.airportCount};
+  const flightSection=`<section class="flight-insights" id="flightInsights"><div class="section-title"><div><div class="eyebrow">FLIGHT HISTORY</div><h2>移動実績</h2></div><span class="muted">Gmailと旅行記録で確認できた搭乗分のみ</span></div><div class="flight-metrics"><div data-flight-km="${stats.totalKm}"><b>${stats.totalKm.toLocaleString()}</b><span>飛行距離 km</span></div><div data-earth-laps="${stats.earthLaps.toFixed(3)}"><b>${stats.earthLaps.toFixed(2)}</b><span>地球周</span></div><div><b>${stats.flights.length}</b><span>Flights</span></div><div><b>${stats.airlineCount}</b><span>Airlines</span></div><div><b>${stats.airportCount}</b><span>Airports</span></div></div><div class="flight-columns"><div class="flight-panel"><h3>航空会社</h3>${S15_airlineRows(stats)}</div><div class="flight-panel"><h3>空港</h3>${S15_airportRows(stats)}</div></div><details class="flight-log"><summary>全フライト ${stats.flights.length}件</summary><div>${S15_flightLog(stats)}</div></details></section>`;
+  const photoSection=`<section class="photo-discovery"><div><div class="eyebrow">PHOTO DISCOVERY</div><h2>写真からTripを復元</h2><p>EXIFの日時とGPSを端末内で解析して、旅行候補をまとめる</p></div><button class="btn primary" id="discoverTripsFromPhotos">写真を選ぶ</button></section>`;
+  const firstSection=view.querySelector('.passport-v3');
+  if(firstSection)firstSection.insertAdjacentHTML('afterend',flightSection+photoSection);else view.insertAdjacentHTML('afterbegin',flightSection+photoSection);
+  const b=$('#discoverTripsFromPhotos');if(b)b.onclick=S15_openPhotoTripDiscovery;
+};
+
+async function S15_attachCardPhotos(){
+  const metas=state.travelOS.photoMeta||[];
+  const byTrip=new Map();metas.forEach(m=>{if(m.tripId&&!byTrip.has(m.tripId))byTrip.set(m.tripId,m)});
+  for(const card of document.querySelectorAll('.trip-card-v3[data-trip]')){
+    if(card.querySelector('.trip-cover-photo'))continue;
+    const meta=byTrip.get(card.dataset.trip);if(!meta)continue;
+    try{
+      const blob=await idbGet(meta.id);if(!blob)continue;
+      let url=S15_photoUrls.get(meta.id);if(!url){url=URL.createObjectURL(blob);S15_photoUrls.set(meta.id,url)}
+      card.classList.add('has-photo','memory-photo-card');
+      card.insertAdjacentHTML('afterbegin',`<img class="trip-cover-photo" src="${url}" alt="">`);
+    }catch{}
+  }
+}
+async function S15_attachTripPhotoHero(t){
+  const meta=(state.travelOS.photoMeta||[]).find(m=>m.tripId===t.id);if(!meta)return;
+  try{
+    const blob=await idbGet(meta.id);if(!blob)return;
+    let url=S15_photoUrls.get(meta.id);if(!url){url=URL.createObjectURL(blob);S15_photoUrls.set(meta.id,url)}
+    const header=view.querySelector('.trip-detail-v3');if(header&&!view.querySelector('.trip-memory-hero'))header.insertAdjacentHTML('beforebegin',`<div class="trip-memory-hero"><img src="${url}" alt=""><div><span>MEMORY</span><b>${esc(tripPrimaryLabel(t))}</b></div></div>`);
+  }catch{}
+}
+const S15_renderTripDetailBase=renderTripDetail;
+renderTripDetail=function(t){S15_renderTripDetailBase(t);S15_attachTripPhotoHero(t)};
+
+function S15_clusterPhotos(items){
+  const sorted=items.filter(x=>x.date).sort((a,b)=>a.date-b.date),groups=[];
+  sorted.forEach(x=>{
+    const prev=groups.at(-1)?.at(-1),gap=prev?(x.date-prev.date)/86400000:Infinity;
+    if(!groups.length||gap>3)groups.push([x]);else groups.at(-1).push(x);
+  });
+  return groups.filter(g=>g.length);
+}
+function S15_candidateFromGroup(group,index){
+  const cityCountry=S15_cityCountryMap(),cities={},countries={};
+  group.forEach(x=>{
+    if(x.city)cities[x.city]=(cities[x.city]||0)+1;
+    const c=x.city&&cityCountry[x.city]?cityCountry[x.city]:x.country;
+    if(c)countries[c]=(countries[c]||0)+1;
+  });
+  const pick=o=>Object.entries(o).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
+  const start=group[0].date.toISOString().slice(0,10),end=group.at(-1).date.toISOString().slice(0,10);
+  return {id:`candidate-${index}`,start,end,city:pick(cities),country:pick(countries),cities:Object.keys(cities),items:group};
+}
+async function S15_parsePhotoFiles(files){
+  const out=[];
+  for(const f of files){
+    let ex=null;try{ex=await exifr.parse(f,{gps:true,tiff:true,exif:true})}catch{}
+    const date=ex?.DateTimeOriginal||ex?.CreateDate||new Date(f.lastModified||0);
+    const validDate=date&&Number.isFinite(new Date(date).getTime());if(!validDate)continue;
+    const lat=Number(ex?.latitude),lng=Number(ex?.longitude),hasGps=Number.isFinite(lat)&&Number.isFinite(lng);
+    const city=hasGps?S15_nearestCity(lat,lng):'',country=city&&S15_cityCountryMap()[city]?S15_cityCountryMap()[city]:(hasGps?S15_nearestCountry(lat,lng):'');
+    out.push({file:f,date:new Date(date),lat:hasGps?lat:null,lng:hasGps?lng:null,city,country});
+  }
+  return out;
+}
+function S15_renderPhotoCandidates(){
+  const el=$('#photoCandidateResult');if(!el)return;
+  el.innerHTML=S15_photoCandidates.map((c,i)=>`<div class="photo-candidate"><div><span>${c.items.length} photos</span><h3>${esc(c.city||c.country||'場所未判定')}</h3><p>${esc(c.start)} → ${esc(c.end)} · ${esc(c.country||'国未判定')}</p></div><button class="btn primary" data-create-photo-trip="${i}">Trip作成</button></div>`).join('')||'<div class="empty">日時を取得できる写真がありません</div>';
+  el.querySelectorAll('[data-create-photo-trip]').forEach(b=>b.onclick=()=>S15_createTripFromPhotoCandidate(Number(b.dataset.createPhotoTrip)));
+}
+async function S15_createTripFromPhotoCandidate(index){
+  const c=S15_photoCandidates[index];if(!c)return;
+  const t={id:uid('trip'),title:`${c.city||c.country||'Photo'} ${c.start.slice(0,4)}`,destination:c.city||c.country||'',countries:[c.country].filter(Boolean),cities:c.cities,startDate:c.start,endDate:c.end,budget:0,status:'写真から復元',archived:false,todos:[],pois:[],days:[],expenses:[],mood:`写真 ${c.items.length}枚のEXIFから作成`};
+  state.base.trips.push(t);
+  for(const x of c.items){
+    const id=uid('photo'),meta={id,tripId:t.id,name:x.file.name,takenAt:x.date.toISOString(),lat:x.lat,lng:x.lng,country:x.country||c.country,city:x.city||''};
+    state.travelOS.photoMeta.push(meta);try{await idbPut(id,x.file)}catch{}
+  }
+  normalize();saveLocal();selectedTripId=t.id;closeModal();navigate('trips');toast(`Tripを作成しました · ${c.items.length} photos`);
+}
+function S15_openPhotoTripDiscovery(){
+  modal(`<div class="row"><div><div class="eyebrow">PHOTO → TRIP</div><h2 style="margin:4px 0">写真からTrip候補を作る</h2></div><button class="btn ghost" id="mClose">×</button></div><div class="list-item"><b>画像は端末内だけで解析</b><div class="muted">撮影日時とGPSで3日以内の写真を旅行候補へまとめる。作成するまでTripデータは変更しない</div></div><div class="field" style="margin-top:12px"><label>写真を複数選択</label><input type="file" id="discoverPhotoFiles" accept="image/*" multiple></div><button class="btn primary" id="analyzePhotoTrips" style="width:100%;margin-top:12px">解析</button><div id="photoCandidateStatus" class="muted" style="margin-top:10px"></div><div id="photoCandidateResult" class="photo-candidate-list"></div>`);
+  $('#mClose').onclick=closeModal;
+  $('#analyzePhotoTrips').onclick=async()=>{
+    const files=[...($('#discoverPhotoFiles')?.files||[])];if(!files.length)return;
+    $('#photoCandidateStatus').textContent=`${files.length}枚を解析中`;
+    const parsed=await S15_parsePhotoFiles(files),groups=S15_clusterPhotos(parsed);
+    S15_photoCandidates=groups.map(S15_candidateFromGroup);
+    $('#photoCandidateStatus').textContent=`${parsed.length}枚解析 · ${S15_photoCandidates.length}候補`;
+    S15_renderPhotoCandidates();
+  };
+}
+window.__tripOSMetrics=(()=>{const s=S15_flightStats();return{flightKm:s.totalKm,earthLaps:Number(s.earthLaps.toFixed(3)),flights:s.flights.length,airlines:s.airlineCount,airports:s.airportCount}})();
