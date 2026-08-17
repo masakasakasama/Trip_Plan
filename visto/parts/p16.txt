@@ -1,0 +1,9 @@
+
+const S16_renderNavBase=renderNav;
+renderNav=function(){
+  S16_renderNavBase();
+  document.querySelectorAll('[data-nav="trips"]').forEach(b=>b.onclick=()=>{
+    selectedTripId='';
+    navigate('trips');
+  });
+};
