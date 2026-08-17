@@ -45,11 +45,14 @@ setTimeout(async()=>{
     const rf=document.getElementById('rebecca'),rd=rf.contentDocument,rw=rf.contentWindow;
     const rebeccaLoaded=rw.TRIP_OS_PERSONA==='rebecca'&&rd.body.dataset.theme==='cute';
     const rebeccaNav=[...rd.querySelectorAll('#bottomNav .bottom-label')].map(x=>x.textContent.trim()).join(',')==='地図,旅行,今日,記録,その他';
+    const sharedIds=rw.__tripOSSharedTripIds||[];
+    rd.querySelector('#sideNav [data-nav="trips"]')?.click(); await wait(250);
+    const rebeccaVietnam=!!rd.querySelector('[data-trip="history-vietnam-2025-04"]')&&sharedIds.includes('history-vietnam-2025-04');
     rd.querySelector('#sideNav [data-nav="passport"]')?.click(); await wait(250);
     const rebeccaFlights=(rw.__tripOSMetrics||{}).flights===0;
 
-    const ok=initialCards.length>=2&&imgs.length>=2&&!letterGlyph&&dimensions&&loaded&&initialChronological&&routeCount>=37&&flightPaths===37&&gControls&&rControls&&backsideFaint&&noRouteNote&&navOk&&cloudOnly&&themeDefault&&filterBar&&quality&&chronological&&thailandNotAheadOf2024&&timeline&&calendar&&flightOk&&photoDiscovery&&settingsOk&&rebeccaLoaded&&rebeccaNav&&rebeccaFlights;
-    out.textContent=ok?`VISUAL_SMOKE_PASS cards=${tripCards.length} flags=${imgs.length} routes=${routeCount} flights=${metrics.flights} km=${km} laps=${laps.toFixed(2)} backside=${backside.length} nav=${mobileLabels} rebecca=${rebeccaLoaded}`:`VISUAL_SMOKE_FAIL cards=${tripCards.length} flags=${imgs.length} glyph=${letterGlyph} loaded=${loaded} order=${initialChronological}/${chronological} routes=${routeCount}/${flightPaths} zoom=${gControls}/${rControls} backside=${backside.length}/${backsideFaint} note=${noRouteNote} nav=${mobileLabels}/${navOk} cloud=${cloudOnly} theme=${themeDefault} filter=${filterBar} quality=${quality} timeline=${timeline} calendar=${calendar} flight=${flightOk} photo=${photoDiscovery} settings=${settingsOk} rebecca=${rebeccaLoaded}/${rebeccaNav}/${rebeccaFlights}`;
+    const ok=initialCards.length>=2&&imgs.length>=2&&!letterGlyph&&dimensions&&loaded&&initialChronological&&routeCount>=37&&flightPaths===37&&gControls&&rControls&&backsideFaint&&noRouteNote&&navOk&&cloudOnly&&themeDefault&&filterBar&&quality&&chronological&&thailandNotAheadOf2024&&timeline&&calendar&&flightOk&&photoDiscovery&&settingsOk&&rebeccaLoaded&&rebeccaNav&&rebeccaVietnam&&rebeccaFlights;
+    out.textContent=ok?`VISUAL_SMOKE_PASS cards=${tripCards.length} flags=${imgs.length} routes=${routeCount} flights=${metrics.flights} km=${km} laps=${laps.toFixed(2)} backside=${backside.length} nav=${mobileLabels} rebecca=${rebeccaLoaded} vietnam=${rebeccaVietnam}`:`VISUAL_SMOKE_FAIL cards=${tripCards.length} flags=${imgs.length} glyph=${letterGlyph} loaded=${loaded} order=${initialChronological}/${chronological} routes=${routeCount}/${flightPaths} zoom=${gControls}/${rControls} backside=${backside.length}/${backsideFaint} note=${noRouteNote} nav=${mobileLabels}/${navOk} cloud=${cloudOnly} theme=${themeDefault} filter=${filterBar} quality=${quality} timeline=${timeline} calendar=${calendar} flight=${flightOk} photo=${photoDiscovery} settings=${settingsOk} rebecca=${rebeccaLoaded}/${rebeccaNav}/${rebeccaVietnam}/${rebeccaFlights}`;
     document.body.dataset.result=ok?'pass':'fail';
   }catch(e){out.textContent='VISUAL_SMOKE_FAIL '+e;document.body.dataset.result='fail'}
 },8500);
