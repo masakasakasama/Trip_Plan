@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><title>Trip OS visual smoke</title><style>body{font-family:system-ui;background:#111;color:#fff}iframe{width:1280px;height:900px;border:0}</style><div id="result">RUNNING</div><iframe id="app" src="./"></iframe><script>
+const out=document.getElementById('result');
+setTimeout(()=>{
+  try{
+    const d=document.getElementById('app').contentDocument;
+    const cards=[...d.querySelectorAll('.trip-card-v3')];
+    const flagBoxes=[...d.querySelectorAll('.trip-card-v3 .trip-flag')];
+    const imgs=[...d.querySelectorAll('.trip-card-v3 .trip-flag img.flag-img')];
+    const letterGlyph=flagBoxes.some(el=>/^(AU|PH|US|JP|DE|TH|FR|BE|NL|PL|TR|CN|KR|HK|VN)$/i.test(el.textContent.trim()));
+    const dimensions=imgs.every(img=>{const r=img.getBoundingClientRect();return r.width>=50&&r.height>=30});
+    const loaded=imgs.length>=2&&imgs.slice(0,2).every(img=>img.complete&&img.naturalWidth>0);
+    const ok=cards.length>=2&&imgs.length>=2&&!letterGlyph&&dimensions&&loaded;
+    out.textContent=ok?`VISUAL_SMOKE_PASS cards=${cards.length} flags=${imgs.length}`:`VISUAL_SMOKE_FAIL cards=${cards.length} flags=${imgs.length} glyph=${letterGlyph} dimensions=${dimensions} loaded=${loaded}`;
+    document.body.dataset.result=ok?'pass':'fail';
+  }catch(e){out.textContent='VISUAL_SMOKE_FAIL '+e;document.body.dataset.result='fail'}
+},6000);
+</script>
