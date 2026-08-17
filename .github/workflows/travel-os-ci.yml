@@ -22,12 +22,18 @@ jobs:
       - name: Validate history seed
         run: node --check visto/history-seed.js
       - name: Validate actual concatenated app order
-        run: cat visto/parts/p{01..11}.txt visto/parts/p13.txt visto/parts/p12.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
+        run: cat visto/parts/p{01..11}.txt visto/parts/p13.txt visto/parts/p14.txt visto/parts/p12.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
       - name: Validate real flag implementation
         run: |
           grep -q 'flagcdn.com/w80/' visto/parts/p13.txt
           grep -q 'flag-fix.css' visto/index.html
           ! grep -q "FLAG_FALLBACK" visto/parts/p13.txt
+      - name: Validate ordering safeguards
+        run: |
+          grep -q 'sortTripsForPhase' visto/parts/p14.txt
+          grep -q 'data-trip-group' visto/parts/p14.txt
+          grep -q 'tripPhase(t)!=='"'"'upcoming'"'"'' visto/parts/p14.txt
+          grep -q 't.days.sort' visto/parts/p14.txt
       - name: Browser visual smoke
         run: |
           python3 -m http.server 4173 --directory . >/tmp/trip-os-http.log 2>&1 &
