@@ -1,0 +1,100 @@
+
+function localDateKey(date=new Date()){
+  const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+function tripSortValue(t){
+  const raw=t?.startDate||t?.endDate||'';
+  const ms=raw?Date.parse(`${raw}T12:00:00`):NaN;
+  if(Number.isFinite(ms))return ms;
+  const text=String(t?.dateLabel||t?.title||'');
+  const m=text.match(/(20\d{2})[^0-9]?(0?[1-9]|1[0-2])?/);
+  return m?Date.UTC(Number(m[1]),Math.max(0,Number(m[2]||1)-1),1):0;
+}
+tripPhase=function(t){
+  const today=localDateKey();
+  if(t?.archived)return'archived';
+  if(t?.startDate&&today<t.startDate)return'upcoming';
+  if(t?.endDate&&today>t.endDate)return'past';
+  if(t?.startDate||t?.endDate)return'current';
+  return String(t?.status||'').includes('過去')?'past':'current';
+};
+function sortTripsForPhase(list,phase){
+  const dir=phase==='upcoming'?1:-1;
+  return [...list].sort((a,b)=>{
+    const diff=(tripSortValue(a)-tripSortValue(b))*dir;
+    if(diff)return diff;
+    return String(a.title||'').localeCompare(String(b.title||''),'ja');
+  });
+}
+function visitedTrips(){return sortTripsForPhase(trips().filter(t=>!t.archived&&tripPhase(t)!=='upcoming'),'past')}
+
+inferCountries=function(t){
+  if(Array.isArray(t?.countries)&&t.countries.length)return t.countries;
+  const text=((t?.destination||'')+' '+(t?.title||'')).toLowerCase();
+  const arr=[];
+  Object.values(COUNTRY_META).forEach(m=>{if(text.includes(m.name.toLowerCase()))arr.push(m.name)});
+  if(t?.id==='australia-2026'||t?.id==='demo-australia')return ['Australia','Philippines'];
+  return arr;
+};
+getCountries=function(){
+  const out=[];
+  visitedTrips().forEach(t=>(t.countries||inferCountries(t)).forEach(c=>{if(c&&!out.includes(c))out.push(c)}));
+  return out;
+};
+
+const _normalizeConsistent=normalize;
+normalize=function(){
+  _normalizeConsistent();
+  trips().forEach(t=>{
+    if(Array.isArray(t.days)){
+      t.days.sort((a,b)=>String(a.date||'9999-99-99').localeCompare(String(b.date||'9999-99-99')));
+      t.days.forEach(d=>{if(Array.isArray(d.items))d.items.sort((a,b)=>String(a.time||'99:99').localeCompare(String(b.time||'99:99')))});
+    }
+  });
+};
+
+tripCards=function(list){return list.map(t=>{const cs=t.countries||inferCountries(t),countries=flagsForTrip(t),destination=tripPrimaryLabel(t),date=tripDateLabel(t),days=tripDurationDays(t),status=statusLabel(t),hasPhoto=!!t.cover,phase=tripPhase(t);return `<article class="trip-card-v3 ${hasPhoto?'has-photo':''}" data-trip="${t.id}" data-start="${esc(t.startDate||'')}" data-phase="${phase}">${hasPhoto?`<img class="trip-cover-photo" src="${esc(t.cover)}" alt="">`:''}<div class="trip-card-v3-head">${flagStackHtml(countries,'trip-card-flags')}<span class="trip-year">${esc(tripYearLabel(t))}</span></div><div class="trip-card-v3-main"><div class="trip-destination">${esc(destination)}</div><div class="trip-country-name">${esc(cs.join(' · '))}</div><div class="trip-date">${esc(date)}</div></div><div class="trip-card-v3-foot"><span>${getCities(t).length} cities</span><span>${days} days</span><span class="trip-status ${status==='旅行中'?'now':''}">${esc(status)}</span></div></article>`}).join('')||'<div class="empty">Tripがありません</div>'};
+
+renderTrips=function(){
+  const all=trips();
+  if(selectedTripId&&all.some(t=>t.id===selectedTripId))return renderTripDetail(activeTrip());
+  const groups=[['current','旅行中'],['upcoming','予定'],['past','過去'],['archived','Archive']];
+  view.innerHTML=`<div class="row wrap"><div><div class="eyebrow">TRIPS</div><div class="big">旅を計画して<br>記録まで残す</div></div><button class="btn primary" id="newTrip">＋ Trip作成</button></div>${groups.map(([key,label])=>{const list=sortTripsForPhase(all.filter(t=>tripPhase(t)===key),key);return list.length?`<div class="section-title"><h2>${label}</h2><span class="muted">${list.length} trips</span></div><div class="grid cols3" data-trip-group="${key}">${tripCards(list)}</div>`:''}).join('')||'<div class="empty">Tripがありません</div>'}`;
+  $('#newTrip').onclick=()=>openTripModal();
+  document.querySelectorAll('[data-trip]').forEach(c=>c.onclick=()=>{selectedTripId=c.dataset.trip;renderTrips()});
+};
+
+passportStats=function(){
+  const live=[...visitedTrips()].sort((a,b)=>tripSortValue(a)-tripSortValue(b));
+  const countryCounts={},countryDays={},continentCounts={};
+  live.forEach(t=>{const cs=t.countries||inferCountries(t);const days=tripDurationDays(t);cs.forEach(c=>{countryCounts[c]=(countryCounts[c]||0)+1;countryDays[c]=(countryDays[c]||0)+days;const id=NAME_TO_ID[c.toLowerCase()],cont=COUNTRY_META[id]?.continent||'Other';continentCounts[cont]=(continentCounts[cont]||0)+1})});
+  const entries=Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  return{live,countryCounts,countryDays,continentCounts,first:live[0],latest:live.at(-1),most:entries[0]?.[0]||'-'};
+};
+
+renderGlobe=function(){
+  const visited=getCountries(),liveTrips=visitedTrips(),cityCount=new Set(liveTrips.flatMap(getCities)).size;
+  view.innerHTML=`<section class="world-head"><div><div class="eyebrow">YOUR WORLD</div><div class="world-count">${visited.length}<span> countries</span></div><div class="world-copy">${coverage()}% explored · ${liveTrips.length} trips · ${cityCount} cities</div></div><div class="world-head-actions"><button class="btn" onclick="window._navBucket()">☆ Bucket</button><button class="btn" id="shareWorld">共有</button></div></section><div class="flag-rail flag-rail-large">${visited.map(c=>`<span class="flag-dot" title="${esc(c)}">${flagImg(c)}</span>`).join('')}</div><section class="world-stage"><div class="world-stage-copy"><span class="stage-label">VISITED</span><strong>${visited.length}</strong><span>of ${COUNTRY_TOTAL} countries</span></div><svg id="globe"></svg><div id="countryPanel" class="country-panel hidden"></div></section><section class="metric-strip"><div><span>Trips</span><b>${liveTrips.length}</b></div><div><span>Cities</span><b>${cityCount}</b></div><div><span>Countries</span><b>${visited.length}</b></div><div><span>Coverage</span><b>${coverage()}%</b></div></section><div class="section-title"><h2>最近のTrip</h2><button class="btn" onclick="window._navTrips()">すべて見る</button></div><div class="grid cols3">${tripCards(sortTripsForPhase(liveTrips,'past').slice(0,6))}</div>`;
+  drawGlobe();const share=$('#shareWorld');if(share)share.onclick=()=>shareCurrent();
+};
+
+function tripLocalClock(t){
+  const id=tripCountryIds(t)[0],tz=COUNTRY_META[id]?.tz||Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
+  const o=Object.fromEntries(parts.map(p=>[p.type,p.value]));
+  return{date:`${o.year}-${o.month}-${o.day}`,minutes:Number(o.hour)*60+Number(o.minute),tz};
+}
+renderToday=function(){
+  const current=sortTripsForPhase(trips().filter(t=>tripPhase(t)==='current'),'current');
+  if(!current.length){
+    const upcoming=sortTripsForPhase(trips().filter(t=>tripPhase(t)==='upcoming'),'upcoming')[0];
+    view.innerHTML=upcoming?`<div class="eyebrow">TODAY MODE</div><div class="big">旅行中のTripはありません</div><div class="card card-pad" style="margin-top:18px"><div class="muted">次のTrip</div><div class="big" style="font-size:28px">${esc(upcoming.title)}</div><div class="muted">${esc(tripDateLabel(upcoming))}</div></div>`:'<div class="empty">現在進行中のTripはありません</div>';
+    return;
+  }
+  const t=current[0],clock=tripLocalClock(t),days=[...(t.days||[])].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  let d=days.find(x=>x.date===clock.date)||days.find(x=>x.date>=clock.date)||days.at(-1),items=[...(d?.items||[])].sort((a,b)=>String(a.time||'99:99').localeCompare(String(b.time||'99:99')));
+  let next=items.find(i=>{const m=String(i.time||'').match(/(\d{1,2}):(\d{2})/);return m&&Number(m[1])*60+Number(m[2])>=clock.minutes})||items[0];
+  view.innerHTML=`<div class="eyebrow">TODAY MODE · ${esc(clock.tz)}</div><div class="big">${esc(t.title)}</div><div class="muted">${d?fmtDate(d.date):'予定なし'} ${esc(d?.title||'')}</div>${next?`<div class="card card-pad today-next" style="margin-top:18px"><div class="eyebrow">NEXT</div><div class="big">${esc(next.time||'')} ${esc(next.title||'')}</div><div class="muted">${esc(next.memo||'')}</div><div class="row wrap" style="margin-top:14px"><button class="btn primary" id="routeNext">Google Maps</button><span class="pill">JST ${esc(next.homeTime||'--:--')}</span></div></div>`:''}<div class="section-title"><h2>この日の予定</h2></div><div class="timeline">${items.map(i=>`<div class="event"><div class="dot">${i===next?'→':'•'}</div><div class="event-box"><strong>${esc(i.time||'')} ${esc(i.title||'')}</strong><div class="event-meta">${esc(i.timezone||'')} ${i.homeTime?`· JST ${esc(i.homeTime)}`:''}</div></div></div>`).join('')||'<div class="empty">予定なし</div>'}</div>`;
+  if(next)$('#routeNext').onclick=()=>openMaps(resolveItemQuery(t,next));
+};

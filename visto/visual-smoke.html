@@ -9,8 +9,11 @@ setTimeout(()=>{
     const letterGlyph=flagBoxes.some(el=>/^(AU|PH|US|JP|DE|TH|FR|BE|NL|PL|TR|CN|KR|HK|VN)$/i.test(el.textContent.trim()));
     const dimensions=imgs.every(img=>{const r=img.getBoundingClientRect();return r.width>=50&&r.height>=30});
     const loaded=imgs.length>=2&&imgs.slice(0,2).every(img=>img.complete&&img.naturalWidth>0);
-    const ok=cards.length>=2&&imgs.length>=2&&!letterGlyph&&dimensions&&loaded;
-    out.textContent=ok?`VISUAL_SMOKE_PASS cards=${cards.length} flags=${imgs.length}`:`VISUAL_SMOKE_FAIL cards=${cards.length} flags=${imgs.length} glyph=${letterGlyph} dimensions=${dimensions} loaded=${loaded}`;
+    const starts=cards.map(c=>c.dataset.start).filter(Boolean);
+    const chronological=starts.every((v,i)=>i===0||starts[i-1]>=v);
+    const thailandNotAheadOf2024=!starts.includes('2020-01-31')||starts.findIndex(v=>v==='2020-01-31')>starts.findIndex(v=>v.startsWith('2024-'));
+    const ok=cards.length>=2&&imgs.length>=2&&!letterGlyph&&dimensions&&loaded&&chronological&&thailandNotAheadOf2024;
+    out.textContent=ok?`VISUAL_SMOKE_PASS cards=${cards.length} flags=${imgs.length} order=${starts.join(',')}`:`VISUAL_SMOKE_FAIL cards=${cards.length} flags=${imgs.length} glyph=${letterGlyph} dimensions=${dimensions} loaded=${loaded} chronological=${chronological} starts=${starts.join(',')}`;
     document.body.dataset.result=ok?'pass':'fail';
   }catch(e){out.textContent='VISUAL_SMOKE_FAIL '+e;document.body.dataset.result='fail'}
 },6000);
