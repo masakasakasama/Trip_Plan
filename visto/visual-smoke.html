@@ -1,4 +1,4 @@
-<!doctype html><meta charset="utf-8"><title>Trip OS visual smoke</title><style>body{font-family:system-ui;background:#111;color:#fff}iframe{width:1280px;height:900px;border:0}</style><div id="result">RUNNING</div><iframe id="app" src="./"></iframe><script>
+<!doctype html><meta charset="utf-8"><title>Trip OS visual smoke</title><style>body{font-family:system-ui;background:#111;color:#fff}iframe{width:1280px;height:900px;border:0}.hidden{position:absolute;left:-99999px;width:800px;height:700px}</style><div id="result">RUNNING</div><iframe id="app" src="./"></iframe><iframe id="rebecca" class="hidden" src="./rebecca/"></iframe><script>
 const out=document.getElementById('result');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 setTimeout(async()=>{
@@ -14,27 +14,43 @@ setTimeout(async()=>{
     const initialChronological=initialStarts.every((v,i)=>i===0||initialStarts[i-1]>=v);
     const routeCount=Number(d.querySelector('#allRouteMap')?.dataset.routeCount||0);
     const flightPaths=d.querySelectorAll('#allRouteMap .route-flight').length;
+    const gControls=d.querySelectorAll('.globe-zoom-controls button').length===3;
+    const rControls=d.querySelectorAll('.route-zoom-controls button').length===3;
+    const backside=[...d.querySelectorAll('#globe .globe-city.backside')];
+    const backsideFaint=backside.length>0&&backside.every(x=>Number(x.getAttribute('opacity')||1)<.1);
+    const noRouteNote=!d.body.textContent.includes('航空ルートはGmail確認済み')&&!d.body.textContent.includes('都市間は記録順');
+    const mobileLabels=[...d.querySelectorAll('#bottomNav .bottom-label')].map(x=>x.textContent.trim()).join(',');
+    const navOk=mobileLabels==='地図,旅行,今日,記録,その他';
+    const cloudOnly=localStorage.getItem('trip-os-demo-v1')===null;
+    const themeDefault=d.body.dataset.theme==='midnight'&&w.TRIP_OS_PERSONA==='tatsu';
 
-    d.querySelector('[data-nav="trips"]')?.click(); await wait(350);
+    d.querySelector('#sideNav [data-nav="trips"]')?.click(); await wait(350);
     const filterBar=!!d.querySelector('.trip-filter-bar'),quality=!!d.querySelector('.quality-panel');
     const tripCards=[...d.querySelectorAll('.trip-card-v3')],starts=tripCards.map(c=>c.dataset.start).filter(Boolean);
     const chronological=starts.every((v,i)=>i===0||starts[i-1]>=v);
     const thailandNotAheadOf2024=!starts.includes('2020-01-31')||starts.findIndex(v=>v==='2020-01-31')>starts.findIndex(v=>v.startsWith('2024-'));
-
     d.querySelector('[data-view-mode="timeline"]')?.click(); await wait(120);
     const timeline=!!d.querySelector('[data-year-timeline]');
     d.querySelector('[data-view-mode="calendar"]')?.click(); await wait(120);
     const calendar=!!d.querySelector('[data-trip-calendar]')&&d.querySelectorAll('.calendar-month').length===12;
 
-    d.querySelector('[data-nav="passport"]')?.click(); await wait(250);
+    d.querySelector('#sideNav [data-nav="passport"]')?.click(); await wait(250);
     const km=Number(d.querySelector('[data-flight-km]')?.dataset.flightKm||0),laps=Number(d.querySelector('[data-earth-laps]')?.dataset.earthLaps||0);
     const metrics=w.__tripOSMetrics||{};
     const flightOk=km>160000&&laps>4&&metrics.flights===37&&metrics.airlines===17&&metrics.airports===18;
     const photoDiscovery=!!d.querySelector('#discoverTripsFromPhotos');
+    d.querySelector('#sideNav [data-nav="profile"]')?.click(); await wait(120);
+    const settingsOk=d.querySelectorAll('[data-theme-choice]').length===3&&d.body.textContent.includes('自動保存 ON');
 
-    const ok=initialCards.length>=2&&imgs.length>=2&&!letterGlyph&&dimensions&&loaded&&initialChronological&&routeCount>=37&&flightPaths===37&&filterBar&&quality&&chronological&&thailandNotAheadOf2024&&timeline&&calendar&&flightOk&&photoDiscovery;
-    out.textContent=ok?`VISUAL_SMOKE_PASS cards=${tripCards.length} flags=${imgs.length} routes=${routeCount} flights=${metrics.flights} km=${km} laps=${laps.toFixed(2)} order=${starts.join(',')}`:`VISUAL_SMOKE_FAIL cards=${tripCards.length} flags=${imgs.length} glyph=${letterGlyph} loaded=${loaded} initialOrder=${initialChronological} routes=${routeCount}/${flightPaths} filter=${filterBar} quality=${quality} chrono=${chronological} timeline=${timeline} calendar=${calendar} flightOk=${flightOk} photo=${photoDiscovery} km=${km} laps=${laps}`;
+    const rf=document.getElementById('rebecca'),rd=rf.contentDocument,rw=rf.contentWindow;
+    const rebeccaLoaded=rw.TRIP_OS_PERSONA==='rebecca'&&rd.body.dataset.theme==='cute';
+    const rebeccaNav=[...rd.querySelectorAll('#bottomNav .bottom-label')].map(x=>x.textContent.trim()).join(',')==='地図,旅行,今日,記録,その他';
+    rd.querySelector('#sideNav [data-nav="passport"]')?.click(); await wait(250);
+    const rebeccaFlights=(rw.__tripOSMetrics||{}).flights===0;
+
+    const ok=initialCards.length>=2&&imgs.length>=2&&!letterGlyph&&dimensions&&loaded&&initialChronological&&routeCount>=37&&flightPaths===37&&gControls&&rControls&&backsideFaint&&noRouteNote&&navOk&&cloudOnly&&themeDefault&&filterBar&&quality&&chronological&&thailandNotAheadOf2024&&timeline&&calendar&&flightOk&&photoDiscovery&&settingsOk&&rebeccaLoaded&&rebeccaNav&&rebeccaFlights;
+    out.textContent=ok?`VISUAL_SMOKE_PASS cards=${tripCards.length} flags=${imgs.length} routes=${routeCount} flights=${metrics.flights} km=${km} laps=${laps.toFixed(2)} backside=${backside.length} nav=${mobileLabels} rebecca=${rebeccaLoaded}`:`VISUAL_SMOKE_FAIL cards=${tripCards.length} flags=${imgs.length} glyph=${letterGlyph} loaded=${loaded} order=${initialChronological}/${chronological} routes=${routeCount}/${flightPaths} zoom=${gControls}/${rControls} backside=${backside.length}/${backsideFaint} note=${noRouteNote} nav=${mobileLabels}/${navOk} cloud=${cloudOnly} theme=${themeDefault} filter=${filterBar} quality=${quality} timeline=${timeline} calendar=${calendar} flight=${flightOk} photo=${photoDiscovery} settings=${settingsOk} rebecca=${rebeccaLoaded}/${rebeccaNav}/${rebeccaFlights}`;
     document.body.dataset.result=ok?'pass':'fail';
   }catch(e){out.textContent='VISUAL_SMOKE_FAIL '+e;document.body.dataset.result='fail'}
-},6500);
+},8500);
 </script>
