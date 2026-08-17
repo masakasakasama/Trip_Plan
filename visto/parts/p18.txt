@@ -1,0 +1,16 @@
+
+const S18_SHARED_TRIP_IDS=new Set(window.TRIP_OS_SHARED_TRIPS||['australia-2026','history-vietnam-2025-04']);
+function S17_tripParticipants(t){
+  if(S18_SHARED_TRIP_IDS.has(t?.id))return ['tatsu','rebecca'];
+  if(Array.isArray(t?.participants)&&t.participants.length){
+    const clean=[...new Set(t.participants.map(x=>String(x).toLowerCase()).filter(x=>x==='tatsu'||x==='rebecca'))];
+    if(clean.length)return clean;
+  }
+  const names=(t?.travelers||[]).map(x=>String(x).toLowerCase());
+  const hasRebecca=names.some(x=>x.includes('rebecca'));
+  const hasTatsu=names.some(x=>x.includes('tatsu')||x.includes('夫')||x.includes('達也'));
+  if(hasRebecca&&hasTatsu)return ['tatsu','rebecca'];
+  if(hasRebecca&&!hasTatsu)return ['rebecca'];
+  return ['tatsu'];
+}
+window.__tripOSSharedTripIds=[...S18_SHARED_TRIP_IDS];
