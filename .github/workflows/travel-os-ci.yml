@@ -19,10 +19,27 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate loader
         run: node --check visto/app.js
-      - name: Validate history seed
-        run: node --check visto/history-seed.js
+      - name: Validate history seeds
+        run: |
+          node --check visto/history-seed.js
+          node --check visto/flight-seed.js
+      - name: Validate S-suite extension
+        run: |
+          cp visto/parts/p15.txt /tmp/p15.js
+          cp visto/parts/p16.txt /tmp/p16.js
+          node --check /tmp/p15.js
+          node --check /tmp/p16.js
+          grep -q 'trip-filter-bar' visto/parts/p15.txt
+          grep -q 'trip-year-timeline' visto/parts/p15.txt
+          grep -q 'trip-calendar' visto/parts/p15.txt
+          grep -q 'S15_qualityIssues' visto/parts/p15.txt
+          grep -q 'allRouteMap' visto/parts/p15.txt
+          grep -q 'country-history-v4' visto/parts/p15.txt
+          grep -q 'S15_openPhotoTripDiscovery' visto/parts/p15.txt
+          grep -q 'FLIGHT HISTORY' visto/parts/p15.txt
+          grep -q "selectedTripId=''" visto/parts/p16.txt
       - name: Validate actual concatenated app order
-        run: cat visto/parts/p{01..11}.txt visto/parts/p13.txt visto/parts/p14.txt visto/parts/p12.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
+        run: cat visto/parts/p{01..11}.txt visto/parts/p13.txt visto/parts/p14.txt visto/parts/p15.txt visto/parts/p16.txt visto/parts/p12.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
       - name: Validate real flag implementation
         run: |
           grep -q 'flagcdn.com/w80/' visto/parts/p13.txt
@@ -34,15 +51,28 @@ jobs:
           grep -q 'data-trip-group' visto/parts/p14.txt
           grep -q 'tripPhase(t)!=='"'"'upcoming'"'"'' visto/parts/p14.txt
           grep -q 't.days.sort' visto/parts/p14.txt
+      - name: Validate flight history integrity
+        run: |
+          node - <<'NODE'
+          global.window=global;
+          require('./visto/flight-seed.js');
+          const s=global.FLIGHT_HISTORY_SEED;
+          if(!s || s.flights.length!==37) throw new Error('expected 37 confirmed flown segments');
+          if(new Set(s.flights.map(x=>x.id)).size!==s.flights.length) throw new Error('duplicate flight ids');
+          for(const f of s.flights){ if(!s.airports[f.from]||!s.airports[f.to]) throw new Error('missing airport '+f.from+' '+f.to); }
+          if(new Set(s.flights.map(x=>x.airline)).size!==17) throw new Error('expected 17 airlines');
+          if(Object.keys(s.airports).length!==18) throw new Error('expected 18 airports');
+          NODE
       - name: Browser visual smoke
         run: |
           python3 -m http.server 4173 --directory . >/tmp/trip-os-http.log 2>&1 &
           sleep 2
           CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME"
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=9000 --dump-dom http://127.0.0.1:4173/visto/visual-smoke.html > /tmp/visual-dom.html
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=16000 --dump-dom http://127.0.0.1:4173/visto/visual-smoke.html > /tmp/visual-dom.html
           cat /tmp/visual-dom.html
-          grep -q 'VISUAL_SMOKE_PASS' /tmp/visual-dom.html
+          grep -q 'data-result="pass"' /tmp/visual-dom.html
+          grep -q 'id="result">VISUAL_SMOKE_PASS' /tmp/visual-dom.html
       - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('visto/manifest.webmanifest','utf8'))"
       - name: Existing sync tests
