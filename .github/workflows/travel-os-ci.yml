@@ -26,7 +26,9 @@ jobs:
       - name: Validate S-suite extension
         run: |
           cp visto/parts/p15.txt /tmp/p15.js
+          cp visto/parts/p16.txt /tmp/p16.js
           node --check /tmp/p15.js
+          node --check /tmp/p16.js
           grep -q 'trip-filter-bar' visto/parts/p15.txt
           grep -q 'trip-year-timeline' visto/parts/p15.txt
           grep -q 'trip-calendar' visto/parts/p15.txt
@@ -35,8 +37,9 @@ jobs:
           grep -q 'country-history-v4' visto/parts/p15.txt
           grep -q 'S15_openPhotoTripDiscovery' visto/parts/p15.txt
           grep -q 'FLIGHT HISTORY' visto/parts/p15.txt
+          grep -q "selectedTripId=''" visto/parts/p16.txt
       - name: Validate actual concatenated app order
-        run: cat visto/parts/p{01..11}.txt visto/parts/p13.txt visto/parts/p14.txt visto/parts/p15.txt visto/parts/p12.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
+        run: cat visto/parts/p{01..11}.txt visto/parts/p13.txt visto/parts/p14.txt visto/parts/p15.txt visto/parts/p16.txt visto/parts/p12.txt > /tmp/trip-os-app.js && node --check /tmp/trip-os-app.js
       - name: Validate real flag implementation
         run: |
           grep -q 'flagcdn.com/w80/' visto/parts/p13.txt
@@ -68,7 +71,8 @@ jobs:
           test -n "$CHROME"
           "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=16000 --dump-dom http://127.0.0.1:4173/visto/visual-smoke.html > /tmp/visual-dom.html
           cat /tmp/visual-dom.html
-          grep -q 'VISUAL_SMOKE_PASS' /tmp/visual-dom.html
+          grep -q 'data-result="pass"' /tmp/visual-dom.html
+          grep -q 'id="result">VISUAL_SMOKE_PASS' /tmp/visual-dom.html
       - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('visto/manifest.webmanifest','utf8'))"
       - name: Existing sync tests
