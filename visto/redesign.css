@@ -1,0 +1,47 @@
+:root{--surface:#0b1320;--surface-2:#101b2a;--surface-3:#152235;--hairline:rgba(255,255,255,.08);--soft:rgba(255,255,255,.055);--muted2:#8293a8}
+body{background:radial-gradient(circle at 18% -10%,#16263a 0,transparent 33%),#07101a}
+.content{max-width:1420px}
+.card{border-color:var(--hairline);box-shadow:0 16px 44px rgba(0,0,0,.22);background:linear-gradient(180deg,rgba(17,29,45,.96),rgba(9,18,29,.96))}
+.section-title{margin-top:32px}
+.section-title h2{font-size:20px;letter-spacing:-.02em}
+.trip-card-v2{position:relative;min-height:250px;padding:20px;border:1px solid var(--hairline);border-radius:24px;background:linear-gradient(155deg,rgba(255,255,255,.075),rgba(255,255,255,.025));overflow:hidden;cursor:pointer;transition:transform .18s ease,border-color .18s ease,background .18s ease;box-shadow:0 18px 45px rgba(0,0,0,.16)}
+.trip-card-v2:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.16);background:linear-gradient(155deg,rgba(255,255,255,.095),rgba(255,255,255,.035))}
+.trip-card-v2:after{content:"";position:absolute;inset:auto -45px -70px auto;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,rgba(96,157,255,.18),transparent 66%);pointer-events:none}
+.trip-card-v2.has-photo{padding-top:145px}
+.trip-cover-photo{position:absolute;inset:0 0 auto;width:100%;height:128px;object-fit:cover;filter:saturate(.92) contrast(1.04)}
+.trip-cover-photo:after{content:""}
+.trip-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:relative;z-index:1}
+.trip-flag-stack{display:flex;align-items:center;min-height:58px}
+.trip-flag{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;font-size:38px;line-height:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.trip-flag+.trip-flag{margin-left:-12px}
+.trip-year{font-size:12px;letter-spacing:.11em;color:#9baabd;background:rgba(255,255,255,.055);border:1px solid var(--hairline);border-radius:999px;padding:7px 9px}
+.trip-destination{margin-top:16px;font-size:25px;font-weight:900;letter-spacing:-.035em;line-height:1.05}
+.trip-country-name{margin-top:5px;font-size:13px;color:#9fb0c4}
+.trip-date{margin-top:18px;font-size:13px;color:#d6e2ef}
+.trip-meta-v2{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+.meta-chip{font-size:11px;color:#9fb0c4;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.045);border:1px solid var(--hairline)}
+.meta-chip.status-now{color:#d9fff2;border-color:rgba(67,209,158,.3);background:rgba(67,209,158,.09)}
+.flag-rail{display:flex;flex-wrap:wrap;gap:5px;margin-top:14px;max-width:360px}
+.flag-rail .flag-dot{font-size:21px;line-height:1;padding:4px 5px;border-radius:9px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.07)}
+.passport-card-v2{padding:26px;min-height:285px;background:radial-gradient(circle at 85% 5%,rgba(76,129,255,.28),transparent 36%),linear-gradient(145deg,#12233a,#08121e 62%);position:relative;overflow:hidden}
+.passport-card-v2 .passport-kicker{font-size:11px;letter-spacing:.22em;color:#84b7ff}
+.passport-card-v2 .passport-number{font-size:58px;line-height:.95;font-weight:950;letter-spacing:-.06em;margin-top:8px}
+.passport-card-v2 .passport-sub{margin-top:8px;color:#9eafc3}
+.passport-flags{display:flex;flex-wrap:wrap;gap:6px;margin-top:22px;max-width:620px}
+.passport-flags span{font-size:24px;line-height:1;padding:6px 7px;border-radius:10px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08)}
+.country-history-card{display:flex;align-items:center;gap:13px;padding:16px;border:1px solid var(--hairline);border-radius:18px;background:rgba(255,255,255,.035)}
+.country-history-flag{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:34px;background:rgba(255,255,255,.055);border:1px solid var(--hairline);flex:0 0 auto}
+.country-history-card h3{margin:0;font-size:16px}
+.country-history-card .country-count{margin-top:4px;font-size:12px;color:#8fa1b7}
+.trip-detail-hero-v2{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;margin:22px 0 18px;padding:22px;border-radius:24px;border:1px solid var(--hairline);background:radial-gradient(circle at 90% 10%,rgba(75,125,255,.16),transparent 36%),rgba(255,255,255,.035)}
+.trip-detail-flags{display:flex;align-items:center}
+.trip-detail-flags .trip-flag{width:66px;height:66px;font-size:46px;border-radius:20px}
+.trip-detail-main .eyebrow{margin-bottom:4px}
+.trip-detail-title{font-size:34px;font-weight:950;line-height:1.02;letter-spacing:-.04em}
+.trip-detail-sub{margin-top:7px;color:#94a6bb;font-size:13px}
+.trip-detail-side{display:grid;gap:7px;text-align:right}
+.trip-detail-side .bigstat{font-weight:900;font-size:21px}
+.trip-detail-side .smallstat{font-size:11px;color:#8799ae}
+.tabs{gap:6px}.tab{background:rgba(255,255,255,.035);border-color:var(--hairline)}.tab.active{background:#eff5ff;color:#09111b;border-color:#eff5ff;font-weight:800}
+.list-item{border-color:var(--hairline);background:rgba(255,255,255,.035)}
+@media(max-width:760px){.trip-detail-hero-v2{grid-template-columns:1fr}.trip-detail-flags{margin-bottom:2px}.trip-detail-side{text-align:left;grid-template-columns:auto auto;justify-content:start}.trip-detail-title{font-size:29px}.passport-card-v2 .passport-number{font-size:50px}.trip-card-v2{min-height:230px}.trip-flag{width:50px;height:50px;font-size:35px}}
