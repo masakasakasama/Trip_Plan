@@ -1,9 +1,10 @@
-const CACHE = 'trip-os-v5';
+const CACHE = 'trip-os-v6';
 const CORE = [
   './',
   './index.html',
   './manifest.webmanifest',
   './app.css',
+  './redesign.css',
   './app.js',
   './history-seed.js',
   './parts/p01.txt',
@@ -17,7 +18,8 @@ const CORE = [
   './parts/p09.txt',
   './parts/p10.txt',
   './parts/p11.txt',
-  './parts/p12.txt'
+  './parts/p12.txt',
+  './parts/p13.txt'
 ];
 const OPTIONAL = [
   'https://cdn.jsdelivr.net/npm/d3@7',
