@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "activeTripId": "australia-2026",
+  "activeTripId": "history-thailand-2020-01",
   "trips": [
     {
       "id": "australia-2026",
@@ -1133,7 +1133,7 @@
       "mood": "Notion「旅行記」から追加。日付は月末・4日間まで確認でき、正確な日付は未記載。",
       "budget": 0,
       "status": "過去",
-      "lastUpdated": "2026-09-02T10:01:32.120Z",
+      "lastUpdated": "2026-09-06T22:55:33.659Z",
       "archived": false,
       "timezones": {},
       "todos": [],
