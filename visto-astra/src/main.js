@@ -1,41 +1,439 @@
-import {createIcons,NotebookTabs,SlidersHorizontal,Orbit,Plus,Minus,Play,Pause,X,Info,ChevronRight} from 'lucide';
-import {loadHistory,aggregate} from './data.js';
-import {Earth} from './globe.js';
-const $=s=>document.querySelector(s);
-const icons=()=>createIcons({icons:{NotebookTabs,SlidersHorizontal,Orbit,Plus,Minus,Play,Pause,X,Info,ChevronRight}});
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const format=d=>d?.replaceAll('-','.')||'';
-let history,earth,all,current,playing=false,position=0,speed=1,mode='all',selected=null,lastIndex=-1,panelKind=null;
-const duration=6;
+import {
+  createIcons,
+  NotebookTabs,
+  SlidersHorizontal,
+  Orbit,
+  Plus,
+  Minus,
+  Play,
+  Pause,
+  X,
+  Info,
+  ChevronRight,
+} from "lucide";
+import { loadHistory, aggregate } from "./data.js";
+import { Earth } from "./globe.js";
+const $ = (s) => document.querySelector(s);
+const icons = () =>
+  createIcons({
+    icons: {
+      NotebookTabs,
+      SlidersHorizontal,
+      Orbit,
+      Plus,
+      Minus,
+      Play,
+      Pause,
+      X,
+      Info,
+      ChevronRight,
+    },
+  });
+const esc = (v) =>
+  String(v ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ],
+  );
+const format = (d) => d?.replaceAll("-", ".") || "";
+let history,
+  earth,
+  all,
+  current,
+  playing = false,
+  position = 0,
+  speed = 1,
+  mode = "all",
+  selected = null,
+  lastIndex = -1,
+  panelKind = null;
+const duration = 6;
 icons();
-function setPlaying(value){playing=value;earth.replaying=value;$('#play').innerHTML=`<i data-lucide="${value?'pause':'play'}"></i>`;$('#play').setAttribute('aria-label',value?'再生を一時停止':'旅行履歴を再生');icons()}
-function counts(data){$('#country-count').textContent=data.countries.length;$('#city-count').textContent=data.cities.length;$('#trip-count').textContent=data.trips.length}
-function showData(data,trip=null){current=data;counts(data);earth.setData(data,history.countryByName,trip)}
-function closePanel(){document.body.classList.remove('panel-open');$('#panel').hidden=true;panelKind=null}
-function panel(title,eyebrow,html,kind){setPlaying(false);panelKind=kind;$('#panel-title').textContent=title;$('#panel-eyebrow').textContent=eyebrow;$('#panel-body').innerHTML=html;$('#panel').hidden=false;document.body.classList.add('panel-open');icons();$('#panel-body').scrollTop=0;$('#panel-body').querySelectorAll('[data-trip]').forEach(b=>b.onclick=()=>chooseTrip(Number(b.dataset.trip)));$('#panel-body').querySelectorAll('[data-city]').forEach(b=>b.onclick=()=>{const c=all.cities.find(c=>c.name===b.dataset.city);cityPanel(c);earth.focus(c.lat,c.lng,1.95)});$('#panel-body').querySelectorAll('[data-country]').forEach(b=>b.onclick=()=>{const name=b.dataset.country;countryPanel(name);const c=history.countryByName[name];if(c)earth.focus(c.lat,c.lng,2.5)})}
-function tripEntry(t){return `<button class="entry ${selected?.id===t.id?'active':''}" data-trip="${t.index}"><span class="swatch" style="background:${t.color}"></span><span><b>${esc(tripName(t))}</b><small>${format(t.startDate)} · ${t.countries.length} 国・地域</small></span><i data-lucide="chevron-right"></i></button>`}
-function tripName(t){return t.destination==='Paris'&&t.countries.length>3?'Europe':t.destination==='Sydney'?'Sydney & Manila':t.destination||t.title}
-function library(tab='trips'){const tabs=`<div class="segmented"><button data-tab="trips" class="${tab==='trips'?'active':''}">Trips</button><button data-tab="countries" class="${tab==='countries'?'active':''}">国・地域</button><button data-tab="cities" class="${tab==='cities'?'active':''}">都市</button></div>`;let rows;if(tab==='trips')rows=[...history.trips].reverse().map(tripEntry).join('');else if(tab==='countries')rows=all.countries.sort((a,b)=>b.trips.length-a.trips.length).map(c=>`<button class="entry" data-country="${esc(c.name)}"><span><b>${esc(c.name)}</b></span><span class="num">${c.trips.length} Trips</span></button>`).join('');else rows=[...all.cities].sort((a,b)=>b.trips.length-a.trips.length).map(c=>`<button class="entry" data-city="${esc(c.name)}"><span><b>${esc(c.name)}</b><small>${esc(c.country)}</small></span><span class="num">${c.trips.length}×</span></button>`).join('');panel('旅の記録','YOUR ATLAS',tabs+rows,'library');document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>library(b.dataset.tab))}
-function countryPanel(name){const c=current.countries.find(c=>c.name===name);panel(name,'COUNTRY / REGION',`<p class="detail-summary">${c?`<strong>${c.trips.length}</strong> Trips · ${current.cities.filter(x=>x.country===name).length} 都市`:'この時点の訪問記録はありません。'}</p>${c?.trips.map(tripEntry).join('')||''}`,'country');$('#scene-caption').textContent=name}
-function cityPanel(city){panel(city.name,city.country.toUpperCase(),`<p class="detail-summary"><strong>${city.trips.length}</strong> 回の旅で訪問</p>${city.trips.map(tripEntry).join('')}`,'city');$('#scene-caption').textContent=city.name}
-function chooseTrip(index){setPlaying(false);selected=history.trips[index];mode='trip';position=index;lastIndex=index;showData(aggregate([selected]),selected);$('#scene-caption').textContent=tripName(selected);updateReplay(index,0);const c=selected.cities.find(c=>c.name===selected.destination)||selected.cities[0];closePanel();if(c)earth.focus(c.lat,c.lng,2.75);tripDetail(selected)}
-function tripDetail(t){const routes=t.routes.filter(r=>r.kind==='flight');panel(tripName(t),`${format(t.startDate)} — ${format(t.endDate)}`,`<p class="detail-summary">${t.dateLabel?esc(t.dateLabel)+'<br>':''}${esc(t.countries.join(' · '))}<br><strong>${t.cities.length}</strong> 都市 · <strong>${routes.length}</strong> フライト</p><button class="panel-action" id="replay-from">この旅から再生</button>${routes.length?routes.map(r=>`<div class="entry"><span><b>${esc(r.from.city)} → ${esc(r.to.city)}</b><small>${esc(r.flight||r.airline)} · ${format(r.date)}</small></span></div>`).join(''):''}${t.cities.map(c=>`<button class="entry" data-city="${esc(c.name)}"><span><b>${esc(c.name)}</b><small>${esc(c.country)}</small></span><i data-lucide="chevron-right"></i></button>`).join('')}<p class="credit">実線は確認済みフライト。点線は記録に並ぶ都市間のつながりで、実際の移動経路ではありません。</p>`,'trip');$('#replay-from').onclick=()=>startReplay(t.index)}
-function updateReplay(index,fraction){const t=history.trips[index];$('#replay-date').textContent=`${format(t.startDate)}${t.dateLabel?' · 日付は概算を含む':''}`;$('#replay-title').textContent=tripName(t);$('#scrubber').value=(index+fraction)/history.trips.length*100;$('#years').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.textContent===t.startDate.slice(0,4)))}
-function step(index,focus=true){const t=history.trips[index];lastIndex=index;selected=t;showData(aggregate(history.trips.slice(0,index+1)),t);$('#scene-caption').textContent=`${index+1} / ${history.trips.length} · ${tripName(t)}`;if(focus){const c=t.cities.find(c=>c.name===t.destination)||t.cities[0];if(c)earth.focus(c.lat,c.lng,Math.min(earth.homeDistance,3.2),2.2)}updateReplay(index,0)}
-function startReplay(index=0){closePanel();mode='replay';position=index;step(index);setPlaying(true)}
-function allTime(){setPlaying(false);closePanel();mode='all';selected=null;lastIndex=-1;position=history.trips.length;showData(all);$('#scene-caption').textContent='すべての旅';$('#replay-date').textContent=`${history.trips[0].startDate.slice(0,4)} — ${history.trips.at(-1).startDate.slice(0,4)}`;$('#replay-title').textContent='ひとつずつ、世界が広がる。';$('#scrubber').value=100;$('#years').querySelectorAll('button').forEach(b=>b.classList.remove('active'));earth.home()}
-function settings(){panel('表示設定','EARTH',`<label class="setting">雲<input id="cloud-toggle" type="checkbox" ${earth.uniforms.clouds.value?'checked':''}></label><label class="setting">訪問国<input id="visit-toggle" type="checkbox" ${earth.uniforms.visits.value?'checked':''}></label><label class="setting">ルート<input id="route-toggle" type="checkbox" ${earth.routesVisible!==false?'checked':''}></label><label class="setting">自動回転<input id="rotate-toggle" type="checkbox" ${earth.auto?'checked':''}></label><label class="setting">太陽光<select id="light-mode"><option value="portrait">ポートレート</option><option value="live">現在の太陽</option></select></label><label class="setting">画質<select id="quality"><option value="auto">自動</option><option value="high">高画質</option><option value="eco">省電力</option></select></label>`,'settings');$('#cloud-toggle').onchange=e=>earth.uniforms.clouds.value=+e.target.checked;$('#visit-toggle').onchange=e=>earth.uniforms.visits.value=+e.target.checked;$('#route-toggle').onchange=e=>{earth.routesVisible=e.target.checked;earth.routeGroup.visible=e.target.checked};$('#rotate-toggle').onchange=e=>earth.auto=e.target.checked;$('#light-mode').value=earth.lightMode||'portrait';$('#light-mode').onchange=e=>{earth.lightMode=e.target.value;earth.setLight(e.target.value)};$('#quality').value=earth.quality||'auto';$('#quality').onchange=e=>{earth.quality=e.target.value;earth.renderer.setPixelRatio(e.target.value==='eco'?1:Math.min(devicePixelRatio,e.target.value==='high'?2:1.6));earth.resize()}}
-function about(){panel('Visto Astra','VERSION 1.0',`<p class="credit">旅の記録はVistoと共有するデータを参照しています。${history.source==='snapshot'?'現在は保存済みスナップショットを表示中です。':''}</p><p class="credit">Earth imagery: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noreferrer">Solar System Scope</a> · CC BY 4.0<br>Maps: Natural Earth / world-atlas<br>Rendering: Three.js<br>Icons: Lucide</p><p class="credit">国・地域は元の旅行履歴の区分に準拠。香港は独立した地域として数えています。訪問回数は都市ごとのTrip数です。</p>`,'about')}
-async function init(){try{[history,earth]=await Promise.all([loadHistory(),Promise.resolve(new Earth())]);await earth.init($('#stage'),e=>{setPlaying(false);e.type==='city'?cityPanel(e.data):countryPanel(e.data.name)},()=>{if(playing)setPlaying(false)});if(!history.trips.length)throw Error('No travel history');all=aggregate(history.trips);showData(all);position=history.trips.length;
- $('#years').innerHTML=[...new Set(history.trips.map(t=>t.startDate.slice(0,4)))].map(y=>`<button data-year="${y}">${y}</button>`).join('');document.querySelectorAll('[data-year]').forEach(b=>b.onclick=()=>{setPlaying(false);closePanel();mode='replay';position=history.trips.findIndex(t=>t.startDate.startsWith(b.dataset.year));step(position)});
- $('#play').onclick=()=>{if(playing)setPlaying(false);else if(mode==='all'||position>=history.trips.length)startReplay(0);else{closePanel();mode='replay';step(Math.floor(position));setPlaying(true)}};
- $('#speed').onclick=()=>{speed=speed===1?2:speed===2?4:1;$('#speed').textContent=`${speed}×`};
- $('#scrubber').oninput=e=>{setPlaying(false);mode='replay';position=Math.min(history.trips.length-.0001,+e.target.value/100*history.trips.length);const i=Math.floor(position);if(i!==lastIndex)step(i);updateReplay(i,position-i);earth.setReveal(i,position-i)};
- $('#all-time').onclick=allTime;$('#home').onclick=()=>{closePanel();earth.home()};$('#zoom-in').onclick=()=>earth.zoom(.82);$('#zoom-out').onclick=()=>earth.zoom(1.22);$('#close-panel').onclick=closePanel;$('#library').onclick=()=>library();$('#trips').onclick=()=>library();$('#countries').onclick=()=>library('countries');$('#cities').onclick=()=>library('cities');$('#settings').onclick=settings;$('#about').onclick=about;$('#current-trip').onclick=()=>selected?tripDetail(selected):library();
- document.addEventListener('keydown',e=>{if(e.key==='Escape')closePanel()});
- earth.onFrame=dt=>{if(!playing)return;position+=dt*speed/duration;if(position>=history.trips.length){position=history.trips.length;setPlaying(false);showData(all);$('#replay-title').textContent='ここまでの旅、これからの世界。';$('#replay-date').textContent=`${all.countries.length} 国・地域 · ${all.cities.length} 都市`;$('#scrubber').value=100;$('#scene-caption').textContent='すべての旅';earth.home();return}const index=Math.floor(position);if(index!==lastIndex)step(index);updateReplay(index,position-index);earth.setReveal(index,position-index)};
- document.addEventListener('visibilitychange',()=>{if(document.hidden&&playing)setPlaying(false)});$('#loading').hidden=true;allTime();
- window.astra={get state(){return{mode,playing,position,total:history.trips.length,selected:selected?.id,countries:current.countries.length,cities:current.cities.length,source:history.source,unresolved:history.unresolved,panel:panelKind}},get metrics(){return earth.metrics()},project:(lat,lng)=>{const p=pointForTest(lat,lng);return p},history:history.trips};
- function pointForTest(lat,lng){const a=lat*Math.PI/180,b=lng*Math.PI/180;const v=earth.earth.position.clone().set(Math.cos(a)*Math.cos(b),Math.sin(a),-Math.cos(a)*Math.sin(b)).multiplyScalar(1.013).project(earth.camera);const r=$('#stage').getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2}}
- }catch(error){console.error('Astra failed to load',error);$('#loading').hidden=true;$('#failure').hidden=false}}
+function setPlaying(value) {
+  playing = value;
+  earth.replaying = value;
+  $("#play").innerHTML = `<i data-lucide="${value ? "pause" : "play"}"></i>`;
+  $("#play").setAttribute(
+    "aria-label",
+    value ? "再生を一時停止" : "旅行履歴を再生",
+  );
+  icons();
+}
+function counts(data) {
+  $("#country-count").textContent = data.countries.length;
+  $("#city-count").textContent = data.cities.length;
+  $("#trip-count").textContent = data.trips.length;
+}
+function showData(data, trip = null) {
+  current = data;
+  counts(data);
+  earth.setData(data, history.countryByName, trip);
+}
+function closePanel() {
+  if (earth?.highlight) { earth.highlight = null; earth.drawCountries(); }
+  document.body.classList.remove("panel-open");
+  $("#panel").hidden = true;
+  panelKind = null;
+}
+function panel(title, eyebrow, html, kind) {
+  setPlaying(false);
+  panelKind = kind;
+  $("#panel-title").textContent = title;
+  $("#panel-eyebrow").textContent = eyebrow;
+  $("#panel-body").innerHTML = html;
+  $("#panel").hidden = false;
+  document.body.classList.add("panel-open");
+  icons();
+  $("#panel-body").scrollTop = 0;
+  $("#panel-body")
+    .querySelectorAll("[data-trip]")
+    .forEach((b) => (b.onclick = () => chooseTrip(Number(b.dataset.trip))));
+  $("#panel-body")
+    .querySelectorAll("[data-city]")
+    .forEach(
+      (b) =>
+        (b.onclick = () => {
+          const c = all.cities.find((c) => c.name === b.dataset.city);
+          cityPanel(c);
+          earth.focus(c.lat, c.lng, 1.95);
+        }),
+    );
+  $("#panel-body")
+    .querySelectorAll("[data-country]")
+    .forEach(
+      (b) =>
+        (b.onclick = () => {
+          const name = b.dataset.country;
+          countryPanel(name);
+          const c = history.countryByName[name];
+          if (c) earth.focus(c.lat, c.lng, 2.5);
+        }),
+    );
+}
+function tripEntry(t) {
+  return `<button class="entry ${selected?.id === t.id ? "active" : ""}" data-trip="${t.index}"><span class="swatch" style="background:${t.color}"></span><span><b>${esc(tripName(t))}</b><small>${format(t.startDate)} · ${t.countries.length} 国・地域</small></span><i data-lucide="chevron-right"></i></button>`;
+}
+function tripName(t) {
+  return t.destination === "Paris" && t.countries.length > 3
+    ? "Europe"
+    : t.destination === "Sydney"
+      ? "Sydney & Manila"
+      : t.destination || t.title;
+}
+function library(tab = "trips") {
+  const tabs = `<div class="segmented"><button data-tab="trips" class="${tab === "trips" ? "active" : ""}">Trips</button><button data-tab="countries" class="${tab === "countries" ? "active" : ""}">国・地域</button><button data-tab="cities" class="${tab === "cities" ? "active" : ""}">都市</button></div>`;
+  let rows;
+  if (tab === "trips")
+    rows = [...history.trips].reverse().map(tripEntry).join("");
+  else if (tab === "countries")
+    rows = all.countries
+      .sort((a, b) => b.trips.length - a.trips.length)
+      .map(
+        (c) =>
+          `<button class="entry" data-country="${esc(c.name)}"><span><b>${esc(c.name)}</b></span><span class="num">${c.trips.length} Trips</span></button>`,
+      )
+      .join("");
+  else
+    rows = [...all.cities]
+      .sort((a, b) => b.trips.length - a.trips.length)
+      .map(
+        (c) =>
+          `<button class="entry" data-city="${esc(c.name)}"><span><b>${esc(c.name)}</b><small>${esc(c.country)}</small></span><span class="num">${c.trips.length}×</span></button>`,
+      )
+      .join("");
+  panel("旅の記録", "YOUR ATLAS", tabs + rows, "library");
+  document
+    .querySelectorAll("[data-tab]")
+    .forEach((b) => (b.onclick = () => library(b.dataset.tab)));
+}
+function countryPanel(name) {
+  earth.highlight = name; earth.drawCountries();
+  const c = current.countries.find((c) => c.name === name);
+  panel(
+    name,
+    "COUNTRY / REGION",
+    `<p class="detail-summary">${c ? `<strong>${c.trips.length}</strong> Trips · ${current.cities.filter((x) => x.country === name).length} 都市` : "この時点の訪問記録はありません。"}</p>${c?.trips.map(tripEntry).join("") || ""}`,
+    "country",
+  );
+  $("#scene-caption").textContent = name;
+}
+function cityPanel(city) {
+  panel(
+    city.name,
+    city.country.toUpperCase(),
+    `<p class="detail-summary"><strong>${city.trips.length}</strong> 回の旅で訪問</p>${city.trips.map(tripEntry).join("")}`,
+    "city",
+  );
+  $("#scene-caption").textContent = city.name;
+}
+function chooseTrip(index) {
+  setPlaying(false);
+  selected = history.trips[index];
+  mode = "trip";
+  position = index;
+  lastIndex = index;
+  showData(aggregate([selected]), selected);
+  $("#scene-caption").textContent = tripName(selected);
+  updateReplay(index, 0);
+  const c =
+    selected.cities.find((c) => c.name === selected.destination) ||
+    selected.cities[0];
+  closePanel();
+  if (c) earth.focus(c.lat, c.lng, 2.75);
+  tripDetail(selected);
+}
+function tripDetail(t) {
+  const routes = t.routes.filter((r) => r.kind === "flight");
+  panel(
+    tripName(t),
+    `${format(t.startDate)} — ${format(t.endDate)}`,
+    `<p class="detail-summary">${t.dateLabel ? esc(t.dateLabel) + "<br>" : ""}${esc(t.countries.join(" · "))}<br><strong>${t.cities.length}</strong> 都市 · <strong>${routes.length}</strong> フライト</p><button class="panel-action" id="replay-from">この旅から再生</button>${routes.length ? routes.map((r) => `<div class="entry"><span><b>${esc(r.from.city)} → ${esc(r.to.city)}</b><small>${esc(r.flight || r.airline)} · ${format(r.date)}</small></span></div>`).join("") : ""}${t.cities.map((c) => `<button class="entry" data-city="${esc(c.name)}"><span><b>${esc(c.name)}</b><small>${esc(c.country)}</small></span><i data-lucide="chevron-right"></i></button>`).join("")}<p class="credit">実線は確認済みフライト。点線は記録に並ぶ都市間のつながりで、実際の移動経路ではありません。</p>`,
+    "trip",
+  );
+  $("#replay-from").onclick = () => startReplay(t.index);
+}
+function updateReplay(index, fraction) {
+  const t = history.trips[index];
+  $("#replay-date").textContent =
+    `${format(t.startDate)}${t.dateLabel ? " · 日付は概算を含む" : ""}`;
+  $("#replay-title").textContent = tripName(t);
+  $("#scrubber").value = ((index + fraction) / history.trips.length) * 100;
+  $("#years")
+    .querySelectorAll("button")
+    .forEach((b) =>
+      b.classList.toggle("active", b.textContent === t.startDate.slice(0, 4)),
+    );
+}
+function step(index, focus = true) {
+  const t = history.trips[index];
+  lastIndex = index;
+  selected = t;
+  showData(aggregate(history.trips.slice(0, index + 1)), t);
+  $("#scene-caption").textContent =
+    `${index + 1} / ${history.trips.length} · ${tripName(t)}`;
+  if (focus) {
+    const c = t.cities.find((c) => c.name === t.destination) || t.cities[0];
+    if (c) earth.focus(c.lat, c.lng, earth.mobile ? earth.homeDistance : 3.55, 2.2);
+  }
+  updateReplay(index, 0);
+}
+function startReplay(index = 0) {
+  closePanel();
+  mode = "replay";
+  position = index;
+  step(index);
+  setPlaying(true);
+}
+function allTime() {
+  setPlaying(false);
+  closePanel();
+  mode = "all";
+  selected = null;
+  lastIndex = -1;
+  position = history.trips.length;
+  showData(all);
+  $("#scene-caption").textContent = "すべての旅";
+  $("#replay-date").textContent =
+    `${history.trips[0].startDate.slice(0, 4)} — ${history.trips.at(-1).startDate.slice(0, 4)}`;
+  $("#replay-title").textContent = "ひとつずつ、世界が広がる。";
+  $("#scrubber").value = 100;
+  $("#years")
+    .querySelectorAll("button")
+    .forEach((b) => b.classList.remove("active"));
+  earth.home();
+}
+function settings() {
+  panel(
+    "表示設定",
+    "EARTH",
+    `<label class="setting">雲<input id="cloud-toggle" type="checkbox" ${earth.uniforms.clouds.value ? "checked" : ""}></label><label class="setting">訪問国<input id="visit-toggle" type="checkbox" ${earth.uniforms.visits.value ? "checked" : ""}></label><label class="setting">ルート<input id="route-toggle" type="checkbox" ${earth.routesVisible !== false ? "checked" : ""}></label><label class="setting">自動回転<input id="rotate-toggle" type="checkbox" ${earth.auto ? "checked" : ""}></label><label class="setting">太陽光<select id="light-mode"><option value="portrait">ポートレート</option><option value="live">現在の太陽</option></select></label><label class="setting">画質<select id="quality"><option value="auto">自動</option><option value="high">高画質</option><option value="eco">省電力</option></select></label>`,
+    "settings",
+  );
+  $("#cloud-toggle").onchange = (e) =>
+    (earth.uniforms.clouds.value = +e.target.checked);
+  $("#visit-toggle").onchange = (e) =>
+    (earth.uniforms.visits.value = +e.target.checked);
+  $("#route-toggle").onchange = (e) => {
+    earth.routesVisible = e.target.checked;
+    earth.routeGroup.visible = e.target.checked;
+  };
+  $("#rotate-toggle").onchange = (e) => (earth.auto = e.target.checked);
+  $("#light-mode").value = earth.lightMode || "portrait";
+  $("#light-mode").onchange = (e) => {
+    earth.lightMode = e.target.value;
+    earth.setLight(e.target.value);
+  };
+  $("#quality").value = earth.quality || "auto";
+  $("#quality").onchange = (e) => {
+    earth.quality = e.target.value;
+    earth.renderer.setPixelRatio(
+      e.target.value === "eco"
+        ? 1
+        : Math.min(devicePixelRatio, e.target.value === "high" ? 2 : 1.6),
+    );
+    earth.resize();
+  };
+}
+function about() {
+  panel(
+    "Visto Astra",
+    "VERSION 1.1",
+    `<p class="credit">旅の記録はVistoと共有するデータを参照しています。${history.source === "snapshot" ? "現在は保存済みスナップショットを表示中です。" : ""}</p><p class="credit">Earth imagery: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noreferrer">Solar System Scope</a> · CC BY 4.0<br>Maps: Natural Earth / world-atlas<br>Rendering: Three.js<br>Icons: Lucide</p><p class="credit">国・地域は元の旅行履歴の区分に準拠。香港は独立した地域として数えています。訪問回数は都市ごとのTrip数です。</p>`,
+    "about",
+  );
+}
+async function init() {
+  try {
+    [history, earth] = await Promise.all([
+      loadHistory(),
+      Promise.resolve(new Earth()),
+    ]);
+    await earth.init(
+      $("#stage"),
+      (e) => {
+        setPlaying(false);
+        e.type === "city" ? cityPanel(e.data) : countryPanel(e.data.name);
+      },
+      () => {
+        if (playing) setPlaying(false);
+      },
+    );
+    if (!history.trips.length) throw Error("No travel history");
+    all = aggregate(history.trips);
+    showData(all);
+    position = history.trips.length;
+    $("#years").innerHTML = [
+      ...new Set(history.trips.map((t) => t.startDate.slice(0, 4))),
+    ]
+      .map((y) => `<button data-year="${y}">${y}</button>`)
+      .join("");
+    document.querySelectorAll("[data-year]").forEach(
+      (b) =>
+        (b.onclick = () => {
+          setPlaying(false);
+          closePanel();
+          mode = "replay";
+          position = history.trips.findIndex((t) =>
+            t.startDate.startsWith(b.dataset.year),
+          );
+          step(position);
+        }),
+    );
+    $("#play").onclick = () => {
+      if (playing) setPlaying(false);
+      else if (mode === "all" || position >= history.trips.length)
+        startReplay(0);
+      else {
+        closePanel();
+        mode = "replay";
+        step(Math.floor(position));
+        setPlaying(true);
+      }
+    };
+    $("#speed").onclick = () => {
+      speed = speed === 1 ? 2 : speed === 2 ? 4 : 1;
+      $("#speed").textContent = `${speed}×`;
+    };
+    $("#scrubber").oninput = (e) => {
+      setPlaying(false);
+      mode = "replay";
+      position = Math.min(
+        history.trips.length - 0.0001,
+        (+e.target.value / 100) * history.trips.length,
+      );
+      const i = Math.floor(position);
+      if (i !== lastIndex) step(i);
+      updateReplay(i, position - i);
+      earth.setReveal(i, position - i);
+    };
+    $("#all-time").onclick = allTime;
+    $("#home").onclick = () => {
+      closePanel();
+      earth.home();
+    };
+    $("#zoom-in").onclick = () => earth.zoom(0.82);
+    $("#zoom-out").onclick = () => earth.zoom(1.22);
+    $("#close-panel").onclick = closePanel;
+    $("#library").onclick = () => library();
+    $("#trips").onclick = () => library();
+    $("#countries").onclick = () => library("countries");
+    $("#cities").onclick = () => library("cities");
+    $("#settings").onclick = settings;
+    $("#about").onclick = about;
+    $("#current-trip").onclick = () =>
+      selected ? tripDetail(selected) : library();
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closePanel();
+    });
+    earth.onFrame = (dt) => {
+      if (!playing) return;
+      position += (dt * speed) / duration;
+      if (position >= history.trips.length) {
+        position = history.trips.length;
+        setPlaying(false);
+        showData(all);
+        $("#replay-title").textContent = "ここまでの旅、これからの世界。";
+        $("#replay-date").textContent =
+          `${all.countries.length} 国・地域 · ${all.cities.length} 都市`;
+        $("#scrubber").value = 100;
+        $("#scene-caption").textContent = "すべての旅";
+        earth.home();
+        return;
+      }
+      const index = Math.floor(position);
+      if (index !== lastIndex) step(index);
+      updateReplay(index, position - index);
+      earth.setReveal(index, position - index);
+    };
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && playing) setPlaying(false);
+    });
+    $("#loading").hidden = true;
+    allTime();
+    window.astra = {
+      get state() {
+        return {
+          mode,
+          playing,
+          position,
+          total: history.trips.length,
+          selected: selected?.id,
+          countries: current.countries.length,
+          cities: current.cities.length,
+          source: history.source,
+          unresolved: history.unresolved,
+          panel: panelKind,
+        };
+      },
+      get metrics() {
+        return earth.metrics();
+      },
+      project: (lat, lng) => {
+        const p = pointForTest(lat, lng);
+        return p;
+      },
+      history: history.trips,
+    };
+    function pointForTest(lat, lng) {
+      const a = (lat * Math.PI) / 180,
+        b = (lng * Math.PI) / 180;
+      const v = earth.earth.position
+        .clone()
+        .set(Math.cos(a) * Math.cos(b), Math.sin(a), -Math.cos(a) * Math.sin(b))
+        .multiplyScalar(1.013)
+        .project(earth.camera);
+      const r = $("#stage").getBoundingClientRect();
+      return {
+        x: r.left + ((v.x + 1) * r.width) / 2,
+        y: r.top + ((1 - v.y) * r.height) / 2,
+      };
+    }
+  } catch (error) {
+    console.error("Astra failed to load", error);
+    $("#loading").hidden = true;
+    $("#failure").hidden = false;
+  }
+}
 init();
