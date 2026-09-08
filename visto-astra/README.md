@@ -25,7 +25,9 @@ Serve the repository root, then open `/visto-astra/`. `app.js` is the checked-in
 
 Three.js WebGL2 with custom surface, cloud and atmosphere shaders. Day/night textures, elevation-derived normals, ocean highlights, cloud shadows, a separate cloud shell, day/night terminator, emissive night lights, atmosphere and a single star field. City points are a single GPU draw. Curved routes use low-resolution tubes, draw-on reveals and animated light pulses.
 
-Mobile loads 2048-pixel WebP textures, caps pixel ratio at 1.6, and can reduce it to 1.0 if measured frame rate drops. Desktop uses 4096-pixel textures with a 1.8 cap. Geometry is shared for the planet layers; removed travel overlays are disposed. Background tabs skip rendering. Reduced-motion preference disables idle motion. Auto rotation resumes after ten seconds without interaction.
+Mobile and desktop load 4096-pixel WebP textures. Devices reporting less than 4 GB memory start with 2048-pixel textures, with a mobile close-up upgrade. Pixel ratio starts at up to 2.25 on mobile and 2 on desktop; automatic quality reduces rendering resolution when measured frame rate drops, while preserving 4K imagery. High quality allows up to 2.75. Country, cloud and night textures remain independent of CSS sizing. The mobile canvas stays square and centered in the available space, including when a detail panel opens.
+
+Route geometry is batched by Trip and route type; the full history uses 28 draw calls. Geometry is shared for the planet layers; removed travel overlays are disposed. Background tabs skip rendering. Reduced-motion preference disables idle motion. Auto rotation resumes after ten seconds without interaction. Replay time uses elapsed wall time independently of the bounded controls delta, so low rendering frame rates do not slow playback.
 
 Replay accumulates countries and cities across chronological trips and eases the camera to each destination. Playback pauses on direct manipulation and when the tab becomes hidden. Year buttons, direct Trip selection, a continuous scrubber and 1x/2x/4x playback provide navigation.
 

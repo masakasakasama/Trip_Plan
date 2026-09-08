@@ -26,4 +26,5 @@ for (const name of ["day", "night", "bump_roughness_clouds"]) {
         import.meta.url,
       ).pathname.replace(/^\/([A-Z]:)/, "$1"),
     );
+  await sharp(await fs.readFile(source)).webp({quality:95}).toFile(new URL(`../assets/earth_${name}_4096.webp`,import.meta.url).pathname.replace(/^\/([A-Z]:)/,'$1'));
 }

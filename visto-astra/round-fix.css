@@ -1,14 +1,16 @@
-/* Mobile globe aspect-ratio correction.
-   Keep the WebGL stage square so a mathematical sphere cannot be stretched
-   into a vertical ellipse by the browser's CSS sizing. */
+/* A square drawing region centered in the space left by the UI.
+   Its actual dimensions also drive the camera and WebGL drawing buffer. */
 @media (max-width: 700px) {
   #stage {
-    top: 154px;
+    --stage-top: 154px;
+    --stage-bottom: 221px;
+    --stage-size: min(100vw, max(160px, calc(100dvh - var(--stage-top) - var(--stage-bottom))));
+    top: calc(var(--stage-top) + (100dvh - var(--stage-top) - var(--stage-bottom) - var(--stage-size)) / 2);
     left: 50%;
     right: auto;
     bottom: auto;
-    width: 100vw;
-    height: 100vw;
+    width: var(--stage-size);
+    height: var(--stage-size);
     max-width: 700px;
     max-height: 700px;
     transform: translateX(-50%);
@@ -30,17 +32,13 @@
     height: 100%;
   }
 
-  .view-tools {
-    top: calc(154px + 100vw - 48px);
+  body.panel-open #stage {
+    --stage-bottom: calc(36dvh + 90px);
     bottom: auto;
   }
 
-  .scene-caption {
-    top: calc(154px + 100vw - 38px);
-    bottom: auto;
-  }
 }
 
-@media (max-width: 700px) and (min-width: 701px) {
-  /* intentionally empty; keeps desktop rules untouched */
+@media (max-width: 700px) and (max-height: 700px) {
+  #stage { --stage-top: 121px; --stage-bottom: 190px; }
 }

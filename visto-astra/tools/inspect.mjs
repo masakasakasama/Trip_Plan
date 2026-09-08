@@ -26,6 +26,8 @@ console.log(
   ),
 );
 console.log({ errors });
+console.log('GPU',await page.evaluate(()=>{const gl=document.querySelector('canvas').getContext('webgl2');const ext=gl.getExtension('WEBGL_debug_renderer_info');return ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):'unavailable'}));
+await context.close();
 const desktop = await browser.newPage({
   viewport: { width: 1440, height: 1000 },
 });
