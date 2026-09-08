@@ -36,6 +36,7 @@ for (const mobile of [true, false]) {
   assert.equal(initial.state.countries, 15);
   assert.equal(initial.state.total, 16);
   assert.equal(initial.state.unresolved.length, 0);
+  if(mobile){const dimensions=await page.locator('#stage canvas').evaluate(c=>{const r=c.getBoundingClientRect();return{cssRatio:r.width/r.height,bufferRatio:c.width/c.height}});assert.ok(Math.abs(dimensions.cssRatio-1)<.005,'CSS globe viewport must be square');assert.ok(Math.abs(dimensions.bufferRatio-1)<.005,'WebGL drawing buffer must be square');}
   const image = await page.locator("#stage canvas").screenshot();
   const raw = await sharp(image)
     .resize(128, 128)
@@ -201,7 +202,7 @@ for (const mobile of [true, false]) {
   await page.selectOption("#light-mode", "portrait");
   await page.click("#close-panel");
   await page.click("#cities");
-  await page.locator('[data-city="Los Angeles"]').click();
+  await page.locator('#panel-body [data-city="Los Angeles"]').click();
   await page.click("#close-panel");
   await page.waitForTimeout(2000);
   await page.click('#zoom-out');await page.waitForTimeout(550);await page.click('#zoom-out');await page.waitForTimeout(550);
