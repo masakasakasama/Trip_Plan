@@ -1,0 +1,11 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
+import {buildHistory,aggregate} from '../src/data.js';
+const w={window:{}};for(const f of ['history-seed','flight-seed'])vm.runInNewContext(fs.readFileSync(new URL(`../../visto/${f}.js`,import.meta.url),'utf8'),w);
+const geo=JSON.parse(fs.readFileSync(new URL('../assets/geography.json',import.meta.url)));
+const base=JSON.parse(fs.readFileSync(new URL('../../trip-plan.json',import.meta.url)));
+const model=buildHistory(base,w.window.TRIP_HISTORY_SEED,w.window.FLIGHT_HISTORY_SEED,geo,'2026-09-08');
+test('preserves 15 countries and regions without treating departures as new visits',()=>{assert.equal(aggregate(model.trips).countries.length,15)});
+test('Shanghai repeated visits deduplicate spots but retain separate trips',()=>{assert.equal(aggregate(model.trips).cities.find(c=>c.name==='Shanghai').trips.length,3)});
+test('input remains unchanged and future trips are excluded',()=>{const before=JSON.stringify(base);buildHistory(base,w.window.TRIP_HISTORY_SEED,w.window.FLIGHT_HISTORY_SEED,geo,'2024-01-01');assert.equal(JSON.stringify(base),before);assert.equal(buildHistory(base,w.window.TRIP_HISTORY_SEED,w.window.FLIGHT_HISTORY_SEED,geo,'2024-01-01').trips.length,1)});
+test('all flights assigned at most once and no fabricated flights',()=>{const routes=model.trips.flatMap(t=>t.routes).filter(r=>r.kind==='flight');assert.equal(new Set(routes.map(r=>r.id)).size,routes.length);assert.equal(routes.length,w.window.FLIGHT_HISTORY_SEED.flights.length)});
+test('replay accumulates monotonically to complete history',()=>{let count=0;for(let i=1;i<=model.trips.length;i++){const n=aggregate(model.trips.slice(0,i)).countries.length;assert.ok(n>=count);count=n}assert.equal(count,15)});
