@@ -1,0 +1,46 @@
+/* Mobile globe aspect-ratio correction.
+   Keep the WebGL stage square so a mathematical sphere cannot be stretched
+   into a vertical ellipse by the browser's CSS sizing. */
+@media (max-width: 700px) {
+  #stage {
+    top: 154px;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    width: 100vw;
+    height: 100vw;
+    max-width: 700px;
+    max-height: 700px;
+    transform: translateX(-50%);
+  }
+
+  #stage canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none;
+    max-height: none;
+    transform: none !important;
+  }
+
+  #labels,
+  #loading,
+  #failure {
+    width: 100%;
+    height: 100%;
+  }
+
+  .view-tools {
+    top: calc(154px + 100vw - 48px);
+    bottom: auto;
+  }
+
+  .scene-caption {
+    top: calc(154px + 100vw - 38px);
+    bottom: auto;
+  }
+}
+
+@media (max-width: 700px) and (min-width: 701px) {
+  /* intentionally empty; keeps desktop rules untouched */
+}
