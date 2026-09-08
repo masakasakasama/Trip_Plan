@@ -279,7 +279,7 @@ function settings() {
 function about() {
   panel(
     "Visto Astra",
-    "VERSION 1.2.1",
+    "VERSION 1.2.2",
     `<p class="credit">旅の記録はVistoと共有するデータを参照しています。${history.source === "snapshot" ? "現在は保存済みスナップショットを表示中です。" : ""}</p><p class="credit">Earth imagery: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noreferrer">Solar System Scope</a> · CC BY 4.0<br>Maps: Natural Earth / world-atlas<br>Rendering: Three.js<br>Icons: Lucide</p><p class="credit">国・地域は元の旅行履歴の区分に準拠。香港は独立した地域として数えています。訪問回数は都市ごとのTrip数です。</p>`,
     "about",
   );

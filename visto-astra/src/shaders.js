@@ -29,7 +29,7 @@ void main(){
  float darkness=1.-smoothstep(-.14,.08,light);
  color+=night*darkness*1.65;
  vec4 visit=texture2D(visitMap,vUv);
- color+=visit.rgb*visits*(.075+.04*diff);
+ color+=visit.rgb*visit.a*visits*(.02+.06*diff);
  float fresnel=pow(1.-max(0.,dot(n,v)),3.);
  vec3 air=mix(vec3(.65,.19,.045),vec3(.075,.35,.7),smoothstep(-.15,.3,light));
  color+=air*fresnel*smoothstep(-.3,.5,light)*.6;
