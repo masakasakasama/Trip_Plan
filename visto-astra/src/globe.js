@@ -42,7 +42,7 @@ export class Earth {
     stage.prepend(this.renderer.domElement);
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(38, 1, 0.05, 100);
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls = new OrbitControls(this.camera, stage);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.07;
     this.controls.enablePan = false;
@@ -57,6 +57,7 @@ export class Earth {
     this.auto = true;
     this.lastInteraction = performance.now();
     this.controls.addEventListener("start", () => {
+      this.overview = false;
       this.lastInteraction = performance.now();
       this.flight = null;
       this.controls.autoRotate = false;
@@ -144,17 +145,26 @@ export class Earth {
     this.ray = new THREE.Raycaster();
     this.ndc = new THREE.Vector2();
     let down;
-    this.renderer.domElement.addEventListener(
-      "pointerdown",
-      (e) => (down = { x: e.clientX, y: e.clientY, t: performance.now() }),
-    );
-    this.renderer.domElement.addEventListener("pointerup", (e) => {
+    const pointers = new Set();
+    stage.addEventListener("pointerdown", (e) => {
+      pointers.add(e.pointerId);
+      if (pointers.size > 1) { down = null; return; }
+      down = {x:e.clientX,y:e.clientY,t:performance.now(),city:e.target.closest('.city-label')?.dataset.city};
+    });
+    stage.addEventListener('pointermove',e=>{if(down && Math.hypot(e.clientX-down.x,e.clientY-down.y)>7)down=null});
+    stage.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);down=null});
+    stage.addEventListener("pointerup", (e) => {
+      pointers.delete(e.pointerId);
       if (
         down &&
+        pointers.size === 0 &&
         Math.hypot(e.clientX - down.x, e.clientY - down.y) < 7 &&
         performance.now() - down.t < 600
-      )
-        this.pick(e.clientX, e.clientY);
+      ) {
+        const city = this.data.cities.find(c=>c.name===down.city);
+        if(city){this.onPick({type:'city',data:city});this.focus(city.lat,city.lng,1.95)}
+        else this.pick(e.clientX,e.clientY);
+      }
       down = null;
     });
     this.renderer.domElement.addEventListener("webglcontextlost", (e) => {
@@ -207,6 +217,8 @@ export class Earth {
     const w = this.stage.clientWidth,
       h = this.stage.clientHeight;
     if (!w || !h) return;
+    const layoutChanged = this.cssWidth !== w || this.cssHeight !== h;
+    this.cssWidth = w; this.cssHeight = h;
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
@@ -215,7 +227,7 @@ export class Earth {
       Math.atan((Math.tan((this.camera.fov * Math.PI) / 360) * w) / h),
     );
     this.homeDistance = 1.13 / Math.sin(angle);
-    if (this.ready && this.overview)
+    if (this.ready && this.overview && layoutChanged)
       this.focus(24, 118, this.homeDistance, 0.5);
   }
   makeStars() {
@@ -288,13 +300,15 @@ export class Earth {
       this.picks.push({ city, position });
       const el = document.createElement("button");
       el.className = "city-label";
+      el.dataset.city = city.name;
       el.textContent = city.name;
       if (city.trips.length > 1) {
         const small = document.createElement("small");
         small.textContent = `${city.trips.length}×`;
         el.append(small);
       }
-      el.onclick = () => {
+      el.onclick = (event) => {
+        if (event.detail !== 0) return;
         this.onPick({ type: "city", data: city });
         this.focus(city.lat, city.lng, 1.95);
       };
