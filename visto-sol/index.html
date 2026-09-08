@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#07111f" />
+<title>Trip OS · Globe Sol</title>
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="./app.css?v=20260908a">
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">Trip OS</div>
+      <h1>地球儀</h1>
+    </div>
+    <a class="ghost-link" href="../visto/">元のVisto</a>
+  </header>
+
+  <section class="hero-card">
+    <div class="hero-copy">
+      <div>
+        <div class="eyebrow">VISITED</div>
+        <div class="hero-number"><span id="countryCount">0</span><small> countries</small></div>
+        <div class="hero-sub" id="heroSub">3D globe loading</div>
+      </div>
+      <div class="hero-pills">
+        <span class="pill active">訪問国</span>
+        <span class="pill">都市</span>
+        <span class="pill">フライトルート</span>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-scroll" id="tripFilters"></div>
+    </div>
+
+    <div class="globe-stage">
+      <div id="globeViz"></div>
+      <div class="floating controls">
+        <button class="icon-btn" id="zoomIn" aria-label="zoom in">＋</button>
+        <button class="icon-btn" id="zoomOut" aria-label="zoom out">－</button>
+        <button class="icon-btn" id="resetView" aria-label="reset">↺</button>
+      </div>
+      <div class="floating replay-panel">
+        <div class="replay-head">
+          <span class="eyebrow">TRAVEL REPLAY</span>
+          <button class="play-btn" id="replayToggle">再生</button>
+        </div>
+        <input type="range" id="replaySlider" min="0" max="0" value="0" />
+        <div class="replay-label" id="replayLabel">All trips</div>
+      </div>
+      <aside class="floating info-panel" id="infoPanel">
+        <div class="eyebrow">FOCUS</div>
+        <h2>世界全体</h2>
+        <p>ドラッグで回転、ピンチでズーム、国や都市をタップするとフォーカスします</p>
+        <div class="info-list" id="infoList"></div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="stats-grid">
+    <article class="stat-card"><span>Trips</span><b id="tripCount">0</b></article>
+    <article class="stat-card"><span>Cities</span><b id="cityCount">0</b></article>
+    <article class="stat-card"><span>Routes</span><b id="routeCount">0</b></article>
+    <article class="stat-card"><span>Coverage</span><b id="coverage">0%</b></article>
+  </section>
+
+  <section class="bottom-panels">
+    <article class="panel">
+      <div class="panel-head">
+        <h3>Trip一覧</h3>
+        <span id="tripListMeta">0件</span>
+      </div>
+      <div class="trip-list" id="tripList"></div>
+    </article>
+    <article class="panel">
+      <div class="panel-head">
+        <h3>訪問都市</h3>
+        <span id="cityListMeta">0都市</span>
+      </div>
+      <div class="city-list" id="cityList"></div>
+    </article>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<script src="https://unpkg.com/globe.gl"></script>
+<script src="../visto/history-seed.js?v=20260817h"></script>
+<script src="../visto/flight-seed.js?v=20260817h"></script>
+<script src="../visto/shared-trips.js?v=20260817h"></script>
+<script src="./app.js?v=20260908a"></script>
+</body>
+</html>
