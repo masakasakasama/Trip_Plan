@@ -198,11 +198,13 @@ for (const mobile of [true, false]) {
   await page.click("#settings");
   await page.uncheck("#cloud-toggle");
   await page.selectOption("#light-mode", "live");
+  await page.selectOption("#light-mode", "portrait");
   await page.click("#close-panel");
   await page.click("#cities");
   await page.locator('[data-city="Los Angeles"]').click();
   await page.click("#close-panel");
   await page.waitForTimeout(2000);
+  await page.click('#zoom-out');await page.waitForTimeout(550);await page.click('#zoom-out');await page.waitForTimeout(550);
   await page.screenshot({
     path: `${output}/${mobile ? "mobile" : "desktop"}-night.png`,
   });

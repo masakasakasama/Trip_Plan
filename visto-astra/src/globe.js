@@ -33,9 +33,7 @@ export class Earth {
       powerPreference: "high-performance",
     });
     this.renderer.setClearColor(0x060b10, 0);
-    this.renderer.setPixelRatio(
-      Math.min(devicePixelRatio, this.mobile ? 1.6 : 1.8),
-    );
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, this.mobile ? 2.25 : 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
@@ -78,7 +76,8 @@ export class Earth {
     this.mask.height = 1024;
     this.maskTexture = new THREE.CanvasTexture(this.mask);
     const loader = new THREE.TextureLoader();
-    const suffix = this.mobile ? "2048.webp" : "4096.jpg";
+    this.highResolution = !(navigator.deviceMemory && navigator.deviceMemory < 4);
+    const suffix = this.highResolution ? "4096.webp" : "2048.webp";
     const [day, night, detail, topo] = await Promise.all(
       ["day", "night", "bump_roughness_clouds"]
         .map((n) => loader.loadAsync(`./assets/earth_${n}_${suffix}`))
@@ -285,7 +284,7 @@ export class Earth {
     for (const city of data.cities) {
       const position = point(city.lat, city.lng, 1.012);
       markerPositions.push(...position.toArray());
-      markerSizes.push(7 + Math.sqrt(city.trips.length) * 4);
+      markerSizes.push(5 + Math.sqrt(city.trips.length) * 2.5);
       this.picks.push({ city, position });
       const el = document.createElement("button");
       el.className = "city-label";
@@ -445,6 +444,7 @@ export class Earth {
     this.maskTexture.needsUpdate = true;
   }
   focus(lat, lng, distance = 2.3, duration = 1.6) {
+    if (distance < 2.8) this.upgradeTextures();
     this.lastInteraction = performance.now();
     this.controls.autoRotate = false;
     this.overview = false;
@@ -459,6 +459,23 @@ export class Earth {
   home() {
     this.focus(24, 118, this.homeDistance);
     this.overview = true;
+  }
+  async upgradeTextures() {
+    if (!this.mobile || this.highResolution || this.upgrading || this.quality === 'eco' || performance.now() - (this.lastUpgradeAttempt || -60000) < 60000) return;
+    this.lastUpgradeAttempt = performance.now();
+    this.upgrading = true;
+    try {
+      const loader = new THREE.TextureLoader();
+      const textures = await Promise.all(['day','night','bump_roughness_clouds'].map(n=>loader.loadAsync(`./assets/earth_${n}_4096.webp`)));
+      for (const [i,key] of ['dayMap','nightMap','detailMap'].entries()) {
+        textures[i].anisotropy = Math.min(4,this.renderer.capabilities.getMaxAnisotropy());
+        textures[i].wrapS = THREE.RepeatWrapping;
+        this.uniforms[key].value.dispose();
+        this.uniforms[key].value = textures[i];
+      }
+      this.highResolution = true;
+    } catch { /* Keep the already rendered mobile textures if an upgrade is unavailable. */ }
+    finally { this.upgrading = false; }
   }
   zoom(factor) {
     this.lastInteraction = performance.now();
@@ -562,6 +579,7 @@ export class Earth {
     this.last = now;
     if (document.hidden) return;
     this.time += dt;
+    if (this.camera.position.length()<2.8) this.upgradeTextures();
     if (this.lightMode === 'live' && (!this.lastSun || now-this.lastSun>60000)) { this.setLight('live'); this.lastSun=now; }
     this.uniforms.time.value = this.time;
     this.clouds.visible = this.uniforms.clouds.value > 0;
@@ -640,6 +658,7 @@ export class Earth {
       frameTimeMedian: frames[Math.floor(frames.length*.5)] || null,
       frameTimeP95: frames[Math.floor(frames.length*.95)] || null,
       jsHeapMiB: performance.memory ? Math.round(performance.memory.usedJSHeapSize/1048576) : null,
+      textureResolution: this.highResolution ? 4096 : 2048,
       pixelRatio: this.renderer.getPixelRatio(),
       drawCalls: this.renderer.info.render.calls,
       triangles: this.renderer.info.render.triangles,
