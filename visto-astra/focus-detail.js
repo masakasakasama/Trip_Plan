@@ -51,25 +51,23 @@
     style.id = "astra-detail-map-style";
     style.textContent = `
       #detail-map-shell {
-        position: fixed;
-        z-index: 12;
-        right: 18px;
-        bottom: 18px;
-        width: min(560px, calc(100vw - 36px));
-        height: min(56dvh, 520px);
-        border: 1px solid rgba(182,239,215,.18);
-        border-radius: 18px;
+        position: absolute;
+        z-index: 20;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 0;
         overflow: hidden;
-        background: rgba(6,11,16,.96);
-        box-shadow: 0 24px 70px rgba(0,0,0,.55);
-        backdrop-filter: blur(20px);
-        transform: translateY(calc(100% + 32px));
+        background: #071015;
+        box-shadow: none;
+        transform: scale(1.015);
         opacity: 0;
         pointer-events: none;
-        transition: transform .45s cubic-bezier(.22,.8,.2,1), opacity .3s ease;
+        transition: transform .7s cubic-bezier(.22,.8,.2,1), opacity .55s ease;
       }
       #detail-map-shell.open {
-        transform: translateY(0);
+        transform: scale(1);
         opacity: 1;
         pointer-events: auto;
       }
@@ -162,16 +160,17 @@
         pointer-events: none;
         transition: opacity .25s;
       }
+      body.detail-map-open #labels {
+        opacity: 0;
+      }
       @media (max-width: 700px) {
         #detail-map-shell {
-          left: 12px;
-          right: 12px;
-          bottom: max(12px, env(safe-area-inset-bottom));
-          width: auto;
-          height: 43dvh;
-          min-height: 320px;
-          max-height: 430px;
-          border-radius: 18px;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          min-height: 0;
+          max-height: none;
+          border-radius: 0;
         }
         .detail-map-head { top: 10px; left: 10px; right: 10px; }
         .detail-map-title { max-width: 55%; font-size: 11px; }
@@ -204,7 +203,7 @@
       </div>
       <div id="detail-map"></div>
     `;
-    document.body.append(shell);
+    document.querySelector("#stage")?.append(shell);
     titleEl = shell.querySelector(".detail-map-title");
     mapEl = shell.querySelector("#detail-map");
 
@@ -288,13 +287,13 @@
 
       marker.setLatLng([detail.lat, detail.lng]);
       const targetZoom =
-        detail.distance <= 2.6 ? 12 : detail.distance <= 2.75 ? 8 : 7;
+        detail.distance <= 2.6 ? 13 : detail.distance <= 2.75 ? 9 : 7;
 
       setTimeout(() => {
         map.invalidateSize();
         map.flyTo([detail.lat, detail.lng], targetZoom, {
           animate: true,
-          duration: 2.6,
+          duration: 3.2,
           easeLinearity: 0.18,
         });
       }, 80);
