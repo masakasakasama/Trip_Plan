@@ -49,7 +49,7 @@ export class Earth {
     this.controls.minDistance = 1.22;
     this.controls.maxDistance = 6;
     this.controls.rotateSpeed = 0.5;
-    this.controls.zoomSpeed = 0.65;
+    this.controls.zoomSpeed = 0.18;
     this.controls.autoRotateSpeed = 0.22;
     this.controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
     this.controls.minPolarAngle = 0.04;
@@ -310,7 +310,7 @@ export class Earth {
       el.onclick = (event) => {
         if (event.detail !== 0) return;
         this.onPick({ type: "city", data: city });
-        this.focus(city.lat, city.lng, 1.95);
+        this.focus(city.lat, city.lng, 2.55);
       };
       document.querySelector("#labels").append(el);
       this.labels.push({ el, position, city });
@@ -457,7 +457,7 @@ export class Earth {
     }
     this.maskTexture.needsUpdate = true;
   }
-  focus(lat, lng, distance = 2.3, duration = 2.8) {
+  focus(lat, lng, distance = 2.65, duration = 4.2) {
     if (distance < 2.8) this.upgradeTextures();
     this.lastInteraction = performance.now();
     this.controls.autoRotate = false;
@@ -470,7 +470,7 @@ export class Earth {
       .clone()
       .normalize()
       .angleTo(to.clone().normalize());
-    const naturalDuration = 2.6 + (angularDistance / Math.PI) * 2.2;
+    const naturalDuration = 4.0 + (angularDistance / Math.PI) * 1.8;
     const flightDuration = semanticFocus
       ? Math.max(duration, naturalDuration)
       : duration;
@@ -485,7 +485,7 @@ export class Earth {
     // Country/city focus flows into a high-detail satellite/map view after
     // the globe has mostly completed its camera flight.
     clearTimeout(this.detailFocusTimer);
-    if (semanticFocus && distance <= 2.6) {
+    if (semanticFocus && distance <= 2.75) {
       this.detailFocusTimer = setTimeout(
         () =>
           window.dispatchEvent(
@@ -550,7 +550,7 @@ export class Earth {
     }
     if (best) {
       this.onPick({ type: "city", data: best });
-      this.focus(best.lat, best.lng, 1.95);
+      this.focus(best.lat, best.lng, 2.55);
       return;
     }
     this.ndc.set(
@@ -570,7 +570,7 @@ export class Earth {
           (c) => c.id === String(f.id).padStart(3, "0"),
         )?.name || f.properties.name;
       this.onPick({ type: "country", data: { name, lat, lng } });
-      this.focus(lat, lng, 2.25);
+      this.focus(lat, lng, 2.7);
     }
   }
   front(p) {
