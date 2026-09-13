@@ -288,7 +288,7 @@
 
       marker.setLatLng([detail.lat, detail.lng]);
       const targetZoom =
-        detail.distance <= 2.05 ? 12 : detail.distance <= 2.35 ? 9 : 7;
+        detail.distance <= 2.6 ? 12 : detail.distance <= 2.75 ? 8 : 7;
 
       setTimeout(() => {
         map.invalidateSize();
