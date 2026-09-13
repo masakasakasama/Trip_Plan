@@ -46,7 +46,7 @@ export class Earth {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.07;
     this.controls.enablePan = false;
-    this.controls.minDistance = 1.22;
+    this.controls.minDistance = 2.55;
     this.controls.maxDistance = 6;
     this.controls.rotateSpeed = 0.5;
     this.controls.zoomSpeed = 0.18;
@@ -63,10 +63,21 @@ export class Earth {
       this.controls.autoRotate = false;
       onInteraction?.();
     });
-    this.controls.addEventListener(
-      "end",
-      () => (this.lastInteraction = performance.now()),
-    );
+    this.controls.addEventListener("end", () => {
+      this.lastInteraction = performance.now();
+      // Never let the global Earth texture be enlarged into a blurry local map.
+      // Once the user reaches regional scale, hand off to tiled satellite imagery.
+      if (this.camera.position.length() <= 2.6 && !this.flight) {
+        const p = this.camera.position.clone().normalize();
+        const lat = (Math.asin(p.y) * 180) / Math.PI;
+        const lng = (Math.atan2(-p.z, p.x) * 180) / Math.PI;
+        window.dispatchEvent(
+          new CustomEvent("astra:focus", {
+            detail: { lat, lng, distance: this.camera.position.length() },
+          }),
+        );
+      }
+    });
     this.resize();
     this.camera.position.copy(point(24, 118, this.homeDistance));
     this.controls.update();
@@ -522,7 +533,7 @@ export class Earth {
     this.lastInteraction = performance.now();
     const d = THREE.MathUtils.clamp(
       this.camera.position.length() * factor,
-      1.22,
+      2.55,
       6,
     );
     const p = this.camera.position.clone().normalize();
