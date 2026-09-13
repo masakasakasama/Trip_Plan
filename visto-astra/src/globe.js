@@ -457,18 +457,45 @@ export class Earth {
     }
     this.maskTexture.needsUpdate = true;
   }
-  focus(lat, lng, distance = 2.3, duration = 1.6) {
+  focus(lat, lng, distance = 2.3, duration = 2.8) {
     if (distance < 2.8) this.upgradeTextures();
     this.lastInteraction = performance.now();
     this.controls.autoRotate = false;
     this.overview = false;
+
     const from = this.camera.position.clone();
+    const to = point(lat, lng, distance);
+    const semanticFocus = duration >= 1;
+    const angularDistance = from
+      .clone()
+      .normalize()
+      .angleTo(to.clone().normalize());
+    const naturalDuration = 2.6 + (angularDistance / Math.PI) * 2.2;
+    const flightDuration = semanticFocus
+      ? Math.max(duration, naturalDuration)
+      : duration;
+
     this.flight = {
       from,
-      to: point(lat, lng, distance),
+      to,
       start: performance.now(),
-      duration: this.reduced ? 0.05 : duration,
+      duration: this.reduced ? 0.05 : flightDuration,
     };
+
+    // Country/city focus flows into a high-detail satellite/map view after
+    // the globe has mostly completed its camera flight.
+    clearTimeout(this.detailFocusTimer);
+    if (semanticFocus && distance <= 2.6) {
+      this.detailFocusTimer = setTimeout(
+        () =>
+          window.dispatchEvent(
+            new CustomEvent("astra:focus", {
+              detail: { lat, lng, distance },
+            }),
+          ),
+        this.reduced ? 50 : flightDuration * 820,
+      );
+    }
   }
   home() {
     this.focus(24, 118, this.homeDistance);
