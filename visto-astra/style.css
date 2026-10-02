@@ -314,7 +314,7 @@ footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #586c74;
+  color: var(--tatsu-color-text-muted);
   font-size: 8px;
   letter-spacing: 0;
   z-index: 4;
@@ -324,7 +324,7 @@ footer button {
   align-items: center;
   gap: 6px;
   font-size: 9px;
-  color: #71858a;
+  color: var(--tatsu-color-text-secondary);
   letter-spacing: 0;
 }
 footer svg {
@@ -700,3 +700,7 @@ h2 {
     animation: none;
   }
 }
+
+/* Stage 1 shared semantic colors; retain existing footer layout. */
+footer button:hover { color: var(--tatsu-color-accent); }
+footer button:focus-visible { outline-color: var(--tatsu-color-accent); }

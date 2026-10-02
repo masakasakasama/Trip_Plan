@@ -15,8 +15,10 @@ Goal: 旅行計画の同期保護と現行Astra 1.4.0の表示/データ整合�
 - 実Worker handler＋fake GitHub＋Chrome persistent profileで428/409、offline pending再起動、同欄競合/recovery、retry ACK解除、recovery再起動保持を検証。
 - Astra APP_VERSIONを単一sourceとしfooter/Aboutを1.4.0へ統一。generated bundleを再build。
 
+- Design_system revision 3c1f39bのOcean Dark semantic tokenをvendored SHA-256付きでpin。Astra footer文字色/hover/focusへ最小導入。
+
 ## Current
-- 本番旅行データに試験書込みなし。isolated同期E2EとAstra versionブラウザ確認が成功。
+- isolated同期E2E成功。Astra footerのみshared semantic color採用、他画面・地球表示のlayout変更なし。
 
 ## Next
 - 実GalaxyでGPU/fps/発熱を測定し、利用可能なCloudflare資格情報で本番同期の受入を確認する。
@@ -25,9 +27,9 @@ Goal: 旅行計画の同期保護と現行Astra 1.4.0の表示/データ整合�
 - 実Galaxy端末・Cloudflare本番資格情報が利用できず、実機性能と本番Worker同期は未検証。
 
 ## Verification
-- isolated Worker/Chrome E2E: 6 scenarios passed; fixtureWrites=1; productionRequests=0; JS errors=[]
-- Astra footer/About 1.4.0 Chrome passed; external APIs blocked
-- sync merge 1/1 and Astra data 5/5 passed; Astra production build passed
-- node --check sync-browser.mjs and git diff --check passed
+- Astra build and data 5/5 passed; git diff --check passed
+- Chrome pinned footer colors/focus/About passed; screenshot reviewed; JS errors=[]; external APIs blocked
+- Vendored SHA-256 matches pinned source; no runtime token fetch
+- Previous isolated Worker/Chrome sync E2E passed; productionRequests=0
 
-Updated at: 2026-10-02T20:57:21.938747+00:00
+Updated at: 2026-10-02T20:58:41.868005+00:00
