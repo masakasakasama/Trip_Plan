@@ -83,3 +83,11 @@ Uses the actual Worker handler with a fake GitHub Contents API, synthetic trip d
 and a disposable persistent browser profile. Checks If-Match preconditions, offline
 pending restoration across process restart, conflict recovery, retry ACK, and retained
 recovery snapshots. All external browser requests are blocked; production state is untouched.
+
+## Shared design tokens
+
+Astra footer uses Ocean Dark semantic colors from Design_system revision
+`3c1f39b431286cac03710a8a9175a39a83244242`. Vendored `tokens.css` and its SHA-256
+are pinned in `visto-astra/vendor/tatsu/revision.json`; no runtime token fetch.
+Only footer text/hover/focus colors are adopted. Layout and other screens remain as before.
+Future adoption proceeds in small scopes with build and browser comparison.

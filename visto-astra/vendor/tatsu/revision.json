@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/masakasakasama/Design_system",
+  "revision": "3c1f39b431286cac03710a8a9175a39a83244242",
+  "source": "dist/web/tokens.css",
+  "sha256": "0fedb40e69e3f25821d445494ba35b14e39978a2112dfb88e27abf2d34941ea0",
+  "scope": "Astra footer semantic colors only; Ocean Dark"
+}
