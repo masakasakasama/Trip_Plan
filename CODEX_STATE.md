@@ -12,21 +12,22 @@ Goal: 旅行計画の同期保護と現行Astra 1.4.0の表示/データ整合�
 - 情報パネルを閉じた後の地図残留、遅延focusによる再表示、Leaflet未初期化flyToを修正。closeは予約focusを取り消し、古いasync/animationを無視する。
 - verifyをnpm scriptへ追加。任意Chromiumパス・cwdに依存しないartifact保存・動く都市ラベルの実座標tapに対応。実旅行データ変更なし。
 
+- 実Worker handler＋fake GitHub＋Chrome persistent profileで428/409、offline pending再起動、同欄競合/recovery、retry ACK解除、recovery再起動保持を検証。
+- Astra APP_VERSIONを単一sourceとしfooter/Aboutを1.4.0へ統一。generated bundleを再build。
+
 ## Current
-- 修正後の両viewport全検証結果をvisto-astra/docsに保存。cloud FPSは6/4で、実機性能合格ではない。
+- 本番旅行データに試験書込みなし。isolated同期E2EとAstra versionブラウザ確認が成功。
 
 ## Next
-- isolated Worker fixtureでIf-Match競合・pending/recovery再起動復元のE2Eを検証。本番旅行予定へテストを書かない。
-- AstraのAbout 1.2.2表記とfooter 1.4.0の既存version差分を同一の情報源へ整える。
+- 実GalaxyでGPU/fps/発熱を測定し、利用可能なCloudflare資格情報で本番同期の受入を確認する。
 
 ## Blockers
-- 実Galaxy GPU/fps/発熱は未測定。ブラウザ起動だけで性能合格にしない。
-- 本番Workerへの書込み・Cloudflare secret接続は今回未実施。
+- 実Galaxy端末・Cloudflare本番資格情報が利用できず、実機性能と本番Worker同期は未検証。
 
 ## Verification
-- Astra production build and data tests 5/5; root sync-merge test 1/1 passed
-- Playwright full mobile 412x915 / desktop 1440x1000: passed; observed replay steps 17/17; JS/console errors=[] (favicon mocked)
-- Chrome immediate focus-cancel fixture: closed=true, stale map initializations=0, JS errors=[]
-- node --check focus-detail.js / tools/verify.mjs; git diff --check passed
+- isolated Worker/Chrome E2E: 6 scenarios passed; fixtureWrites=1; productionRequests=0; JS errors=[]
+- Astra footer/About 1.4.0 Chrome passed; external APIs blocked
+- sync merge 1/1 and Astra data 5/5 passed; Astra production build passed
+- node --check sync-browser.mjs and git diff --check passed
 
-Updated at: 2026-10-02T17:00:43.568796+00:00
+Updated at: 2026-10-02T20:57:21.938747+00:00

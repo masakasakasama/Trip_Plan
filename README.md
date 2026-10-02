@@ -70,3 +70,16 @@ GitHub Settings > Pages の Source は `GitHub Actions` を選択してくださ
 - `wrangler.toml`: Workerデプロイ設定
 - `sydney-trip-data.js`: 初期データ
 - `trip-plan.json`: Workerが読み書きする同期データ
+
+## Isolated sync verification
+
+```bash
+npm ci --prefix visto-astra
+# CHROMIUM_EXECUTABLE_PATH can select an installed Chrome binary.
+npm run verify:sync --prefix visto-astra
+```
+
+Uses the actual Worker handler with a fake GitHub Contents API, synthetic trip data,
+and a disposable persistent browser profile. Checks If-Match preconditions, offline
+pending restoration across process restart, conflict recovery, retry ACK, and retained
+recovery snapshots. All external browser requests are blocked; production state is untouched.

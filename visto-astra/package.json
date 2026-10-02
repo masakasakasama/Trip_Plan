@@ -5,7 +5,8 @@
   "scripts": {
     "build": "node tools/build.mjs",
     "test": "node --test tests/data.test.js",
-    "verify": "node tools/verify.mjs"
+    "verify": "node tools/verify.mjs",
+    "verify:sync": "node ../scripts/sync-browser.mjs"
   },
   "dependencies": {
     "three": "0.180.0",
