@@ -1,3 +1,14 @@
+# Trip_Plan — current handoff (2026-10-02)
+
+現行mainはAstra 1.4.0の地域別衛星表示まで進んでいる。最新再開状態はCODEX_STATE.md。
+共有データはCloudflare Worker経由でGitHubへ保存し、フロントへGitHub tokenは保存しない。旧tokenはapp.js起動時に除去される。
+POI編集フォームと日程POI selectは現在のapp.jsに実装済み。以下の7月「次にやること」をそのまま再実装しない。
+同期3方向merge testとAstraデータ5テスト、Astra production buildをローカルで確認。実機GPU性能と本番同期は別の未検証項目。
+
+以下は過去の引き継ぎ資料。現在と食い違う場合は最新ソースとCODEX_STATE.mdを優先する。
+
+---
+
 # Trip_Plan handoff
 
 ## 現状
