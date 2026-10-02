@@ -72,6 +72,7 @@ function showData(data, trip = null) {
   earth.setData(data, history.countryByName, trip);
 }
 function closePanel() {
+  window.dispatchEvent(new CustomEvent("astra:focus-cancel"));
   if (earth?.highlight) { earth.highlight = null; earth.drawCountries(); }
   document.body.classList.remove("panel-open");
   $("#panel").hidden = true;

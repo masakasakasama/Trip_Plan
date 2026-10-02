@@ -1,11 +1,14 @@
 import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 const url = process.argv[2] || "http://127.0.0.1:8765/visto-astra/";
-const output = "visto-astra/artifacts";
+const output = fileURLToPath(new URL("../artifacts/", import.meta.url));
 await fs.mkdir(output, { recursive: true });
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true,
+  ...(process.env.CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.CHROMIUM_EXECUTABLE_PATH } : {}),
+});
 const report = { url, views: [] };
 for (const mobile of [true, false]) {
   const width = mobile ? 412 : 1440,
@@ -24,6 +27,8 @@ for (const mobile of [true, false]) {
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
   });
+  // Favicon availability is outside this interaction test.
+  await page.route("**/favicon.ico", route => route.fulfill({ status: 204 }));
   const began = Date.now();
   await page.goto(url);
   await page.waitForFunction(() => window.astra, { timeout: 30000 });
@@ -122,12 +127,18 @@ for (const mobile of [true, false]) {
     path: `${output}/${mobile ? "mobile" : "desktop"}-country.png`,
   });
   await page.click("#close-panel");
+  await page.waitForFunction(() => !document.body.classList.contains("detail-map-open"));
   await page.click("#home");
   await page.waitForTimeout(1800);
   const city = page
     .locator(".city-label:visible")
     .filter({ hasText: "Shanghai" });
-  await city.click();
+  // Labels move with the globe; use a real pointer at the current visible position.
+  const cityBox = await city.boundingBox();
+  assert.ok(cityBox, "Shanghai label must be visible");
+  const cityX = cityBox.x + cityBox.width / 2, cityY = cityBox.y + cityBox.height / 2;
+  if (mobile) await page.touchscreen.tap(cityX, cityY);
+  else await page.mouse.click(cityX, cityY);
   assert.equal(await page.locator("#panel-title").textContent(), "Shanghai");
   assert.match(await page.locator("#panel-body").textContent(), /3 回/);
   await page.click("#library");

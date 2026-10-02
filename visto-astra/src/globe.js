@@ -78,6 +78,7 @@ export class Earth {
         );
       }
     });
+    window.addEventListener("astra:focus-cancel", () => clearTimeout(this.detailFocusTimer));
     this.resize();
     this.camera.position.copy(point(24, 118, this.homeDistance));
     this.controls.update();

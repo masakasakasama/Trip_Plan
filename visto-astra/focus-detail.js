@@ -12,6 +12,7 @@
   let shell;
   let titleEl;
   let mapEl;
+  let focusGeneration = 0;
 
   function loadLeaflet() {
     if (window.L) return Promise.resolve(window.L);
@@ -216,6 +217,8 @@
   }
 
   function close() {
+    focusGeneration += 1;
+    window.dispatchEvent(new CustomEvent("astra:focus-cancel"));
     if (!shell) return;
     shell.classList.remove("open");
     document.body.classList.remove("detail-map-open");
@@ -244,23 +247,27 @@
 
   async function show(detail) {
     if (!detail || !Number.isFinite(detail.lat) || !Number.isFinite(detail.lng)) return;
+    const generation = ++focusGeneration;
     ensureShell();
     shell.hidden = false;
     titleEl.textContent = focusName();
     requestAnimationFrame(() => {
+      if (generation !== focusGeneration) return;
       shell.classList.add("open");
       document.body.classList.add("detail-map-open");
     });
 
     try {
       const L = await loadLeaflet();
+      if (generation !== focusGeneration) return;
+      const targetZoom = detail.distance <= 2.6 ? 13 : detail.distance <= 2.75 ? 9 : 7;
       if (!map) {
         map = L.map(mapEl, {
           zoomControl: false,
           attributionControl: true,
           preferCanvas: true,
           worldCopyJump: true,
-        });
+        }).setView([detail.lat, detail.lng], targetZoom);
 
         satelliteLayer = L.tileLayer(
           "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -286,10 +293,9 @@
       }
 
       marker.setLatLng([detail.lat, detail.lng]);
-      const targetZoom =
-        detail.distance <= 2.6 ? 13 : detail.distance <= 2.75 ? 9 : 7;
 
       setTimeout(() => {
+        if (generation !== focusGeneration) return;
         map.invalidateSize();
         map.flyTo([detail.lat, detail.lng], targetZoom, {
           animate: true,
@@ -298,6 +304,7 @@
         });
       }, 80);
     } catch (error) {
+      if (generation !== focusGeneration) return;
       console.warn("Astra detail map unavailable", error);
       titleEl.textContent = "詳細地図を読み込めませんでした";
     }
@@ -305,7 +312,7 @@
 
   window.addEventListener("astra:focus", (event) => show(event.detail));
   document.addEventListener("click", (event) => {
-    if (event.target.closest("#home")) close();
+    if (event.target.closest("#home, #close-panel")) close();
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && shell?.classList.contains("open")) close();

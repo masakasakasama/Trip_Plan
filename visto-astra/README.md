@@ -50,3 +50,5 @@ node visto-astra/tools/verify.mjs https://masakasakasama.github.io/Trip_Plan/vis
 ```
 
 The runner checks both desktop and 412x915 Android-emulated viewports, canvas pixels, real pointer rotation, multi-touch pinch, country and city picking, Trip selection, the full 16-trip replay, layout bounds and JavaScript errors. Screenshots and metrics go to the ignored `artifacts` directory. Emulation validates touch and layout; it does not establish physical Galaxy S26 Ultra GPU performance.
+
+Run `npm run verify -- http://127.0.0.1:8765/visto-astra/` with a server serving the repository root. The default is Playwright Chromium; `CHROMIUM_EXECUTABLE_PATH=/path/to/chrome` can select an existing Chromium executable. Reports always go to `visto-astra/artifacts`, regardless of the working directory.
