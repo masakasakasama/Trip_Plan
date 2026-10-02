@@ -1,0 +1,141 @@
+{
+  "url": "http://127.0.0.1:8765/visto-astra/",
+  "views": [
+    {
+      "mobile": true,
+      "viewport": {
+        "width": 412,
+        "height": 915
+      },
+      "loadMs": 2589,
+      "litPixels": 7890,
+      "initial": {
+        "mode": "all",
+        "playing": false,
+        "position": 16,
+        "total": 16,
+        "countries": 15,
+        "cities": 33,
+        "source": "snapshot",
+        "unresolved": [],
+        "panel": null
+      },
+      "metrics": {
+        "fps": 6,
+        "frameTimeMedian": 170.09999999776483,
+        "frameTimeP95": 288.69999999925494,
+        "jsHeapMiB": 12,
+        "textureResolution": 4096,
+        "pixelRatio": 1.2000000000000002,
+        "drawCalls": 28,
+        "triangles": 79488,
+        "textures": 4,
+        "geometries": 26,
+        "camera": [
+          -1.488593023649829,
+          1.4117240902814938,
+          -2.799636295750797
+        ],
+        "routes": 54,
+        "cities": 33
+      },
+      "observedReplaySteps": 17,
+      "errors": [],
+      "boxes": {
+        "stage": {
+          "x": 35.203125,
+          "y": 154,
+          "right": 376.796875,
+          "bottom": 495.59375,
+          "width": 341.59375,
+          "height": 341.59375
+        },
+        "panel": {
+          "x": 14,
+          "y": 539.609375,
+          "right": 398,
+          "bottom": 869,
+          "width": 384,
+          "height": 329.390625
+        },
+        "header": {
+          "x": 0,
+          "y": 0,
+          "right": 412,
+          "bottom": 62,
+          "width": 412,
+          "height": 62
+        },
+        "overflow": false
+      }
+    },
+    {
+      "mobile": false,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "loadMs": 2415,
+      "litPixels": 7964,
+      "initial": {
+        "mode": "all",
+        "playing": false,
+        "position": 16,
+        "total": 16,
+        "countries": 15,
+        "cities": 33,
+        "source": "snapshot",
+        "unresolved": [],
+        "panel": null
+      },
+      "metrics": {
+        "fps": 4,
+        "frameTimeMedian": 270.8999999985099,
+        "frameTimeP95": 362.4000000022352,
+        "jsHeapMiB": 12,
+        "textureResolution": 4096,
+        "pixelRatio": 1,
+        "drawCalls": 28,
+        "triangles": 79488,
+        "textures": 4,
+        "geometries": 26,
+        "camera": [
+          -1.4885666291946895,
+          1.411724090281495,
+          -2.7996503297719415
+        ],
+        "routes": 54,
+        "cities": 33
+      },
+      "observedReplaySteps": 17,
+      "errors": [],
+      "boxes": {
+        "stage": {
+          "x": 320,
+          "y": 84,
+          "right": 1440,
+          "bottom": 812,
+          "width": 1120,
+          "height": 728
+        },
+        "panel": {
+          "x": 36,
+          "y": 310,
+          "right": 346,
+          "bottom": 790,
+          "width": 310,
+          "height": 480
+        },
+        "header": {
+          "x": 0,
+          "y": 0,
+          "right": 1440,
+          "bottom": 93,
+          "width": 1440,
+          "height": 93
+        },
+        "overflow": false
+      }
+    }
+  ]
+}
