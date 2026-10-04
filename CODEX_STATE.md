@@ -1,9 +1,10 @@
 # CODEX_STATE
 
-Status: in_progress
+Status: blocked
 Goal: 旅行計画の同期保護と現行Astra 1.4.0の表示/データ整合性を維持する。
 
 ## Done
+- d6cd74cの変更は旅行データのlastUpdatedのみ。本番Workerのhealth/stateをブラウザーUser-AgentとPages Originでread-only取得し、200・GitHub正本JSON/ETag一致・CORSを確認。旅行データへ書込みなし。
 - 最新main 262cb6a / Astra1.4.0を確認。旧handoffのGitHub token保存/POI prompt/select未実装の記述を歴史資料と明示。
 - 実際はWorker secret方式、起動時に旧tokenを除去、POI編集フォーム/日程POI selectは実装済み。
 - 同期merge test、Astraデータテスト5件、production buildを検証。buildで生成されたapp.js差分は修正に含めず復元。
@@ -18,18 +19,21 @@ Goal: 旅行計画の同期保護と現行Astra 1.4.0の表示/データ整合�
 - Design_system revision 3c1f39bのOcean Dark semantic tokenをvendored SHA-256付きでpin。Astra footer文字色/hover/focusへ最小導入。
 
 ## Current
+- 本番Workerの読み取りは利用可能。通常Python User-Agentは403 error 1010だが、ブラウザー条件では200。これをアプリ本体の同期障害とは扱わない。実書込み/競合/復旧とGalaxy測定は未完了。
 - isolated同期E2E成功。Astra footerのみshared semantic color採用、他画面・地球表示のlayout変更なし。
 
 ## Next
-- 実GalaxyでGPU/fps/発熱を測定し、利用可能なCloudflare資格情報で本番同期の受入を確認する。
+- 実Galaxy接続後にGPU/fps/発熱を測定する。本番health/state読み取りの合格を維持し、Cloudflare管理資格情報と安全な隔離/復旧条件が利用可能になったら本番書込み・競合・復旧の受入を確認する。実旅行データを試験目的で書き換えない。
 
 ## Blockers
-- 実Galaxy端末・Cloudflare本番資格情報が利用できず、実機性能と本番Worker同期は未検証。
+- 実Galaxy端末・Cloudflare管理資格情報が利用できない（runtime204 secret/capabilityなし、adb端末なし）。本番Worker読み取りは確認済みだが、実機性能と本番書込み・競合・復旧は未検証。
 
 ## Verification
+- Production read-only health/state HTTP200 with browser User-Agent; state JSON equals current GitHub trip-plan.json; ETag equals GitHub blob SHA; CORS allows https://masakasakasama.github.io; productionWrites=0
+- d6cd74c changes lastUpdated only; no source/build changes and no repeated synthetic tests. Prior build/E2E records below apply to their previous checkpoint
 - Astra build and data 5/5 passed; git diff --check passed
 - Chrome pinned footer colors/focus/About passed; screenshot reviewed; JS errors=[]; external APIs blocked
 - Vendored SHA-256 matches pinned source; no runtime token fetch
 - Previous isolated Worker/Chrome sync E2E passed; productionRequests=0
 
-Updated at: 2026-10-02T20:58:41.868005+00:00
+Updated at: 2026-10-04T07:13:15.159454+00:00
