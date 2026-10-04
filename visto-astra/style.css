@@ -472,6 +472,9 @@ h2 {
   color: var(--muted);
   padding: 14px 0;
 }
+.credit.about-credit {
+  color: var(--tatsu-color-text-muted);
+}
 .credit a {
   text-decoration: underline;
 }
