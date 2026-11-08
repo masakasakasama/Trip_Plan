@@ -12,7 +12,7 @@ function corsHeaders(request, env) {
   return {
     "Access-Control-Allow-Origin": origin === allowed ? origin : allowed,
     "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, If-Match",
+    "Access-Control-Allow-Headers": "Content-Type, If-Match, X-Trip-Passcode",
     "Access-Control-Expose-Headers": "ETag, X-Trip-Sha",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"
@@ -157,8 +157,29 @@ async function readState(request, env) {
   }, request, env);
 }
 
+async function sha256(text) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return new Uint8Array(digest);
+}
+
+// 書き込みは合言葉（Cloudflareのシークレット SYNC_PASSCODE）を知っている端末だけに許可する。
+// CORSはブラウザ以外からのリクエストを止められないため、認証の代わりにはならない。
+async function passcodeOk(request, env) {
+  const expected = (env.SYNC_PASSCODE || "").trim();
+  if (!expected) return false; // 未設定なら書き込みを閉じる（fail closed）
+  const given = (request.headers.get("X-Trip-Passcode") || "").trim();
+  const [a, b] = await Promise.all([sha256(given), sha256(expected)]);
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
 async function writeState(request, env) {
   const cfg = config(env);
+  if (!(await passcodeOk(request, env))) {
+    const configured = Boolean((env.SYNC_PASSCODE || "").trim());
+    return json({ error: configured ? "unauthorized" : "passcode_not_configured" }, { status: configured ? 401 : 503 }, request, env);
+  }
   let body;
   try {
     body = await request.json();

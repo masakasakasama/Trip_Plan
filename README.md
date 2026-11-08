@@ -25,6 +25,8 @@ npx wrangler login
 
 ```powershell
 npx wrangler secret put GITHUB_TOKEN
+# 書き込み用の合言葉（アプリで初回保存時に入力）
+npx wrangler secret put SYNC_PASSCODE
 ```
 
 3. Workerをデプロイ

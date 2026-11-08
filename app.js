@@ -95,6 +95,19 @@ function workerUrl() {
   return configured.replace(/\/$/, "");
 }
 
+const PASSCODE_KEY = "trip-plan-sync-passcode-v1";
+let passcodePromptDeclined = false;
+
+function syncPasscode() {
+  try { return localStorage.getItem(PASSCODE_KEY) || ""; } catch { return ""; }
+}
+
+function askSyncPasscode() {
+  const value = (window.prompt("同期用の合言葉を入力してください（この端末に保存されます）") || "").trim();
+  try { value ? localStorage.setItem(PASSCODE_KEY, value) : localStorage.removeItem(PASSCODE_KEY); } catch {}
+  return value;
+}
+
 function getMapsKey() {
   return localStorage.getItem(MAPS_KEY) || "";
 }
@@ -1119,7 +1132,8 @@ async function saveRemote() {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "If-Match": remoteSha
+        "If-Match": remoteSha,
+        "X-Trip-Passcode": syncPasscode()
       },
       body: JSON.stringify(snapshotToSave)
     }, 15000);
@@ -1132,6 +1146,17 @@ async function saveRemote() {
       retryDelay = 50;
       setStatus("同時編集を統合・再保存中", "warn");
       return;
+    }
+    if (response.status === 401) {
+      if (!passcodePromptDeclined && askSyncPasscode()) {
+        retryDelay = 50;
+        setStatus("合言葉を確認して再保存中", "warn");
+        return;
+      }
+      passcodePromptDeclined = true;
+      const error = new Error("合言葉が必要です（この端末だけに保存中）");
+      error.retryDelay = 60000;
+      throw error;
     }
     if (!response.ok) throw new Error(`保存失敗 (${response.status})`);
     const payload = await response.json();
@@ -1146,7 +1171,7 @@ async function saveRemote() {
   } catch (error) {
     persistPending();
     setStatus(error.message, "warn");
-    retryDelay = 3000;
+    retryDelay = error.retryDelay || 3000;
   } finally {
     saving = false;
     if (dirty) {
